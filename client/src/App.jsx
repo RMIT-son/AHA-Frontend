@@ -1,6 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import ChatPage from "./pages/ChatPage"; // đặt tên đúng cho file bạn đã có
-
+import ChatPage from "./pages/ChatPage"; 
 function App() {
     return (
         <BrowserRouter>
