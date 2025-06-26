@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import ChatPage from "./pages/ChatPage"; // đặt tên đúng cho file bạn đã có
+import { ChatPage, LoginPage, RegisterPage } from "./pages";
 
 function App() {
     return (
@@ -7,7 +7,8 @@ function App() {
             <Routes>
                 <Route path="/" element={<ChatPage />} />
                 <Route path="/chat/:id" element={<ChatPage />} />
-                <Route path="*" element={<h1>404 Not Found</h1>} />
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
             </Routes>
         </BrowserRouter>
     );
