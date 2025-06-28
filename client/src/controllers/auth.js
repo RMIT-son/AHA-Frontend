@@ -24,6 +24,12 @@ export const loginUser = async (email, password) => {
 // Register with email, password, name, phone
 export const registerUser = async ({ fullName, email, password, phone }) => {
     try {
+        console.log("Registering user:", {
+            fullName,
+            email,
+            password,
+            phone,
+        });
         const response = await axios.post(
             `${app.serverURL}/api/auth/register`,
             { fullName, email, password, phone },

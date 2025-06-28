@@ -1,4 +1,5 @@
 import { useState } from "react";
+import Cookies from "js-cookie";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../controllers/auth";
 
@@ -12,6 +13,9 @@ export default function LoginPage() {
         e.preventDefault();
         const res = await loginUser(email, password);
         if (res.success) {
+            console.log("Login successful:", res.data);
+            Cookies.set("user", JSON.stringify(res.data), { expires: 7 });
+
             // Optionally store token, set context
             navigate("/"); // Redirect to home or chat
         } else {

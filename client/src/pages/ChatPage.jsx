@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 import { ChatWindow, ChatInput, Sidebar } from "../components";
 import {
     createConversation,
@@ -19,60 +20,125 @@ export default function ChatPage() {
     const [isBotTyping, setIsBotTyping] = useState(false);
     const [isLoadingInput, setIsLoadingInput] = useState(false);
 
-    // Tạo mới hoặc load lại chat
+    // Load chat data
     useEffect(() => {
-        if (!chatId) {
-            createConversation().then((res) => {
-                setChatId(res._id);
-                navigate(`/chat/${res._id}`);
-            });
-        } else {
-            getConversationById(chatId).then((res) => {
-                if (res) setMessages(res.messages || []);
-            });
+        const loadChatData = async () => {
+            try {
+                if (!chatId || chatId === "undefined") {
+                    // Create new conversation
+                    const res = await createConversation();
+                    console.log("Created new conversation:", res);
+                    setChatId(res.id);
+                    navigate(`/chat/${res.id}`);
+                } else {
+                    // Load existing conversation
+                    console.log("Loading conversation with ID:", chatId);
+                    const res = await getConversationById(chatId);
+                    console.log("Loaded conversation:", res);
+                    if (res && res.messages) {
+                        setMessages(res.messages);
+                    }
+                }
 
-            getAllConversations().then((res) => {
-                const list = res.map((chat) => ({
-                    id: chat._id,
-                    name: `Chat ${chat._id.slice(-5)}`,
+                // Load all conversations for sidebar
+                const allConversations = await getAllConversations();
+                console.log("All conversations:", allConversations);
+
+                const list = allConversations.map((chat) => ({
+                    id: chat.id,
+                    name: `Chat ${chat.id ? chat.id.slice(-5) : "New"}`,
                     lastMessageSnippet:
-                        chat.messages?.[
-                            chat.messages.length - 1
-                        ]?.content.slice(0, 30) + "...",
+                        chat.messages && chat.messages.length > 0
+                            ? chat.messages[
+                                  chat.messages.length - 1
+                              ]?.content?.slice(0, 30) + "..."
+                            : "No messages yet",
                 }));
                 setChatRooms(list);
-            });
+            } catch (error) {
+                console.error("Error loading chat data:", error);
+            }
+        };
+
+        loadChatData();
+    }, [chatId, navigate]);
+
+    useEffect(() => {
+        const userCookie = Cookies.get("user");
+
+        if (!userCookie) {
+            alert("Please log in to access the chat.");
+            navigate("/login");
         }
-    }, [chatId]);
+    }, []);
 
     const handleSend = async (text) => {
         setIsLoadingInput(true);
-        setIsBotTyping(true);
+
+        // Generate temporary ID for optimistic update
+        const tempUserMessage = {
+            sender: "user",
+            content: text,
+            timestamp: new Date().toISOString(),
+            tempId: Date.now(), // Temporary ID for tracking
+        };
 
         try {
             let currentChatId = chatId;
 
-            if (!currentChatId) {
+            // Create new conversation if none exists
+            if (!currentChatId || currentChatId === "undefined") {
+                console.log("Creating new conversation for message");
                 const newChat = await createConversation("anonymous");
-                currentChatId = newChat._id;
-                setChatId(newChat._id);
-                navigate(`/chat/${newChat._id}`);
+                currentChatId = newChat.id;
+                setChatId(newChat.id);
+                navigate(`/chat/${newChat.id}`);
             }
 
+            // 1. Immediately add user message to UI (optimistic update)
+            setMessages((prevMessages) => [...prevMessages, tempUserMessage]);
+            setIsBotTyping(true);
+            setIsLoadingInput(false); // User can send another message
+
+            // 2. Send message to backend and wait for bot response
+            console.log("Sending message to conversation:", currentChatId);
             await sendMessageToConversation(currentChatId, "user", text);
 
+            // 3. Replace optimistic message with real data from backend
             const updated = await getConversationById(currentChatId);
-            setMessages(updated.messages || []);
+
+            if (updated && updated.messages) {
+                setMessages(updated.messages);
+            }
         } catch (err) {
             console.error("Error sending message:", err);
+
+            // Remove the optimistic message on error
+            setMessages((prevMessages) =>
+                prevMessages.filter(
+                    (msg) => msg.tempId !== tempUserMessage.tempId
+                )
+            );
+
+            // Show error message
+            setMessages((prevMessages) => [
+                ...prevMessages,
+                {
+                    sender: "system",
+                    content: "Failed to send message. Please try again.",
+                    timestamp: new Date().toISOString(),
+                    isError: true,
+                },
+            ]);
         } finally {
-            setIsLoadingInput(false);
             setIsBotTyping(false);
         }
     };
 
     const chatDisplayTitle = `Chat ${
-        chatId?.substring(chatId.length - 5) || ""
+        chatId && chatId !== "undefined"
+            ? chatId.substring(chatId.length - 5)
+            : "New"
     }`;
 
     return (
@@ -82,8 +148,10 @@ export default function ChatPage() {
                 chatRooms={chatRooms}
                 activeRoomId={chatId}
                 onSelectRoom={(roomId) => {
-                    setChatId(roomId);
-                    navigate(`/chat/${roomId}`);
+                    if (roomId && roomId !== "undefined") {
+                        setChatId(roomId);
+                        navigate(`/chat/${roomId}`);
+                    }
                 }}
             />
 
