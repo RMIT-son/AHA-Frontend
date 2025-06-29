@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import Cookies from "js-cookie";
 import { ChatWindow, ChatInput, Sidebar } from "../components";
 import {
     createConversation,
-    // sendMessageToConversation,
     getConversationById,
     getAllConversations,
     streamFromBackend
@@ -24,17 +24,17 @@ export default function ChatPage() {
     useEffect(() => {
         const loadChatData = async () => {
             try {
-                if (!chatId || chatId === 'undefined') {
+                if (!chatId || chatId === "undefined") {
                     // Create new conversation
                     const res = await createConversation();
-                    console.log('Created new conversation:', res);
+                    console.log("Created new conversation:", res);
                     setChatId(res.id);
                     navigate(`/chat/${res.id}`);
                 } else {
                     // Load existing conversation
-                    console.log('Loading conversation with ID:', chatId);
+                    console.log("Loading conversation with ID:", chatId);
                     const res = await getConversationById(chatId);
-                    console.log('Loaded conversation:', res);
+                    console.log("Loaded conversation:", res);
                     if (res && res.messages) {
                         setMessages(res.messages);
                     }
@@ -42,46 +42,62 @@ export default function ChatPage() {
 
                 // Load all conversations for sidebar
                 const allConversations = await getAllConversations();
-                console.log('All conversations:', allConversations);
-                
+                console.log("All conversations:", allConversations);
+
                 const list = allConversations.map((chat) => ({
                     id: chat.id,
-                    name: `Chat ${chat.id ? chat.id.slice(-5) : 'New'}`,
-                    lastMessageSnippet: chat.messages && chat.messages.length > 0
-                        ? chat.messages[chat.messages.length - 1]?.content?.slice(0, 30) + "..."
-                        : "No messages yet"
+                    name: `Chat ${chat.id ? chat.id.slice(-5) : "New"}`,
+                    lastMessageSnippet:
+                        chat.messages && chat.messages.length > 0
+                            ? chat.messages[
+                                  chat.messages.length - 1
+                              ]?.content?.slice(0, 30) + "..."
+                            : "No messages yet",
                 }));
                 setChatRooms(list);
             } catch (error) {
-                console.error('Error loading chat data:', error);
+                console.error("Error loading chat data:", error);
             }
         };
 
         loadChatData();
-        
     }, [chatId, navigate]);
+
+    // Cookie authentication check
+    useEffect(() => {
+        const userCookie = Cookies.get("user");
+
+        if (!userCookie) {
+            alert("Please log in to access the chat.");
+            navigate("/login");
+        }
+    }, [navigate]);
 
     const handleSend = async (text) => {
         setIsLoadingInput(true);
+
         // Generate temporary ID for optimistic update
         const tempUserMessage = {
             sender: "user",
             content: text,
             timestamp: new Date().toISOString(),
-            tempId: Date.now() // Temporary ID for tracking
+            tempId: Date.now(), // Temporary ID for tracking
         };
+
         try {
             let currentChatId = chatId;
+
             // Create new conversation if none exists
-            if (!currentChatId || currentChatId === 'undefined') {
-                console.log('Creating new conversation for message');
+            if (!currentChatId || currentChatId === "undefined") {
+                console.log("Creating new conversation for message");
                 const newChat = await createConversation("anonymous");
                 currentChatId = newChat.id;
                 setChatId(newChat.id);
                 navigate(`/chat/${newChat.id}`);
             }
+
             // 1. Immediately add user message to UI (optimistic update)
-            setMessages(prevMessages => [...prevMessages, tempUserMessage]);
+            setMessages((prevMessages) => [...prevMessages, tempUserMessage]);
             
             // 2. Set bot typing state (this will show the typing animation)
             setIsBotTyping(true);
@@ -123,23 +139,27 @@ export default function ChatPage() {
                     return updated;
                 });
             });
-            
+
         } catch (err) {
             console.error("Error sending message:", err);
-            
+
             // Remove the optimistic message on error
-            setMessages(prevMessages => 
-                prevMessages.filter(msg => msg.tempId !== tempUserMessage.tempId)
+            setMessages((prevMessages) =>
+                prevMessages.filter(
+                    (msg) => msg.tempId !== tempUserMessage.tempId
+                )
             );
-            
+
             // Show error message
-            setMessages(prevMessages => [...prevMessages, {
-                sender: "system",
-                content: "Failed to send message. Please try again.",
-                timestamp: new Date().toISOString(),
-                isError: true
-            }]);
-            
+            setMessages((prevMessages) => [
+                ...prevMessages,
+                {
+                    sender: "system",
+                    content: "Failed to send message. Please try again.",
+                    timestamp: new Date().toISOString(),
+                    isError: true,
+                },
+            ]);
         } finally {
             // Ensure typing is turned off (in case of errors before first chunk)
             setIsBotTyping(false);
@@ -147,26 +167,27 @@ export default function ChatPage() {
     };
 
     const chatDisplayTitle = `Chat ${
-        chatId && chatId !== 'undefined' ? chatId.substring(chatId.length - 5) : "New"
+        chatId && chatId !== "undefined"
+            ? chatId.substring(chatId.length - 5)
+            : "New"
     }`;
 
     return (
-        <div className="flex h-screen bg-[#F3F4F6] text-gray-800 overflow-hidden">
+        <div className="flex h-screen bg-[#F3F4F6] text-gray-800">
             <Sidebar
                 isOpen={isSidebarOpen}
                 chatRooms={chatRooms}
                 activeRoomId={chatId}
                 onSelectRoom={(roomId) => {
-                    if (roomId && roomId !== 'undefined') {
+                    if (roomId && roomId !== "undefined") {
                         setChatId(roomId);
                         navigate(`/chat/${roomId}`);
                     }
                 }}
             />
 
-            <div className="flex-1 flex flex-col bg-white min-h-0">
-                {/* Fixed Header */}
-                <div className="h-16 border-b border-gray-200 flex items-center justify-between px-6 bg-white flex-shrink-0">
+            <div className="flex-1 flex flex-col bg-white">
+                <div className="h-16 border-b border-gray-200 flex items-center justify-between px-6 bg-white">
                     <div className="flex items-center">
                         <button
                             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -200,11 +221,8 @@ export default function ChatPage() {
                     </div>
                 </div>
 
-                {/* Scrollable Chat Area */}
-                <div className="flex-1 min-h-0 flex flex-col">
-                    <ChatWindow messages={messages} isBotTyping={isBotTyping} />
-                    <ChatInput onSend={handleSend} isLoading={isLoadingInput} />
-                </div>
+                <ChatWindow messages={messages} isBotTyping={isBotTyping} />
+                <ChatInput onSend={handleSend} isLoading={isLoadingInput} />
             </div>
         </div>
     );

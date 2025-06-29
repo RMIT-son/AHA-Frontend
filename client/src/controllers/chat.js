@@ -15,37 +15,6 @@ export const createConversation = async (user_id = "anonymous") => {
   }
 };
 
-// Send a message to a specific conversation
-export const sendMessageToConversation = async (
-  conversationId,
-  sender,
-  content
-) => {
-  // Add validation and debugging
-  if (!conversationId || conversationId === "undefined") {
-    console.error("Invalid conversationId:", conversationId);
-    throw new Error("Conversation ID is required and cannot be undefined");
-  }
-
-  console.log("Sending message:", { conversationId, sender, content });
-
-  try {
-    const res = await axios.post(
-      `${app.serverURL}/api/conversations/${conversationId}/message`,
-      {
-        sender,
-        content,
-      }
-    );
-    console.log("Message sent successfully:", res.data);
-    return res.data; // Updated conversation
-  } catch (error) {
-    console.error("Failed to send message", error);
-    console.error("Error details:", error.response?.data);
-    throw error;
-  }
-};
-
 export const getAllConversations = async () => {
   try {
     const res = await axios.get(`${app.serverURL}/api/conversations/`);
