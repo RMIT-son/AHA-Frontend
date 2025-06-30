@@ -1,10 +1,10 @@
 import axios from "axios";
 import { app } from "../config/keys";
 
-export const createConversation = async (user_id = "anonymous") => {
+export const createConversation = async (user_id) => {
   try {
     console.log("Creating conversation for user:", user_id);
-    const res = await axios.post(`${app.serverURL}/api/conversations/`, {
+    const res = await axios.post(`${app.serverURL}/api/conversations/create/${user_id}`, {
       user_id,
     });
     console.log("Created conversation:", res.data);
@@ -15,10 +15,11 @@ export const createConversation = async (user_id = "anonymous") => {
   }
 };
 
-export const getAllConversations = async () => {
+export const getAllConversations = async (userId) => {
   try {
-    const res = await axios.get(`${app.serverURL}/api/conversations/`);
-    console.log("Loaded conversations:", res.data);
+    const res = await axios.get(`${app.serverURL}/api/conversations/user/${userId}`);
+    console.log("✅ Axios raw response:", res);
+    console.log("✅ Response data:", res.data);
     return res.data;
   } catch (error) {
     console.error("Failed to load conversations", error);
@@ -37,7 +38,7 @@ export const getConversationById = async (conversationId) => {
 
   try {
     const res = await axios.get(
-      `${app.serverURL}/api/conversations/${conversationId}`
+      `${app.serverURL}/api/conversations/chat/${conversationId}`
     );
     console.log("Loaded conversation:", res.data);
     return res.data;

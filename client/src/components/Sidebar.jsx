@@ -32,6 +32,39 @@ const Sidebar = ({ isOpen, chatRooms = [], onSelectRoom, activeRoomId }) => {
         return `${Math.floor(diffInHours / 168)}w`;
     };
 
+    // ✅ Sort chat rooms by newest first
+    const sortedChatRooms = [...chatRooms].sort((a, b) => {
+        // First, try to sort by lastMessageTime if available
+        if (a.lastMessageTime && b.lastMessageTime) {
+            return new Date(b.lastMessageTime) - new Date(a.lastMessageTime);
+        }
+        
+        // If no lastMessageTime, try to sort by createdAt if available
+        if (a.createdAt && b.createdAt) {
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        }
+        
+        // If no timestamps, sort by ID (assuming newer IDs are larger)
+        // This works well with MongoDB ObjectIds and similar ID systems
+        if (a.id && b.id) {
+            return b.id.localeCompare(a.id);
+        }
+        
+        // Fallback: maintain original order
+        return 0;
+    });
+
+    // ✅ Fixed: Navigate to home route (same as when user first logs in)
+    const handleStartNewChat = () => {
+        // Navigate to home route - this will show a fresh chat interface
+        navigate("/");
+        
+        // Clear the current chat selection
+        if (onSelectRoom) {
+            onSelectRoom(null);
+        }
+    };
+
     return (
         <div
             className={`transition-all duration-300 ease-in-out ${
@@ -53,9 +86,9 @@ const Sidebar = ({ isOpen, chatRooms = [], onSelectRoom, activeRoomId }) => {
                     <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                 </div>
 
-                {/* New Chat Button */}
+                {/* New Chat Button - FIXED */}
                 <button
-                    onClick={() => navigate("/")}
+                    onClick={handleStartNewChat}
                     className="group w-full bg-[#1a1a1a] hover:bg-[#2a2a2a] text-white rounded-lg p-4 flex items-center justify-center gap-3 transition-all duration-200 border border-[#2a2a2a]"
                 >
                     <svg
@@ -81,7 +114,7 @@ const Sidebar = ({ isOpen, chatRooms = [], onSelectRoom, activeRoomId }) => {
                     !isOpen && "hidden"
                 }`}
             >
-                {chatRooms.length > 0 && (
+                {sortedChatRooms.length > 0 && (
                     <div className="px-6 pb-2">
                         <div className="flex items-center gap-2 mb-4">
                             <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wider">
@@ -89,14 +122,14 @@ const Sidebar = ({ isOpen, chatRooms = [], onSelectRoom, activeRoomId }) => {
                             </h3>
                             <div className="flex-1 h-px bg-[#2a2a2a]" />
                             <span className="text-xs text-gray-600 bg-[#1a1a1a] px-2 py-1 rounded-full">
-                                {chatRooms.length}
+                                {sortedChatRooms.length}
                             </span>
                         </div>
                     </div>
                 )}
 
                 <div className="flex-1 overflow-y-auto px-6 space-y-2 scrollbar-thin scrollbar-thumb-[#2a2a2a] scrollbar-track-transparent">
-                    {chatRooms.map((room) => (
+                    {sortedChatRooms.map((room) => (
                         <button
                             key={room.id}
                             onClick={() =>
