@@ -1,128 +1,285 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import { ChatWindow, ChatInput, Sidebar } from "../components";
 import {
     createConversation,
-    sendMessageToConversation,
     getConversationById,
     getAllConversations,
+    streamFromBackend,
 } from "../controllers/chat";
 
 export default function ChatPage() {
     const { id } = useParams();
     const navigate = useNavigate();
+    const skipNextLoadRef = useRef(null);
 
+    const [userId, setUserId] = useState(null);
     const [chatId, setChatId] = useState(id || null);
     const [messages, setMessages] = useState([]);
     const [chatRooms, setChatRooms] = useState([]);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isBotTyping, setIsBotTyping] = useState(false);
     const [isLoadingInput, setIsLoadingInput] = useState(false);
+    const [hasLoaded, setHasLoaded] = useState(false);
 
-    // Load chat data
+    // Validation function to check message order integrity
+    const validateMessageOrder = (messages) => {
+        const issues = [];
+
+        messages.forEach((msg, index) => {
+            const expectedSender = index % 2 === 0 ? "user" : "bot";
+            if (msg.sender !== expectedSender) {
+                issues.push({
+                    index,
+                    expected: expectedSender,
+                    actual: msg.sender,
+                    content: msg.content?.slice(0, 50) + "...",
+                });
+            }
+        });
+
+        if (issues.length > 0) {
+            console.warn("Message order issues found:", issues);
+        }
+
+        return issues.length === 0;
+    };
+
+    // Cookie authentication check and set userId
+    useEffect(() => {
+        const userCookie = Cookies.get("user");
+        if (!userCookie) {
+            alert("Please log in to access the chat.");
+            navigate("/login");
+            return;
+        }
+        try {
+            const user = JSON.parse(userCookie);
+            setUserId(user.id);
+        } catch (err) {
+            console.error("❌ Failed to parse user cookie:", err);
+            navigate("/login");
+        }
+    }, [navigate]);
+
+    // Load chat data when ID or userId changes
     useEffect(() => {
         const loadChatData = async () => {
+            if (!userId) return;
             try {
-                if (!chatId || chatId === "undefined") {
-                    // Create new conversation
-                    const res = await createConversation();
-                    console.log("Created new conversation:", res);
-                    setChatId(res.id);
-                    navigate(`/chat/${res.id}`);
-                } else {
-                    // Load existing conversation
-                    console.log("Loading conversation with ID:", chatId);
-                    const res = await getConversationById(chatId);
-                    console.log("Loaded conversation:", res);
+                if (id && id === skipNextLoadRef.current) {
+                    skipNextLoadRef.current = null;
+                    return;
+                }
+                if (id === "new" || !id) {
+                    setChatId(null);
+                    setMessages([]);
+                } else if (id && id !== "undefined") {
+                    const res = await getConversationById(id);
                     if (res && res.messages) {
-                        setMessages(res.messages);
+                        setChatId(id);
+                        console.log("Loaded chat:", res.messages[0]);
+
+                        // Enhanced message normalization with index-based validation
+                        const normalizedMessages = res.messages.map(
+                            (msg, index) => {
+                                let sender = msg.sender?.toLowerCase?.().trim();
+
+                                // Normalize assistant to bot
+                                if (sender === "assistant") sender = "bot";
+
+                                // Safety check: ensure proper alternating pattern
+                                // Assuming conversation starts with user message (index 0)
+                                if (index % 2 === 0) {
+                                    // Even index should be user
+                                    if (sender !== "user") {
+                                        console.warn(
+                                            `Message at index ${index} corrected: ${sender} -> user`
+                                        );
+                                        sender = "user";
+                                    }
+                                } else {
+                                    // Odd index should be bot
+                                    if (sender !== "bot") {
+                                        console.warn(
+                                            `Message at index ${index} corrected: ${sender} -> bot`
+                                        );
+                                        sender = "bot";
+                                    }
+                                }
+
+                                return { ...msg, sender };
+                            }
+                        );
+
+                        // Validate the final message order
+                        validateMessageOrder(normalizedMessages);
+
+                        setMessages(normalizedMessages);
+                    } else {
+                        setChatId(null);
+                        setMessages([]);
                     }
                 }
-
-                // Load all conversations for sidebar
-                const allConversations = await getAllConversations();
-                console.log("All conversations:", allConversations);
-
-                const list = allConversations.map((chat) => ({
-                    id: chat.id,
-                    name: `Chat ${chat.id ? chat.id.slice(-5) : "New"}`,
-                    lastMessageSnippet:
-                        chat.messages && chat.messages.length > 0
-                            ? chat.messages[
-                                  chat.messages.length - 1
-                              ]?.content?.slice(0, 30) + "..."
-                            : "No messages yet",
-                }));
-                setChatRooms(list);
+                await refreshConversationList(userId);
+                setHasLoaded(true);
             } catch (error) {
                 console.error("Error loading chat data:", error);
             }
         };
 
         loadChatData();
-    }, [chatId, navigate]);
+    }, [id, userId]);
 
-    useEffect(() => {
-        const userCookie = Cookies.get("user");
-
-        if (!userCookie) {
-            alert("Please log in to access the chat.");
-            navigate("/login");
+    const refreshConversationList = async (uid = userId) => {
+        if (!uid) return;
+        try {
+            const allConversations = await getAllConversations(uid);
+            const list = allConversations.map((chat) => ({
+                id: chat.id,
+                name:
+                    chat.name || `Chat ${chat.id ? chat.id.slice(-5) : "New"}`, // Use actual name if available
+                lastMessageSnippet:
+                    chat.messages && chat.messages.length > 0
+                        ? chat.messages[
+                              chat.messages.length - 1
+                          ]?.content?.slice(0, 30) + "..."
+                        : "No messages yet",
+            }));
+            setChatRooms(list);
+        } catch (error) {
+            console.error("Error refreshing conversation list:", error);
         }
-    }, []);
+    };
 
-    const handleSend = async (text) => {
+    // Handle rename conversation
+    const handleRenameRoom = async (roomId, newName) => {
+        try {
+            // Call your API to update the conversation name
+            // await updateConversationName(roomId, newName);
+
+            // Update local state
+            setChatRooms((prev) =>
+                prev.map((room) =>
+                    room.id === roomId ? { ...room, name: newName } : room
+                )
+            );
+
+            console.log(`Renamed room ${roomId} to ${newName}`);
+        } catch (error) {
+            console.error("Error renaming conversation:", error);
+        }
+    };
+
+    // Handle delete conversation
+    const handleDeleteRoom = async (roomId) => {
+        try {
+            // Call your API to delete the conversation
+            // await deleteConversation(roomId);
+
+            // Update local state
+            setChatRooms((prev) => prev.filter((room) => room.id !== roomId));
+
+            // If we're currently viewing the deleted chat, navigate to home
+            if (chatId === roomId) {
+                navigate("/", { replace: true });
+            }
+
+            console.log(`Deleted room ${roomId}`);
+        } catch (error) {
+            console.error("Error deleting conversation:", error);
+        }
+    };
+
+    // Enhanced handleSend function with file and voice support
+    const handleSend = async (text, files = []) => {
         setIsLoadingInput(true);
-
-        // Generate temporary ID for optimistic update
         const tempUserMessage = {
             sender: "user",
             content: text,
             timestamp: new Date().toISOString(),
-            tempId: Date.now(), // Temporary ID for tracking
+            tempId: Date.now(),
+            status: "pending",
+            files: files, // Include files if any
         };
 
         try {
             let currentChatId = chatId;
-
-            // Create new conversation if none exists
-            if (!currentChatId || currentChatId === "undefined") {
-                console.log("Creating new conversation for message");
-                const newChat = await createConversation("anonymous");
+            if (
+                !currentChatId ||
+                currentChatId === "undefined" ||
+                currentChatId === "new"
+            ) {
+                const newChat = await createConversation(userId);
                 currentChatId = newChat.id;
                 setChatId(newChat.id);
-                navigate(`/chat/${newChat.id}`);
+                skipNextLoadRef.current = newChat.id;
+                navigate(`/chat/${newChat.id}`, { replace: true });
             }
 
-            // 1. Immediately add user message to UI (optimistic update)
-            setMessages((prevMessages) => [...prevMessages, tempUserMessage]);
+            setMessages((prev) => [...prev, tempUserMessage]);
             setIsBotTyping(true);
-            setIsLoadingInput(false); // User can send another message
+            setIsLoadingInput(false);
 
-            // 2. Send message to backend and wait for bot response
-            console.log("Sending message to conversation:", currentChatId);
-            await sendMessageToConversation(currentChatId, "user", text);
+            let botMessageId = null;
+            let isFirstChunk = true;
 
-            // 3. Replace optimistic message with real data from backend
-            const updated = await getConversationById(currentChatId);
+            // Pass files to backend if needed
+            await streamFromBackend(
+                currentChatId,
+                text,
+                userId,
+                (chunk) => {
+                    if (isFirstChunk) {
+                        setIsBotTyping(false);
+                        isFirstChunk = false;
+                    }
+                    setMessages((prev) => {
+                        const updated = [...prev];
+                        const botIndex = updated.findIndex(
+                            (msg) => msg.tempId === botMessageId
+                        );
+                        if (botIndex !== -1) {
+                            updated[botIndex] = {
+                                ...updated[botIndex],
+                                content: updated[botIndex].content + chunk,
+                            };
+                        } else {
+                            botMessageId = Date.now();
+                            updated.push({
+                                sender: "bot",
+                                content: chunk,
+                                timestamp: new Date().toISOString(),
+                                tempId: botMessageId,
+                            });
+                        }
+                        return updated;
+                    });
+                },
+                files
+            ); // Pass files to streaming function
 
-            if (updated && updated.messages) {
-                setMessages(updated.messages);
-            }
-        } catch (err) {
-            console.error("Error sending message:", err);
-
-            // Remove the optimistic message on error
-            setMessages((prevMessages) =>
-                prevMessages.filter(
-                    (msg) => msg.tempId !== tempUserMessage.tempId
+            setMessages((prev) =>
+                prev.map((msg) =>
+                    msg.tempId === tempUserMessage.tempId
+                        ? { ...msg, status: "delivered" }
+                        : msg
                 )
             );
 
-            // Show error message
-            setMessages((prevMessages) => [
-                ...prevMessages,
+            await refreshConversationList();
+        } catch (err) {
+            console.error("Error sending message:", err);
+            setMessages((prev) =>
+                prev.map((msg) =>
+                    msg.tempId === tempUserMessage.tempId
+                        ? { ...msg, status: "failed", error: err.message }
+                        : msg
+                )
+            );
+            setMessages((prev) => [
+                ...prev,
                 {
                     sender: "system",
                     content: "Failed to send message. Please try again.",
@@ -132,66 +289,92 @@ export default function ChatPage() {
             ]);
         } finally {
             setIsBotTyping(false);
+            setIsLoadingInput(false);
         }
     };
 
-    const chatDisplayTitle = `Chat ${
-        chatId && chatId !== "undefined"
-            ? chatId.substring(chatId.length - 5)
-            : "New"
-    }`;
+    // Handle file upload
+    const handleFileUpload = (files) => {
+        console.log("Files uploaded:", files);
+        // You can process files here if needed
+    };
+
+    // Handle voice recording
+    const handleVoiceRecord = (audioBlob) => {
+        console.log("Voice recorded:", audioBlob);
+        // You can process the audio blob here
+        // For example, convert to text or send to backend
+    };
+
+    // Format chat name using the same logic as the sidebar
+    const formatChatName = (room) => {
+        if (room.name && room.name !== `Chat ${room.id?.slice(-5)}`) {
+            return room.name;
+        }
+        return room.lastMessageSnippet &&
+            room.lastMessageSnippet !== "No messages yet"
+            ? room.lastMessageSnippet.slice(0, 30) + "..."
+            : `Chat ${room.id?.slice(-5) || "New"}`;
+    };
+
+    // Get the actual chat title from chatRooms data using the same formatting as sidebar
+    const getCurrentChatTitle = () => {
+        if (!chatId || chatId === "undefined" || chatId === "new") {
+            return "New Chat";
+        }
+
+        // Find the current chat in chatRooms to get its actual name
+        const currentChat = chatRooms.find((room) => room.id === chatId);
+        if (currentChat) {
+            return formatChatName(currentChat);
+        }
+
+        // Fallback to generic name if not found
+        return `Chat ${chatId.slice(-5)}`;
+    };
 
     return (
-        <div className="flex h-screen bg-[#F3F4F6] text-gray-800">
+        <div className="flex h-screen bg-white">
             <Sidebar
                 isOpen={isSidebarOpen}
                 chatRooms={chatRooms}
                 activeRoomId={chatId}
-                onSelectRoom={(roomId) => {
-                    if (roomId && roomId !== "undefined") {
-                        setChatId(roomId);
-                        navigate(`/chat/${roomId}`);
-                    }
-                }}
+                onSelectRoom={(roomId) =>
+                    navigate(
+                        roomId && roomId !== "undefined"
+                            ? `/chat/${roomId}`
+                            : "/"
+                    )
+                }
+                onRenameRoom={handleRenameRoom}
+                onDeleteRoom={handleDeleteRoom}
+                onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
+                onRefresh={() => refreshConversationList()}
             />
 
-            <div className="flex-1 flex flex-col bg-white">
-                <div className="h-16 border-b border-gray-200 flex items-center justify-between px-6 bg-white">
-                    <div className="flex items-center">
-                        <button
-                            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                            className="mr-4 p-2 rounded-md hover:bg-gray-100"
-                        >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                strokeWidth={1.5}
-                                stroke="currentColor"
-                                className="w-6 h-6 text-gray-600"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12"
-                                />
-                            </svg>
-                        </button>
-                        <h2 className="text-lg font-semibold">
-                            {chatDisplayTitle}
-                        </h2>
-                    </div>
-                    <div className="flex items-center space-x-3">
-                        <input
-                            type="search"
-                            placeholder="Search in chat..."
-                            className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500 hidden md:block"
-                        />
+            <div className="flex-1 flex flex-col min-w-0">
+                {/* Simplified Header - removed toggle button since it's now in sidebar */}
+                <div className="h-12 border-b border-gray-200 flex items-center justify-between px-4 bg-white flex-shrink-0">
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900 text-sm">
+                                {getCurrentChatTitle()}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
-                <ChatWindow messages={messages} isBotTyping={isBotTyping} />
-                <ChatInput onSend={handleSend} isLoading={isLoadingInput} />
+                <ChatWindow
+                    messages={messages}
+                    isBotTyping={isBotTyping}
+                    hasLoaded={hasLoaded}
+                />
+                <ChatInput
+                    onSend={handleSend}
+                    onFileUpload={handleFileUpload}
+                    onVoiceRecord={handleVoiceRecord}
+                    isLoading={isLoadingInput}
+                />
             </div>
         </div>
     );
