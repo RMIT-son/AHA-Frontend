@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 
@@ -43,16 +43,19 @@ export default function ChatWindow({ messages, isBotTyping }) {
         }
     }, [messages]);
 
-    // ✅ Markdown formatting: convert \n to "  \n" for proper new lines
-    const formatMarkdown = (text) => {
-        return text.replace(/\n/g, "  \n");
-    };
-
-    // Markdown component with custom styling
-    const MarkdownContent = ({ content }) => (
-        <ReactMarkdown
-            rehypePlugins={[rehypeSanitize]}
-            components={{
+    // Force re-render when content changes to ensure markdown is applied
+    const MarkdownContent = ({ content }) => {
+        const [key, setKey] = useState(0);
+        
+        useEffect(() => {
+            setKey(prev => prev + 1);
+        }, [content]);
+        
+        return (
+            <ReactMarkdown
+                key={key}
+                rehypePlugins={[rehypeSanitize]}
+                components={{
                 p: ({ children }) => (
                     <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>
                 ),
@@ -72,17 +75,17 @@ export default function ChatWindow({ messages, isBotTyping }) {
                     </h3>
                 ),
                 ul: ({ children }) => (
-                    <ul className="list-disc list-inside mb-3 space-y-1">
+                    <ul className="list-disc list-outside mb-3 space-y-1 pl-6">
                         {children}
                     </ul>
                 ),
                 ol: ({ children }) => (
-                    <ol className="list-decimal list-inside mb-3 space-y-1">
+                    <ol className="list-decimal list-outside mb-3 space-y-1 pl-6">
                         {children}
                     </ol>
                 ),
                 li: ({ children }) => (
-                    <li className="leading-relaxed">{children}</li>
+                    <li className="leading-relaxed pl-2">{children}</li>
                 ),
                 code: ({ inline, children }) =>
                     inline ? (
@@ -123,9 +126,10 @@ export default function ChatWindow({ messages, isBotTyping }) {
                 hr: () => <hr className="border-gray-200 my-4" />,
             }}
         >
-            {formatMarkdown(content)}
+            {content}
         </ReactMarkdown>
     );
+};
 
     return (
         <div ref={scrollAreaRef} className="flex-1 overflow-y-auto bg-white">
@@ -147,15 +151,9 @@ export default function ChatWindow({ messages, isBotTyping }) {
                             return (
                                 <div
                                     key={message.tempId || message.id || index}
-                                    className={`flex ${
-                                        isUser ? "justify-end" : "justify-start"
-                                    }`}
+                                    className="flex justify-center"
                                 >
-                                    <div
-                                        className={`max-w-[80%] ${
-                                            isUser ? "ml-auto" : "mr-auto"
-                                        }`}
-                                    >
+                                    <div className="max-w-[80%] w-full">
                                         <div
                                             className={`px-4 py-3 rounded-2xl ${
                                                 isUser
@@ -182,27 +180,8 @@ export default function ChatWindow({ messages, isBotTyping }) {
                                             </div>
                                         </div>
 
-                                        {message.status === "pending" && (
-                                            <div
-                                                className={`flex items-center gap-2 mt-2 text-xs text-gray-500 ${
-                                                    isUser
-                                                        ? "justify-end"
-                                                        : "justify-start"
-                                                }`}
-                                            >
-                                                <div className="w-2 h-2 bg-orange-400 rounded-full animate-pulse"></div>
-                                                Sending...
-                                            </div>
-                                        )}
-
                                         {message.status === "failed" && (
-                                            <div
-                                                className={`flex items-center gap-2 mt-2 text-xs text-red-500 ${
-                                                    isUser
-                                                        ? "justify-end"
-                                                        : "justify-start"
-                                                }`}
-                                            >
+                                            <div className="flex items-center justify-center gap-2 mt-2 text-xs text-red-500">
                                                 <div className="w-2 h-2 bg-red-400 rounded-full"></div>
                                                 Failed to send
                                             </div>
@@ -213,18 +192,20 @@ export default function ChatWindow({ messages, isBotTyping }) {
                         })}
 
                         {isBotTyping && (
-                            <div className="flex justify-start">
-                                <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
-                                    <div className="flex space-x-1">
-                                        <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"></div>
-                                        <div
-                                            className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"
-                                            style={{ animationDelay: "0.1s" }}
-                                        ></div>
-                                        <div
-                                            className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"
-                                            style={{ animationDelay: "0.2s" }}
-                                        ></div>
+                            <div className="flex justify-center">
+                                <div className="max-w-[80%] w-full flex justify-start">
+                                    <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
+                                        <div className="flex space-x-1">
+                                            <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"></div>
+                                            <div
+                                                className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"
+                                                style={{ animationDelay: "0.1s" }}
+                                            ></div>
+                                            <div
+                                                className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"
+                                                style={{ animationDelay: "0.2s" }}
+                                            ></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

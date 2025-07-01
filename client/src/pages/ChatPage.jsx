@@ -15,6 +15,7 @@ export default function ChatPage() {
     const skipNextLoadRef = useRef(null);
 
     const [userId, setUserId] = useState(null);
+    const [user, setUser] = useState(null);
     const [chatId, setChatId] = useState(id || null);
     const [messages, setMessages] = useState([]);
     const [chatRooms, setChatRooms] = useState([]);
@@ -55,8 +56,9 @@ export default function ChatPage() {
             return;
         }
         try {
-            const user = JSON.parse(userCookie);
-            setUserId(user.id);
+            const userData = JSON.parse(userCookie);
+            setUserId(userData.id);
+            setUser(userData); // Store the full user object
         } catch (err) {
             console.error("❌ Failed to parse user cookie:", err);
             navigate("/login");
@@ -350,6 +352,7 @@ export default function ChatPage() {
                 onDeleteRoom={handleDeleteRoom}
                 onToggle={() => setIsSidebarOpen(!isSidebarOpen)}
                 onRefresh={() => refreshConversationList()}
+                user={user}
             />
 
             <div className="flex-1 flex flex-col min-w-0">

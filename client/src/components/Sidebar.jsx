@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import ConversationModal from "./ConversationModal";
 
 const Sidebar = ({
@@ -9,6 +10,7 @@ const Sidebar = ({
     onRenameRoom,
     onDeleteRoom,
     onToggle,
+    user, // Add user prop
 }) => {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState(null);
@@ -18,9 +20,10 @@ const Sidebar = ({
         roomId: null,
         roomName: "",
     });
+    const navigate = useNavigate();
 
-    // Mock user data for demo
-    const displayName = "Duong Pham Hoang";
+    // Get user display name and initial from user prop
+    const displayName = user?.fullName || user?.name || "User";
     const displayInitial = displayName.charAt(0).toUpperCase();
 
     const formatChatName = (room) => {
@@ -409,6 +412,7 @@ const Sidebar = ({
                                         className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-600 transition-colors"
                                         onClick={() => {
                                             console.log("Signing out");
+                                            navigate("/login")
                                         }}
                                     >
                                         Sign out
