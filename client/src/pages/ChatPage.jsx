@@ -7,6 +7,8 @@ import {
     getConversationById,
     getAllConversations,
     streamFromBackend,
+    renameConversation,
+    deleteConversation,
 } from "../controllers/chat";
 
 export default function ChatPage() {
@@ -25,7 +27,8 @@ export default function ChatPage() {
     const [hasLoaded, setHasLoaded] = useState(false);
 
     // New state to track when streaming ends
-    const [shouldReloadAfterStream, setShouldReloadAfterStream] = useState(false);
+    const [shouldReloadAfterStream, setShouldReloadAfterStream] =
+        useState(false);
     const streamingTimeoutRef = useRef(null);
 
     // Effect to handle page reload after streaming
@@ -35,7 +38,7 @@ export default function ChatPage() {
             const reloadTimeout = setTimeout(() => {
                 window.location.reload();
             }, 500);
-            
+
             return () => clearTimeout(reloadTimeout);
         }
     }, [shouldReloadAfterStream, isBotTyping]);
@@ -97,7 +100,6 @@ export default function ChatPage() {
                     const res = await getConversationById(id);
                     if (res && res.messages) {
                         setChatId(id);
-                        console.log("Loaded chat:", res.messages[0]);
 
                         const normalizedMessages = res.messages.map(
                             (msg, index) => {
@@ -146,10 +148,12 @@ export default function ChatPage() {
         if (!uid) return;
         try {
             const allConversations = await getAllConversations(uid);
+
             const list = allConversations.map((chat) => ({
                 id: chat.id,
                 name:
-                    chat.name || `Chat ${chat.id ? chat.id.slice(-5) : "New"}`,
+                    chat.title || `Chat ${chat.id ? chat.id.slice(-5) : "New"}`, // Use the actual title from database
+                title: chat.title, // Store the original title
                 lastMessageSnippet:
                     chat.messages && chat.messages.length > 0
                         ? chat.messages[
@@ -157,6 +161,7 @@ export default function ChatPage() {
                           ]?.content?.slice(0, 30) + "..."
                         : "No messages yet",
             }));
+
             setChatRooms(list);
         } catch (error) {
             console.error("Error refreshing conversation list:", error);
@@ -165,26 +170,50 @@ export default function ChatPage() {
 
     const handleRenameRoom = async (roomId, newName) => {
         try {
+            // Call the backend API to rename the conversation
+            const updatedConversation = await renameConversation(
+                roomId,
+                newName
+            );
+
+            // Update the local state with the new name
             setChatRooms((prev) =>
                 prev.map((room) =>
-                    room.id === roomId ? { ...room, name: newName } : room
+                    room.id === roomId
+                        ? { ...room, name: newName, title: newName }
+                        : room
                 )
             );
+
             console.log(`Renamed room ${roomId} to ${newName}`);
+            return updatedConversation;
         } catch (error) {
             console.error("Error renaming conversation:", error);
+            // Optionally show an error message to the user
+            alert("Failed to rename conversation. Please try again.");
+            throw error;
         }
     };
 
     const handleDeleteRoom = async (roomId) => {
         try {
+            // Call the backend API to delete the conversation
+            await deleteConversation(roomId, userId);
+
+            // Update the local state by removing the conversation
             setChatRooms((prev) => prev.filter((room) => room.id !== roomId));
+
+            // If the deleted room is currently active, navigate away
             if (chatId === roomId) {
                 navigate("/", { replace: true });
             }
+
             console.log(`Deleted room ${roomId}`);
         } catch (error) {
             console.error("Error deleting conversation:", error);
+            // Optionally show an error message to the user
+            alert("Failed to delete conversation. Please try again.");
+            throw error;
         }
     };
 
@@ -192,7 +221,7 @@ export default function ChatPage() {
     const handleSend = async (text, files = []) => {
         setIsLoadingInput(true);
         setShouldReloadAfterStream(false); // Reset reload flag
-        
+
         const tempUserMessage = {
             sender: "user",
             content: text,
@@ -209,10 +238,21 @@ export default function ChatPage() {
                 currentChatId === "undefined" ||
                 currentChatId === "new"
             ) {
-                const newChat = await createConversation(userId);
+                const newChat = await createConversation(userId, text, files);
+
                 currentChatId = newChat.id;
                 setChatId(newChat.id);
                 skipNextLoadRef.current = newChat.id;
+
+                setChatRooms((prev) => [
+                    {
+                        id: newChat.id,
+                        name: newChat.title,
+                        lastMessageSnippet: text.slice(0, 30) + "...",
+                    },
+                    ...prev,
+                ]);
+
                 navigate(`/chat/${newChat.id}`, { replace: true });
             }
 
@@ -225,25 +265,25 @@ export default function ChatPage() {
 
             await streamFromBackend(
                 currentChatId,
-                text,
                 userId,
+                text,
                 (chunk) => {
                     if (isFirstChunk) {
                         setIsBotTyping(false);
                         isFirstChunk = false;
                     }
-                    
+
                     // Clear any existing timeout
                     if (streamingTimeoutRef.current) {
                         clearTimeout(streamingTimeoutRef.current);
                     }
-                    
+
                     // Set a new timeout to detect when streaming stops
                     streamingTimeoutRef.current = setTimeout(() => {
                         // If no new chunks come in 2 seconds, consider streaming finished
                         setShouldReloadAfterStream(true);
                     }, 2000);
-                    
+
                     setMessages((prev) => {
                         const updated = [...prev];
                         const botIndex = updated.findIndex(
@@ -278,11 +318,10 @@ export default function ChatPage() {
             );
 
             await refreshConversationList();
-            
         } catch (err) {
             console.error("Error sending message:", err);
             setShouldReloadAfterStream(false); // Don't reload on error
-            
+
             setMessages((prev) =>
                 prev.map((msg) =>
                     msg.tempId === tempUserMessage.tempId
@@ -323,9 +362,17 @@ export default function ChatPage() {
     };
 
     const formatChatName = (room) => {
+        // First priority: use the actual title from database if it exists
+        if (room.title && room.title.trim() !== "") {
+            return room.title;
+        }
+
+        // Second priority: use the name field if it's not the default format
         if (room.name && room.name !== `Chat ${room.id?.slice(-5)}`) {
             return room.name;
         }
+
+        // Last resort: use the last message snippet or default
         return room.lastMessageSnippet &&
             room.lastMessageSnippet !== "No messages yet"
             ? room.lastMessageSnippet.slice(0, 30) + "..."
