@@ -1,7 +1,7 @@
 import axios from "axios";
 import { app } from "../config/keys";
 
-export const createConversation = async (user_id, message, images) => {
+export const createConversation = async (user_id, message) => {
     try {
         const requestBody = {
             content: message,
@@ -57,41 +57,43 @@ export const getConversationById = async (conversationId) => {
     }
 };
 
-// Best hybrid version - combines performance with reliability
+// Best hybrid version - combines performance with reliability using fetch
 export async function streamFromBackend(
     conversationId,
     userId,
     content,
     onChunk
 ) {
-    // Pre-validate to fail fast
     if (!conversationId || conversationId === "undefined") {
         throw new Error("Conversation ID is required");
     }
 
-    // Pre-build request body
     const requestBody = {
         content,
         timestamp: new Date().toISOString(),
     };
 
     try {
-        const response = await axios({
-            method: "POST",
-            url: `${app.serverURL}/api/conversations/${conversationId}/${userId}/stream`,
-            data: requestBody,
-            headers: {
-                "Content-Type": "application/json",
-                Accept: "text/event-stream",
-                "Cache-Control": "no-cache",
-                Connection: "keep-alive",
-            },
-            responseType: "stream",
-        });
+        const response = await fetch(
+            `${app.serverURL}/api/conversations/${conversationId}/${userId}/stream`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "text/event-stream",
+                    "Cache-Control": "no-cache",
+                    Connection: "keep-alive",
+                },
+                body: JSON.stringify(requestBody),
+            }
+        );
 
-        const reader = response.data.getReader();
+        if (!response.ok || !response.body) {
+            throw new Error("No streamable response from backend");
+        }
+
+        const reader = response.body.getReader();
         const decoder = new TextDecoder();
-
         let buffer = "";
 
         try {
@@ -99,25 +101,19 @@ export async function streamFromBackend(
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                // Decode and append to buffer
                 buffer += decoder.decode(value, { stream: true });
 
-                // Handle both single-line and multi-line SSE events
-                // First try to process complete SSE events (ending with \n\n)
                 let eventEndIndex;
                 while ((eventEndIndex = buffer.indexOf("\n\n")) !== -1) {
                     const event = buffer.slice(0, eventEndIndex);
                     buffer = buffer.slice(eventEndIndex + 2);
-
-                    // Process the complete event
                     processSSEEvent(event, onChunk);
                 }
 
-                // Fallback: if no complete events but we have single lines, process them
-                // This handles servers that send single-line events without \n\n
+                // Fallback for servers that don’t send \n\n
                 if (!buffer.includes("\n\n") && buffer.includes("\n")) {
                     const lines = buffer.split("\n");
-                    buffer = lines.pop() || ""; // Keep last incomplete line
+                    buffer = lines.pop() || "";
 
                     for (const line of lines) {
                         if (line.trim().startsWith("data: ")) {
