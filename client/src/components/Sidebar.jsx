@@ -1,73 +1,439 @@
-import React from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import ConversationModal from "./ConversationModal";
 
-const Sidebar = ({ isOpen, chatRooms = [], onSelectRoom, activeRoomId }) => {
+const Sidebar = ({
+    isOpen,
+    chatRooms = [],
+    onSelectRoom,
+    activeRoomId,
+    onRenameRoom,
+    onDeleteRoom,
+    onToggle,
+    user, // Add user prop
+}) => {
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+    const [activeDropdown, setActiveDropdown] = useState(null);
+    const [modalState, setModalState] = useState({
+        isOpen: false,
+        type: null, // 'rename' or 'delete'
+        roomId: null,
+        roomName: "",
+    });
     const navigate = useNavigate();
 
+    // Get user display name and initial from user prop
+    const displayName = user?.fullName || user?.name || "User";
+    const displayInitial = displayName.charAt(0).toUpperCase();
+
+    const formatChatName = (room) => {
+        if (room.name && room.name !== `Chat ${room.id?.slice(-5)}`) {
+            return room.name;
+        }
+        return room.lastMessageSnippet &&
+            room.lastMessageSnippet !== "No messages yet"
+            ? room.lastMessageSnippet.slice(0, 30) + "..."
+            : `Chat ${room.id?.slice(-5) || "New"}`;
+    };
+
+    const sortedChatRooms = [...chatRooms].sort((a, b) => {
+        if (a.lastMessageTime && b.lastMessageTime) {
+            return new Date(b.lastMessageTime) - new Date(a.lastMessageTime);
+        }
+        if (a.createdAt && b.createdAt) {
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        }
+        if (a.id && b.id) {
+            return b.id.localeCompare(a.id);
+        }
+        return 0;
+    });
+
+    const handleStartNewChat = () => {
+        if (onSelectRoom) {
+            onSelectRoom(null);
+        }
+        console.log("Starting new chat");
+    };
+
+    const handleDropdownToggle = (roomId, e) => {
+        e.stopPropagation();
+        setActiveDropdown(activeDropdown === roomId ? null : roomId);
+    };
+
+    const handleRename = (room, e) => {
+        e.stopPropagation();
+        setModalState({
+            isOpen: true,
+            type: "rename",
+            roomId: room.id,
+            roomName: formatChatName(room),
+        });
+        setActiveDropdown(null);
+    };
+
+    const handleDelete = (roomId, e) => {
+        e.stopPropagation();
+        setModalState({
+            isOpen: true,
+            type: "delete",
+            roomId: roomId,
+            roomName: "",
+        });
+        setActiveDropdown(null);
+    };
+
+    const handleModalClose = () => {
+        setModalState({
+            isOpen: false,
+            type: null,
+            roomId: null,
+            roomName: "",
+        });
+    };
+
+    const handleModalRename = async (newName) => {
+        if (onRenameRoom && modalState.roomId) {
+            await onRenameRoom(modalState.roomId, newName);
+        }
+    };
+
+    const handleModalDelete = async () => {
+        if (onDeleteRoom && modalState.roomId) {
+            await onDeleteRoom(modalState.roomId);
+        }
+    };
+
+    // Close dropdown when clicking outside
+    React.useEffect(() => {
+        const handleClickOutside = () => {
+            setActiveDropdown(null);
+        };
+        document.addEventListener("click", handleClickOutside);
+        return () => document.removeEventListener("click", handleClickOutside);
+    }, []);
+
     return (
-        <div
-            className={`transition-all duration-300 ease-in-out ${
-                isOpen ? "w-72" : "w-0"
-            } bg-[#0E0E10] text-white p-6 flex flex-col items-end text-right relative overflow-hidden`}
-        >
+        <>
             <div
-                className={`absolute inset-0 bg-[radial-gradient(#1f1f1f_1px,transparent_1px)] [background-size:32px_32px] opacity-20 pointer-events-none ${
-                    !isOpen && "hidden"
-                }`}
-            />
-
-            <nav
-                className={`flex-grow z-10 space-y-4 text-base font-light w-full items-end text-right flex flex-col ${
-                    !isOpen && "hidden"
-                }`}
+                className={`transition-all duration-300 ease-in-out ${
+                    isOpen ? "w-64" : "w-16"
+                } bg-gray-800 text-white flex flex-col overflow-hidden relative`}
             >
-                {/* New Chat */}
-                <button
-                    onClick={() => navigate("/")}
-                    className="flex items-center gap-2 justify-end w-full py-2 px-3 hover:bg-gray-700 rounded-md"
-                >
-                    <span>New Chat</span>
-                    <span className="w-5 h-5 bg-gray-600 rounded-sm flex items-center justify-center text-xs">
-                        +
-                    </span>
-                </button>
-
-                {/* Recent Chats section (always visible if chatRooms exist) */}
-                {chatRooms.length > 0 && (
-                    <div className="w-full mt-4 border-t border-gray-600 pt-4">
-                        <h3 className="text-sm text-gray-400 mb-2 uppercase">
-                            Recent Chats
-                        </h3>
-                        {chatRooms.map((room) => (
+                {/* Header */}
+                <div className="px-3 py-4">
+                    <div
+                        className={`flex items-center gap-2 ${
+                            isOpen ? "mb-8" : "mb-6 justify-center"
+                        }`}
+                    >
+                        {isOpen ? (
+                            <>
+                                <button
+                                    onClick={onToggle}
+                                    className="p-1 hover:bg-gray-700 rounded transition-colors"
+                                >
+                                    <svg
+                                        className="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M15 19l-7-7 7-7"
+                                        />
+                                    </svg>
+                                </button>
+                                <span className="text-white font-medium">
+                                    AHA
+                                </span>
+                            </>
+                        ) : (
                             <button
-                                key={room.id}
-                                onClick={() =>
-                                    onSelectRoom && onSelectRoom(room.id)
-                                }
-                                className={`w-full text-right py-1.5 px-3 text-sm rounded-md truncate ${
-                                    activeRoomId === room.id
-                                        ? "bg-blue-500 text-white"
-                                        : "hover:bg-gray-700"
-                                }`}
+                                onClick={onToggle}
+                                className="p-2 hover:bg-gray-700 rounded transition-colors"
+                                title="Expand sidebar"
                             >
-                                {room.name || `Chat ${room.id.slice(-5)}`}
+                                <svg
+                                    className="w-5 h-5"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M4 6h16M4 12h16M4 18h16"
+                                    />
+                                </svg>
                             </button>
-                        ))}
+                        )}
+                    </div>
+
+                    {/* New Chat Button */}
+                    <button
+                        onClick={handleStartNewChat}
+                        className={`w-full bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all duration-200 text-sm font-medium ${
+                            isOpen
+                                ? "px-3 py-2.5 flex items-center gap-2"
+                                : "p-3 flex items-center justify-center"
+                        }`}
+                        title={!isOpen ? "New chat" : ""}
+                    >
+                        <svg
+                            className="w-4 h-4 flex-shrink-0"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 4v16m8-8H4"
+                            />
+                        </svg>
+                        {isOpen && <span>New chat</span>}
+                    </button>
+                </div>
+
+                {/* Navigation Menu */}
+                <div className="px-3 space-y-1">
+                    <button
+                        className={`w-full text-left text-gray-300 hover:bg-gray-700 rounded-md transition-colors text-sm ${
+                            isOpen
+                                ? "px-2 py-2 flex items-center gap-2"
+                                : "p-3 flex items-center justify-center"
+                        }`}
+                        title={!isOpen ? "Chats" : ""}
+                    >
+                        <svg
+                            className="w-4 h-4 flex-shrink-0"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                            />
+                        </svg>
+                        {isOpen && <span>Chats</span>}
+                    </button>
+                </div>
+
+                {/* Recents Section */}
+                {isOpen && (
+                    <div className="flex-1 overflow-y-auto px-3 mt-6">
+                        {sortedChatRooms.length > 0 && (
+                            <>
+                                <div className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3 px-2">
+                                    Recents
+                                </div>
+                                <div className="space-y-1">
+                                    {sortedChatRooms.map((room) => (
+                                        <div
+                                            key={room.id}
+                                            className={`relative group rounded-md transition-colors ${
+                                                activeRoomId === room.id
+                                                    ? "bg-gray-700"
+                                                    : "hover:bg-gray-700"
+                                            }`}
+                                        >
+                                            <div className="flex items-center">
+                                                <button
+                                                    onClick={() =>
+                                                        onSelectRoom &&
+                                                        onSelectRoom(room.id)
+                                                    }
+                                                    className="flex-1 text-left px-2 py-2 text-sm transition-colors flex items-center gap-2 min-w-0"
+                                                >
+                                                    <div className="flex-1 min-w-0">
+                                                        <span
+                                                            className={`truncate block ${
+                                                                activeRoomId ===
+                                                                room.id
+                                                                    ? "text-white"
+                                                                    : "text-gray-300 group-hover:text-white"
+                                                            }`}
+                                                        >
+                                                            {formatChatName(
+                                                                room
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                </button>
+
+                                                <div className="relative flex-shrink-0">
+                                                    <button
+                                                        onClick={(e) =>
+                                                            handleDropdownToggle(
+                                                                room.id,
+                                                                e
+                                                            )
+                                                        }
+                                                        className="opacity-0 group-hover:opacity-100 p-2 mr-1 hover:bg-gray-600 rounded transition-all duration-200"
+                                                    >
+                                                        <svg
+                                                            className="w-4 h-4 text-gray-400 hover:text-white"
+                                                            fill="currentColor"
+                                                            viewBox="0 0 20 20"
+                                                        >
+                                                            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
+                                                        </svg>
+                                                    </button>
+
+                                                    {/* Dropdown Menu */}
+                                                    {activeDropdown ===
+                                                        room.id && (
+                                                        <div className="absolute right-0 top-8 w-32 bg-gray-700 rounded-md border border-gray-600 shadow-lg z-10 overflow-hidden">
+                                                            <button
+                                                                onClick={(e) =>
+                                                                    handleRename(
+                                                                        room,
+                                                                        e
+                                                                    )
+                                                                }
+                                                                className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-600 transition-colors flex items-center gap-2"
+                                                            >
+                                                                <svg
+                                                                    className="w-3 h-3"
+                                                                    fill="none"
+                                                                    stroke="currentColor"
+                                                                    viewBox="0 0 24 24"
+                                                                >
+                                                                    <path
+                                                                        strokeLinecap="round"
+                                                                        strokeLinejoin="round"
+                                                                        strokeWidth={
+                                                                            2
+                                                                        }
+                                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                                                    />
+                                                                </svg>
+                                                                Rename
+                                                            </button>
+                                                            <button
+                                                                onClick={(e) =>
+                                                                    handleDelete(
+                                                                        room.id,
+                                                                        e
+                                                                    )
+                                                                }
+                                                                className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-600 transition-colors flex items-center gap-2"
+                                                            >
+                                                                <svg
+                                                                    className="w-3 h-3"
+                                                                    fill="none"
+                                                                    stroke="currentColor"
+                                                                    viewBox="0 0 24 24"
+                                                                >
+                                                                    <path
+                                                                        strokeLinecap="round"
+                                                                        strokeLinejoin="round"
+                                                                        strokeWidth={
+                                                                            2
+                                                                        }
+                                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                                    />
+                                                                </svg>
+                                                                Delete
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </>
+                        )}
                     </div>
                 )}
-            </nav>
 
-            {/* User section */}
-            <div className={`mt-auto z-10 w-full ${!isOpen && "hidden"}`}>
-                <div className="bg-gray-700 hover:bg-gray-600 cursor-pointer text-white rounded-xl p-3 flex flex-col text-sm w-full">
-                    <span className="text-gray-300">Welcome back,</span>
-                    <span className="font-semibold">Username</span>
-                    <div className="text-right text-gray-400 mt-1 text-xs flex items-center justify-end">
-                        Account Settings ⌄
+                {/* User Profile */}
+                <div className="p-3 border-t border-gray-700 mt-auto">
+                    <div className="relative">
+                        <button
+                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                            className={`w-full hover:bg-gray-700 rounded-md transition-colors text-sm ${
+                                isOpen
+                                    ? "flex items-center gap-2 p-2"
+                                    : "p-2 flex items-center justify-center"
+                            }`}
+                            title={!isOpen ? displayName : ""}
+                        >
+                            <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center font-bold text-white text-sm flex-shrink-0">
+                                {displayInitial}
+                            </div>
+                            {isOpen && (
+                                <>
+                                    <div className="flex-1 text-left min-w-0">
+                                        <div className="font-medium text-white truncate">
+                                            {displayName}
+                                        </div>
+                                    </div>
+                                    <svg
+                                        className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${
+                                            isUserMenuOpen ? "rotate-180" : ""
+                                        }`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M19 9l-7 7-7-7"
+                                        />
+                                    </svg>
+                                </>
+                            )}
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {isUserMenuOpen && isOpen && (
+                            <div className="absolute bottom-full left-0 right-0 mb-1 bg-gray-700 rounded-md border border-gray-600 shadow-lg overflow-hidden">
+                                <button className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-600 transition-colors">
+                                    Settings
+                                </button>
+                                <button className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-600 transition-colors">
+                                    Upgrade
+                                </button>
+                                <div className="border-t border-gray-600">
+                                    <button
+                                        className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-600 transition-colors"
+                                        onClick={() => {
+                                            console.log("Signing out");
+                                            navigate("/login")
+                                        }}
+                                    >
+                                        Sign out
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
-        </div>
+
+            {/* Modal */}
+            <ConversationModal
+                isOpen={modalState.isOpen}
+                onClose={handleModalClose}
+                type={modalState.type}
+                chatName={modalState.roomName}
+                onRename={handleModalRename}
+                onDelete={handleModalDelete}
+            />
+        </>
     );
 };
 
