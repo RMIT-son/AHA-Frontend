@@ -24,6 +24,22 @@ export default function ChatPage() {
     const [isLoadingInput, setIsLoadingInput] = useState(false);
     const [hasLoaded, setHasLoaded] = useState(false);
 
+    // New state to track when streaming ends
+    const [shouldReloadAfterStream, setShouldReloadAfterStream] = useState(false);
+    const streamingTimeoutRef = useRef(null);
+
+    // Effect to handle page reload after streaming
+    useEffect(() => {
+        if (shouldReloadAfterStream && !isBotTyping) {
+            // Small delay to ensure everything is settled
+            const reloadTimeout = setTimeout(() => {
+                window.location.reload();
+            }, 500);
+            
+            return () => clearTimeout(reloadTimeout);
+        }
+    }, [shouldReloadAfterStream, isBotTyping]);
+
     // Validation function to check message order integrity
     const validateMessageOrder = (messages) => {
         const issues = [];
@@ -58,7 +74,7 @@ export default function ChatPage() {
         try {
             const userData = JSON.parse(userCookie);
             setUserId(userData.id);
-            setUser(userData); // Store the full user object
+            setUser(userData);
         } catch (err) {
             console.error("❌ Failed to parse user cookie:", err);
             navigate("/login");
@@ -83,18 +99,13 @@ export default function ChatPage() {
                         setChatId(id);
                         console.log("Loaded chat:", res.messages[0]);
 
-                        // Enhanced message normalization with index-based validation
                         const normalizedMessages = res.messages.map(
                             (msg, index) => {
                                 let sender = msg.sender?.toLowerCase?.().trim();
 
-                                // Normalize assistant to bot
                                 if (sender === "assistant") sender = "bot";
 
-                                // Safety check: ensure proper alternating pattern
-                                // Assuming conversation starts with user message (index 0)
                                 if (index % 2 === 0) {
-                                    // Even index should be user
                                     if (sender !== "user") {
                                         console.warn(
                                             `Message at index ${index} corrected: ${sender} -> user`
@@ -102,7 +113,6 @@ export default function ChatPage() {
                                         sender = "user";
                                     }
                                 } else {
-                                    // Odd index should be bot
                                     if (sender !== "bot") {
                                         console.warn(
                                             `Message at index ${index} corrected: ${sender} -> bot`
@@ -115,9 +125,7 @@ export default function ChatPage() {
                             }
                         );
 
-                        // Validate the final message order
                         validateMessageOrder(normalizedMessages);
-
                         setMessages(normalizedMessages);
                     } else {
                         setChatId(null);
@@ -141,7 +149,7 @@ export default function ChatPage() {
             const list = allConversations.map((chat) => ({
                 id: chat.id,
                 name:
-                    chat.name || `Chat ${chat.id ? chat.id.slice(-5) : "New"}`, // Use actual name if available
+                    chat.name || `Chat ${chat.id ? chat.id.slice(-5) : "New"}`,
                 lastMessageSnippet:
                     chat.messages && chat.messages.length > 0
                         ? chat.messages[
@@ -155,55 +163,43 @@ export default function ChatPage() {
         }
     };
 
-    // Handle rename conversation
     const handleRenameRoom = async (roomId, newName) => {
         try {
-            // Call your API to update the conversation name
-            // await updateConversationName(roomId, newName);
-
-            // Update local state
             setChatRooms((prev) =>
                 prev.map((room) =>
                     room.id === roomId ? { ...room, name: newName } : room
                 )
             );
-
             console.log(`Renamed room ${roomId} to ${newName}`);
         } catch (error) {
             console.error("Error renaming conversation:", error);
         }
     };
 
-    // Handle delete conversation
     const handleDeleteRoom = async (roomId) => {
         try {
-            // Call your API to delete the conversation
-            // await deleteConversation(roomId);
-
-            // Update local state
             setChatRooms((prev) => prev.filter((room) => room.id !== roomId));
-
-            // If we're currently viewing the deleted chat, navigate to home
             if (chatId === roomId) {
                 navigate("/", { replace: true });
             }
-
             console.log(`Deleted room ${roomId}`);
         } catch (error) {
             console.error("Error deleting conversation:", error);
         }
     };
 
-    // Enhanced handleSend function with file and voice support
+    // Enhanced handleSend function with auto-reload after streaming
     const handleSend = async (text, files = []) => {
         setIsLoadingInput(true);
+        setShouldReloadAfterStream(false); // Reset reload flag
+        
         const tempUserMessage = {
             sender: "user",
             content: text,
             timestamp: new Date().toISOString(),
             tempId: Date.now(),
             status: "pending",
-            files: files, // Include files if any
+            files: files,
         };
 
         try {
@@ -227,7 +223,6 @@ export default function ChatPage() {
             let botMessageId = null;
             let isFirstChunk = true;
 
-            // Pass files to backend if needed
             await streamFromBackend(
                 currentChatId,
                 text,
@@ -237,6 +232,18 @@ export default function ChatPage() {
                         setIsBotTyping(false);
                         isFirstChunk = false;
                     }
+                    
+                    // Clear any existing timeout
+                    if (streamingTimeoutRef.current) {
+                        clearTimeout(streamingTimeoutRef.current);
+                    }
+                    
+                    // Set a new timeout to detect when streaming stops
+                    streamingTimeoutRef.current = setTimeout(() => {
+                        // If no new chunks come in 2 seconds, consider streaming finished
+                        setShouldReloadAfterStream(true);
+                    }, 2000);
+                    
                     setMessages((prev) => {
                         const updated = [...prev];
                         const botIndex = updated.findIndex(
@@ -260,7 +267,7 @@ export default function ChatPage() {
                     });
                 },
                 files
-            ); // Pass files to streaming function
+            );
 
             setMessages((prev) =>
                 prev.map((msg) =>
@@ -271,8 +278,11 @@ export default function ChatPage() {
             );
 
             await refreshConversationList();
+            
         } catch (err) {
             console.error("Error sending message:", err);
+            setShouldReloadAfterStream(false); // Don't reload on error
+            
             setMessages((prev) =>
                 prev.map((msg) =>
                     msg.tempId === tempUserMessage.tempId
@@ -295,20 +305,23 @@ export default function ChatPage() {
         }
     };
 
-    // Handle file upload
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (streamingTimeoutRef.current) {
+                clearTimeout(streamingTimeoutRef.current);
+            }
+        };
+    }, []);
+
     const handleFileUpload = (files) => {
         console.log("Files uploaded:", files);
-        // You can process files here if needed
     };
 
-    // Handle voice recording
     const handleVoiceRecord = (audioBlob) => {
         console.log("Voice recorded:", audioBlob);
-        // You can process the audio blob here
-        // For example, convert to text or send to backend
     };
 
-    // Format chat name using the same logic as the sidebar
     const formatChatName = (room) => {
         if (room.name && room.name !== `Chat ${room.id?.slice(-5)}`) {
             return room.name;
@@ -319,19 +332,16 @@ export default function ChatPage() {
             : `Chat ${room.id?.slice(-5) || "New"}`;
     };
 
-    // Get the actual chat title from chatRooms data using the same formatting as sidebar
     const getCurrentChatTitle = () => {
         if (!chatId || chatId === "undefined" || chatId === "new") {
             return "New Chat";
         }
 
-        // Find the current chat in chatRooms to get its actual name
         const currentChat = chatRooms.find((room) => room.id === chatId);
         if (currentChat) {
             return formatChatName(currentChat);
         }
 
-        // Fallback to generic name if not found
         return `Chat ${chatId.slice(-5)}`;
     };
 
@@ -356,7 +366,6 @@ export default function ChatPage() {
             />
 
             <div className="flex-1 flex flex-col min-w-0">
-                {/* Simplified Header - removed toggle button since it's now in sidebar */}
                 <div className="h-12 border-b border-gray-200 flex items-center justify-between px-4 bg-white flex-shrink-0">
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">

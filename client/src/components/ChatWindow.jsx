@@ -1,8 +1,13 @@
-import { useEffect, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import rehypeSanitize from "rehype-sanitize";
+import { useEffect, useRef } from "react";
+import MarkdownWrapper from "./MarkdownWrapper";
 
-export default function ChatWindow({ messages, isBotTyping }) {
+export default function ChatWindow({
+    messages,
+    isBotTyping,
+    hasLoaded,
+    user,
+    isStreaming,
+}) {
     const messagesEndRef = useRef(null);
     const scrollAreaRef = useRef(null);
     const previousMessagesLength = useRef(0);
@@ -22,16 +27,14 @@ export default function ChatWindow({ messages, isBotTyping }) {
     useEffect(() => {
         const messagesIncreased =
             messages.length > previousMessagesLength.current;
-
         if (isNewConversation.current && messages.length > 0) {
             positionAtBottomInstant();
             isNewConversation.current = false;
-        } else if (isBotTyping || messagesIncreased) {
+        } else if (isBotTyping || messagesIncreased || isStreaming) {
             scrollToBottomSmooth();
         }
-
         previousMessagesLength.current = messages.length;
-    }, [messages, isBotTyping]);
+    }, [messages, isBotTyping, isStreaming]);
 
     useEffect(() => {
         if (
@@ -43,93 +46,15 @@ export default function ChatWindow({ messages, isBotTyping }) {
         }
     }, [messages]);
 
-    // Force re-render when content changes to ensure markdown is applied
-    const MarkdownContent = ({ content }) => {
-        const [key, setKey] = useState(0);
-        
-        useEffect(() => {
-            setKey(prev => prev + 1);
-        }, [content]);
-        
+    const AvatarInside = ({ user }) => {
+        const initial =
+            user?.fullName?.charAt(0) || user?.email?.charAt(0) || "A";
         return (
-            <ReactMarkdown
-                key={key}
-                rehypePlugins={[rehypeSanitize]}
-                components={{
-                p: ({ children }) => (
-                    <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>
-                ),
-                h1: ({ children }) => (
-                    <h1 className="text-xl font-bold mb-3 text-gray-900">
-                        {children}
-                    </h1>
-                ),
-                h2: ({ children }) => (
-                    <h2 className="text-lg font-bold mb-2 text-gray-900">
-                        {children}
-                    </h2>
-                ),
-                h3: ({ children }) => (
-                    <h3 className="text-base font-bold mb-2 text-gray-900">
-                        {children}
-                    </h3>
-                ),
-                ul: ({ children }) => (
-                    <ul className="list-disc list-outside mb-3 space-y-1 pl-6">
-                        {children}
-                    </ul>
-                ),
-                ol: ({ children }) => (
-                    <ol className="list-decimal list-outside mb-3 space-y-1 pl-6">
-                        {children}
-                    </ol>
-                ),
-                li: ({ children }) => (
-                    <li className="leading-relaxed pl-2">{children}</li>
-                ),
-                code: ({ inline, children }) =>
-                    inline ? (
-                        <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">
-                            {children}
-                        </code>
-                    ) : (
-                        <code className="block bg-gray-100 p-3 rounded-lg text-sm font-mono text-gray-800 whitespace-pre-wrap overflow-x-auto">
-                            {children}
-                        </code>
-                    ),
-                pre: ({ children }) => (
-                    <pre className="bg-gray-100 p-3 rounded-lg mb-3 overflow-x-auto">
-                        {children}
-                    </pre>
-                ),
-                blockquote: ({ children }) => (
-                    <blockquote className="border-l-4 border-gray-300 pl-4 italic mb-3 text-gray-700">
-                        {children}
-                    </blockquote>
-                ),
-                strong: ({ children }) => (
-                    <strong className="font-bold text-gray-900">
-                        {children}
-                    </strong>
-                ),
-                em: ({ children }) => <em className="italic">{children}</em>,
-                a: ({ href, children }) => (
-                    <a
-                        href={href}
-                        className="text-blue-600 hover:text-blue-800 underline"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                    >
-                        {children}
-                    </a>
-                ),
-                hr: () => <hr className="border-gray-200 my-4" />,
-            }}
-        >
-            {content}
-        </ReactMarkdown>
-    );
-};
+            <div className="w-6 h-6 bg-gray-200 text-gray-800 rounded-full flex items-center justify-center text-xs font-semibold mr-2 flex-shrink-0">
+                {initial.toUpperCase()}
+            </div>
+        );
+    };
 
     return (
         <div ref={scrollAreaRef} className="flex-1 overflow-y-auto bg-white">
@@ -137,76 +62,98 @@ export default function ChatWindow({ messages, isBotTyping }) {
                 <div className="flex flex-col items-center justify-center h-full px-4">
                     <div className="text-center max-w-2xl">
                         <h1 className="text-3xl font-light text-gray-800 mb-4">
-                            Hello, what can I help you with today?
+                            Hello! How can I assist you today?
                         </h1>
                     </div>
                 </div>
             ) : (
-                <div className="max-w-4xl mx-auto px-6 py-6">
+                <div className="max-w-3xl mx-auto px-4 py-8">
                     <div className="space-y-6">
                         {messages.map((message, index) => {
                             const isUser = message.sender === "user";
-                            const isError = message.isError;
+                            const isLastMessage = index === messages.length - 1;
+                            const isStreamingMessage =
+                                isLastMessage && !isUser && isStreaming;
 
                             return (
                                 <div
                                     key={message.tempId || message.id || index}
-                                    className="flex justify-center"
+                                    className="flex justify-start"
                                 >
-                                    <div className="max-w-[80%] w-full">
-                                        <div
-                                            className={`px-4 py-3 rounded-2xl ${
-                                                isUser
-                                                    ? "bg-gray-100 text-gray-900"
-                                                    : isError
-                                                    ? "bg-red-50 text-red-800 border border-red-200"
-                                                    : "bg-white text-gray-900 border border-gray-200"
-                                            }`}
-                                        >
-                                            <div className="prose prose-sm max-w-none">
-                                                {isUser ? (
-                                                    <p className="mb-0 whitespace-pre-wrap leading-relaxed text-sm">
-                                                        {message.content}
-                                                    </p>
-                                                ) : (
-                                                    <div className="text-sm">
-                                                        <MarkdownContent
-                                                            content={
-                                                                message.content
-                                                            }
-                                                        />
+                                    {isUser ? (
+                                        <div className="bg-[#1a1a1a] text-white rounded-2xl px-3 py-2 text-sm max-w-[90%] flex items-center whitespace-pre-wrap">
+                                            <AvatarInside user={user} />
+                                            <span className="break-words">
+                                                {message.content}
+                                            </span>
+                                        </div>
+                                    ) : (
+                                        <div className="max-w-[90%] pl-2">
+                                            <div className="relative">
+                                                {/* Show streaming content as plain text during streaming */}
+                                                {isStreamingMessage ? (
+                                                    <div className="prose prose-sm max-w-none text-gray-900">
+                                                        <div className="whitespace-pre-wrap font-mono text-sm bg-gray-50 p-3 rounded-lg border-l-4 border-orange-400">
+                                                            {message.content}
+                                                            <span className="inline-block w-2 h-4 bg-orange-500 animate-pulse ml-1"></span>
+                                                        </div>
+                                                        <div className="text-xs text-orange-500 mt-1 flex items-center gap-1">
+                                                            <div className="w-1 h-1 bg-orange-500 rounded-full animate-bounce"></div>
+                                                            <div
+                                                                className="w-1 h-1 bg-orange-500 rounded-full animate-bounce"
+                                                                style={{
+                                                                    animationDelay:
+                                                                        "0.1s",
+                                                                }}
+                                                            ></div>
+                                                            <div
+                                                                className="w-1 h-1 bg-orange-500 rounded-full animate-bounce"
+                                                                style={{
+                                                                    animationDelay:
+                                                                        "0.2s",
+                                                                }}
+                                                            ></div>
+                                                            <span className="ml-1">
+                                                                Streaming
+                                                                response...
+                                                            </span>
+                                                        </div>
                                                     </div>
+                                                ) : (
+                                                    /* Show markdown when not streaming */
+                                                    <MarkdownWrapper
+                                                        key={`${
+                                                            message.tempId ||
+                                                            message.id ||
+                                                            index
+                                                        }-${
+                                                            message.content
+                                                                ?.length || 0
+                                                        }`}
+                                                        content={
+                                                            message.content
+                                                        }
+                                                    />
                                                 )}
                                             </div>
                                         </div>
-
-                                        {message.status === "failed" && (
-                                            <div className="flex items-center justify-center gap-2 mt-2 text-xs text-red-500">
-                                                <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                                                Failed to send
-                                            </div>
-                                        )}
-                                    </div>
+                                    )}
                                 </div>
                             );
                         })}
 
-                        {isBotTyping && (
-                            <div className="flex justify-center">
-                                <div className="max-w-[80%] w-full flex justify-start">
-                                    <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3">
-                                        <div className="flex space-x-1">
-                                            <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"></div>
-                                            <div
-                                                className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"
-                                                style={{ animationDelay: "0.1s" }}
-                                            ></div>
-                                            <div
-                                                className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"
-                                                style={{ animationDelay: "0.2s" }}
-                                            ></div>
-                                        </div>
-                                    </div>
+                        {isBotTyping && !isStreaming && (
+                            <div className="max-w-[90%] flex flex-col pl-9">
+                                <div className="flex space-x-1 mt-2">
+                                    <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"></div>
+                                    <div
+                                        className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"
+                                        style={{ animationDelay: "0.1s" }}
+                                    ></div>
+                                    <div
+                                        className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"
+                                        style={{ animationDelay: "0.2s" }}
+                                    ></div>
                                 </div>
                             </div>
                         )}

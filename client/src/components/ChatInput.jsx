@@ -379,11 +379,6 @@ export default function ChatInput({
                         accept="*/*"
                     />
                 </div>
-
-                {/* Disclaimer text */}
-                <p className="text-xs text-gray-500 text-center">
-                    AHA can make mistakes. Please double-check responses.
-                </p>
             </div>
         </div>
     );
