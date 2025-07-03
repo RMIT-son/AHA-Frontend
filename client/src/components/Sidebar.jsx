@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ConversationModal from "./ConversationModal";
 
@@ -26,10 +26,20 @@ const Sidebar = ({
     const displayName = user?.fullName || user?.name || "User";
     const displayInitial = displayName.charAt(0).toUpperCase();
 
+    // Replace the formatChatName function in your Sidebar.jsx
+
     const formatChatName = (room) => {
+        // First priority: use the actual title from database if it exists
+        if (room.title && room.title.trim() !== "") {
+            return room.title;
+        }
+
+        // Second priority: use the name field if it's not the default format
         if (room.name && room.name !== `Chat ${room.id?.slice(-5)}`) {
             return room.name;
         }
+
+        // Last resort: use the last message snippet or default
         return room.lastMessageSnippet &&
             room.lastMessageSnippet !== "No messages yet"
             ? room.lastMessageSnippet.slice(0, 30) + "..."
@@ -53,7 +63,6 @@ const Sidebar = ({
         if (onSelectRoom) {
             onSelectRoom(null);
         }
-        console.log("Starting new chat");
     };
 
     const handleDropdownToggle = (roomId, e) => {
@@ -105,7 +114,7 @@ const Sidebar = ({
     };
 
     // Close dropdown when clicking outside
-    React.useEffect(() => {
+    useEffect(() => {
         const handleClickOutside = () => {
             setActiveDropdown(null);
         };
@@ -412,7 +421,7 @@ const Sidebar = ({
                                         className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-600 transition-colors"
                                         onClick={() => {
                                             console.log("Signing out");
-                                            navigate("/login")
+                                            navigate("/login");
                                         }}
                                     >
                                         Sign out
