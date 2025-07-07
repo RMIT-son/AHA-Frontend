@@ -220,15 +220,16 @@ export default function ChatPage() {
     // Enhanced handleSend function with auto-reload after streaming
     const handleSend = async (text, files = []) => {
         setIsLoadingInput(true);
-        setShouldReloadAfterStream(false); // Reset reload flag
+        setShouldReloadAfterStream(false);
 
+        // Create temp user message with files
         const tempUserMessage = {
             sender: "user",
             content: text,
             timestamp: new Date().toISOString(),
             tempId: Date.now(),
             status: "pending",
-            files: files,
+            files: files, // Files are included in the message
         };
 
         try {
@@ -238,6 +239,7 @@ export default function ChatPage() {
                 currentChatId === "undefined" ||
                 currentChatId === "new"
             ) {
+                // Pass files to createConversation
                 const newChat = await createConversation(userId, text, files);
 
                 currentChatId = newChat.id;
@@ -263,6 +265,7 @@ export default function ChatPage() {
             let botMessageId = null;
             let isFirstChunk = true;
 
+            // Pass files to streamFromBackend
             await streamFromBackend(
                 currentChatId,
                 userId,
@@ -273,14 +276,12 @@ export default function ChatPage() {
                         isFirstChunk = false;
                     }
 
-                    // Clear any existing timeout
+                    // Handle streaming chunks...
                     if (streamingTimeoutRef.current) {
                         clearTimeout(streamingTimeoutRef.current);
                     }
 
-                    // Set a new timeout to detect when streaming stops
                     streamingTimeoutRef.current = setTimeout(() => {
-                        // If no new chunks come in 2 seconds, consider streaming finished
                         setShouldReloadAfterStream(true);
                     }, 2000);
 
@@ -306,9 +307,10 @@ export default function ChatPage() {
                         return updated;
                     });
                 },
-                files
+                files // Files are passed as the last parameter
             );
 
+            // Update message status
             setMessages((prev) =>
                 prev.map((msg) =>
                     msg.tempId === tempUserMessage.tempId
@@ -320,7 +322,7 @@ export default function ChatPage() {
             await refreshConversationList();
         } catch (err) {
             console.error("Error sending message:", err);
-            setShouldReloadAfterStream(false); // Don't reload on error
+            setShouldReloadAfterStream(false);
 
             setMessages((prev) =>
                 prev.map((msg) =>
