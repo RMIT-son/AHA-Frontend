@@ -1,17 +1,63 @@
 import axios from "axios";
 import { app } from "../config/keys";
 
-export const createConversation = async (user_id, message) => {
+// Helper function to convert file to base64
+const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = (error) => reject(error);
+        reader.readAsDataURL(file);
+    });
+};
+
+// Helper function to process files for backend
+const processFilesForBackend = async (files) => {
+    if (!files || files.length === 0) return [];
+
+    const processedFiles = [];
+
+    for (const fileData of files) {
+        try {
+            let base64Data;
+
+            // If preview already exists (for images), use it
+            if (fileData.preview) {
+                base64Data = fileData.preview;
+            } else {
+                // Convert file to base64
+                base64Data = await fileToBase64(fileData.file);
+            }
+
+            processedFiles.push({
+                name: fileData.name,
+                type: fileData.type,
+                size: fileData.size,
+                data: base64Data, // base64 string including data:image/jpeg;base64, prefix
+            });
+        } catch (error) {
+            console.error(`Error processing file ${fileData.name}:`, error);
+            // Skip this file but continue with others
+        }
+    }
+
+    return processedFiles;
+};
+
+export const createConversation = async (user_id, message, files = []) => {
     try {
+        // Process files to base64
+        const processedFiles = await processFilesForBackend(files);
+
         const requestBody = {
             content: message,
-            image: "", // Add actual base64 if needed
+            files: processedFiles, // Send array of file objects
             timestamp: new Date().toISOString(),
         };
 
         const res = await axios.post(
             `${app.serverURL}/api/conversations/create/${user_id}`,
-            requestBody, // send the Message body directly
+            requestBody,
             {
                 headers: {
                     "Content-Type": "application/json",
@@ -57,21 +103,28 @@ export const getConversationById = async (conversationId) => {
     }
 };
 
-// Best hybrid version - combines performance with reliability using fetch
+// Enhanced streaming function with file support
 export async function streamFromBackend(
     conversationId,
     userId,
     content,
-    onChunk
+    onChunk,
+    files = []
 ) {
     if (!conversationId || conversationId === "undefined") {
         throw new Error("Conversation ID is required");
     }
 
+    // Process files to base64
+    const processedFiles = await processFilesForBackend(files);
+
     const requestBody = {
         content,
+        files: processedFiles, // Include processed files
         timestamp: new Date().toISOString(),
     };
+
+    console.log("Streaming request body:", requestBody);
 
     try {
         const response = await fetch(
@@ -110,7 +163,7 @@ export async function streamFromBackend(
                     processSSEEvent(event, onChunk);
                 }
 
-                // Fallback for servers that don’t send \n\n
+                // Fallback for servers that don't send \n\n
                 if (!buffer.includes("\n\n") && buffer.includes("\n")) {
                     const lines = buffer.split("\n");
                     buffer = lines.pop() || "";
