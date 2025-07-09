@@ -56,7 +56,7 @@ export const createConversation = async (user_id, message, files = []) => {
         };
 
         const res = await axios.post(
-            `${app.serverURL}/api/conversations/create/${user_id}`,
+            `${app.dataURL}/api/conversations/create/${user_id}`,
             requestBody,
             {
                 headers: {
@@ -74,7 +74,7 @@ export const createConversation = async (user_id, message, files = []) => {
 export const getAllConversations = async (userId) => {
     try {
         const res = await axios.get(
-            `${app.serverURL}/api/conversations/user/${userId}`
+            `${app.dataURL}/api/conversations/user/${userId}`
         );
         return res.data;
     } catch (error) {
@@ -94,7 +94,7 @@ export const getConversationById = async (conversationId) => {
 
     try {
         const res = await axios.get(
-            `${app.serverURL}/api/conversations/chat/${conversationId}`
+            `${app.dataURL}/api/conversations/chat/${conversationId}`
         );
         return res.data;
     } catch (error) {
@@ -202,7 +202,7 @@ function processSSEEvent(event, onChunk) {
 export const renameConversation = async (conversationId, newTitle) => {
     try {
         const response = await axios.put(
-            `${app.serverURL}/api/conversations/${conversationId}/rename`,
+            `${app.dataURL}/api/conversations/${conversationId}/rename`,
             { title: newTitle },
             {
                 headers: {
@@ -223,7 +223,7 @@ export const renameConversation = async (conversationId, newTitle) => {
 export const deleteConversation = async (conversationId, userId) => {
     try {
         const response = await axios.delete(
-            `${app.serverURL}/api/conversations/${conversationId}/user/${userId}`
+            `${app.dataURL}/api/conversations/${conversationId}/user/${userId}`
         );
 
         console.log("Conversation deleted successfully:", response.data);

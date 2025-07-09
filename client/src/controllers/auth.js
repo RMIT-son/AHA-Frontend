@@ -6,7 +6,7 @@ import { app } from "../config/keys";
 export const loginUser = async (email, password) => {
     try {
         const response = await axios.post(
-            `${app.serverURL}/api/auth/login`,
+            `${app.dataURL}/api/auth/login`,
             { email, password },
             { headers: { "Content-Type": "application/json" } }
         );
@@ -25,7 +25,7 @@ export const loginUser = async (email, password) => {
 export const registerUser = async ({ fullName, email, password, phone }) => {
     try {
         const response = await axios.post(
-            `${app.serverURL}/api/auth/register`,
+            `${app.dataURL}/api/auth/register`,
             { fullName, email, password, phone },
             { headers: { "Content-Type": "application/json" } }
         );
