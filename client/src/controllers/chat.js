@@ -76,6 +76,7 @@ export const getAllConversations = async (userId) => {
         const res = await axios.get(
             `${app.dataURL}/api/conversations/user/${userId}`
         );
+        console.log("Fetched conversations:", res.data);
         return res.data;
     } catch (error) {
         console.error("Failed to load conversations", error);
@@ -123,8 +124,6 @@ export async function streamFromBackend(
         files: processedFiles, // Include processed files
         timestamp: new Date().toISOString(),
     };
-
-    console.log("Streaming request body:", requestBody);
 
     try {
         const response = await fetch(

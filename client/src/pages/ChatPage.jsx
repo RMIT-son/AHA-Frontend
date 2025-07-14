@@ -26,22 +26,13 @@ export default function ChatPage() {
     const [isLoadingInput, setIsLoadingInput] = useState(false);
     const [hasLoaded, setHasLoaded] = useState(false);
 
+    // Add streaming state
+    const [isStreaming, setIsStreaming] = useState(false);
+
     // New state to track when streaming ends
     const [shouldReloadAfterStream, setShouldReloadAfterStream] =
         useState(false);
     const streamingTimeoutRef = useRef(null);
-
-    // Effect to handle page reload after streaming
-    useEffect(() => {
-        if (shouldReloadAfterStream && !isBotTyping) {
-            // Small delay to ensure everything is settled
-            const reloadTimeout = setTimeout(() => {
-                window.location.reload();
-            }, 500);
-
-            return () => clearTimeout(reloadTimeout);
-        }
-    }, [shouldReloadAfterStream, isBotTyping]);
 
     // Validation function to check message order integrity
     const validateMessageOrder = (messages) => {
@@ -265,6 +256,9 @@ export default function ChatPage() {
             let botMessageId = null;
             let isFirstChunk = true;
 
+            // Set streaming state to true when starting
+            setIsStreaming(true);
+
             // Pass files to streamFromBackend
             await streamFromBackend(
                 currentChatId,
@@ -291,10 +285,12 @@ export default function ChatPage() {
                             (msg) => msg.tempId === botMessageId
                         );
                         if (botIndex !== -1) {
-                            updated[botIndex] = {
+                            // CREATE NEW OBJECT — don't mutate
+                            const updatedMsg = {
                                 ...updated[botIndex],
                                 content: updated[botIndex].content + chunk,
                             };
+                            updated[botIndex] = updatedMsg;
                         } else {
                             botMessageId = Date.now();
                             updated.push({
@@ -310,6 +306,9 @@ export default function ChatPage() {
                 files // Files are passed as the last parameter
             );
 
+            // Set streaming state to false when done
+            setIsStreaming(false);
+
             // Update message status
             setMessages((prev) =>
                 prev.map((msg) =>
@@ -323,6 +322,7 @@ export default function ChatPage() {
         } catch (err) {
             console.error("Error sending message:", err);
             setShouldReloadAfterStream(false);
+            setIsStreaming(false); // Reset streaming state on error
 
             setMessages((prev) =>
                 prev.map((msg) =>
@@ -343,6 +343,7 @@ export default function ChatPage() {
         } finally {
             setIsBotTyping(false);
             setIsLoadingInput(false);
+            setIsStreaming(false); // Ensure streaming state is reset
         }
     };
 
@@ -429,6 +430,8 @@ export default function ChatPage() {
                     messages={messages}
                     isBotTyping={isBotTyping}
                     hasLoaded={hasLoaded}
+                    user={user}
+                    isStreaming={isStreaming} // Pass the streaming state
                 />
                 <ChatInput
                     onSend={handleSend}

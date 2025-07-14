@@ -32,17 +32,12 @@ export default function RegisterPage() {
             <div className="w-full max-w-2xl bg-[#eefbfc] rounded-lg shadow-md overflow-hidden">
                 <div className="flex items-center justify-between px-8 py-6 bg-gradient-to-r from-gray-800 to-gray-700 text-white">
                     <h1 className="text-4xl font-bold">SIGN UP</h1>
-                    <img
-                        src="/doctor.jpg"
-                        alt="Doctor"
-                        className="h-16 w-16 object-cover rounded-md"
-                    />
                 </div>
 
                 <form onSubmit={handleSubmit} className="px-8 py-6">
                     <div className="flex items-center mb-4">
                         <label className="w-40 text-gray-700">
-                            Full Name :
+                            Full Name:
                         </label>
                         <input
                             type="text"
@@ -55,7 +50,7 @@ export default function RegisterPage() {
 
                     <div className="flex items-center mb-4">
                         <label className="w-40 text-gray-700">
-                            Email Address :
+                            Email Address:
                         </label>
                         <input
                             type="email"

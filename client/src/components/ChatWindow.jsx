@@ -90,37 +90,8 @@ export default function ChatWindow({
                                     ) : (
                                         <div className="max-w-[90%] pl-2">
                                             <div className="relative">
-                                                {/* Show streaming content as plain text during streaming */}
-                                                {isStreamingMessage ? (
-                                                    <div className="prose prose-sm max-w-none text-gray-900">
-                                                        <div className="whitespace-pre-wrap font-mono text-sm bg-gray-50 p-3 rounded-lg border-l-4 border-orange-400">
-                                                            {message.content}
-                                                            <span className="inline-block w-2 h-4 bg-orange-500 animate-pulse ml-1"></span>
-                                                        </div>
-                                                        <div className="text-xs text-orange-500 mt-1 flex items-center gap-1">
-                                                            <div className="w-1 h-1 bg-orange-500 rounded-full animate-bounce"></div>
-                                                            <div
-                                                                className="w-1 h-1 bg-orange-500 rounded-full animate-bounce"
-                                                                style={{
-                                                                    animationDelay:
-                                                                        "0.1s",
-                                                                }}
-                                                            ></div>
-                                                            <div
-                                                                className="w-1 h-1 bg-orange-500 rounded-full animate-bounce"
-                                                                style={{
-                                                                    animationDelay:
-                                                                        "0.2s",
-                                                                }}
-                                                            ></div>
-                                                            <span className="ml-1">
-                                                                Streaming
-                                                                response...
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                ) : (
-                                                    /* Show markdown when not streaming */
+                                                {/* Always show markdown - streaming or not */}
+                                                <div className="relative">
                                                     <MarkdownWrapper
                                                         key={`${
                                                             message.tempId ||
@@ -134,7 +105,33 @@ export default function ChatWindow({
                                                             message.content
                                                         }
                                                     />
-                                                )}
+
+                                                    {/* Show streaming indicator */}
+                                                    {isStreamingMessage && (
+                                                        <div className="flex items-center gap-2 mt-3 text-xs text-orange-500">
+                                                            <div className="flex items-center gap-1">
+                                                                <div className="w-1 h-1 bg-orange-500 rounded-full animate-bounce"></div>
+                                                                <div
+                                                                    className="w-1 h-1 bg-orange-500 rounded-full animate-bounce"
+                                                                    style={{
+                                                                        animationDelay:
+                                                                            "0.1s",
+                                                                    }}
+                                                                ></div>
+                                                                <div
+                                                                    className="w-1 h-1 bg-orange-500 rounded-full animate-bounce"
+                                                                    style={{
+                                                                        animationDelay:
+                                                                            "0.2s",
+                                                                    }}
+                                                                ></div>
+                                                            </div>
+                                                            <span>
+                                                                AI is typing...
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
                                     )}
