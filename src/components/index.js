@@ -1,6 +1,10 @@
 export { default as ChatWindow } from "./ChatWindow";
 export { default as ChatInput } from "./ChatInput";
-export {default as Sidebar} from "./Sidebar";
+export { default as Sidebar } from "./Sidebar";
 export { default as MarkdownWrapper } from "./MarkdownWrapper";
 export { default as ConversationModal } from "./ConversationModal";
-export {default as ImageUpaloader} from "./ImageUploader";
+export { default as ImageUpaloader } from "./ImageUploader";
+export { default as Account } from "./SettingPage/Account";
+export { default as Profile } from "./SettingPage/Profile";
+export { default as Appearance } from "./SettingPage/Appearance";
+export { default as SettingsPageSidebar } from "./SettingPage/SettingsPageSidebar";

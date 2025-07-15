@@ -10,7 +10,7 @@ const Sidebar = ({
     onRenameRoom,
     onDeleteRoom,
     onToggle,
-    user, // Add user prop
+    user,
 }) => {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [activeDropdown, setActiveDropdown] = useState(null);
@@ -383,8 +383,15 @@ const Sidebar = ({
                         {/* Dropdown Menu */}
                         {isUserMenuOpen && isOpen && (
                             <div className="absolute bottom-full left-0 right-0 mb-1 bg-gray-700 rounded-md border border-gray-600 shadow-lg overflow-hidden">
-                                <button className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-600 transition-colors">
+                                <button
+                                    className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-600 transition-colors"
+                                    onClick={() => {
+                                        setIsUserMenuOpen(false);
+                                        navigate("/settings/profile");
+                                    }}
+                                >
                                     Settings
+                                    {/* TODO: Update setting here */}
                                 </button>
 
                                 <div className="border-t border-gray-600">
