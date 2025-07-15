@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Cookies from "js-cookie";
 import { ChatWindow, ChatInput, Sidebar } from "../components";
@@ -15,6 +15,9 @@ export default function ChatPage() {
     const { id } = useParams();
     const navigate = useNavigate();
     const skipNextLoadRef = useRef(null);
+    const streamingTimeoutRef = useRef(null);
+    const currentStreamingMessageRef = useRef(null);
+    const streamingBufferRef = useRef(""); // Buffer for batching
 
     const [userId, setUserId] = useState(null);
     const [user, setUser] = useState(null);
@@ -25,19 +28,12 @@ export default function ChatPage() {
     const [isBotTyping, setIsBotTyping] = useState(false);
     const [isLoadingInput, setIsLoadingInput] = useState(false);
     const [hasLoaded, setHasLoaded] = useState(false);
-
-    // Add streaming state
     const [isStreaming, setIsStreaming] = useState(false);
-
-    // New state to track when streaming ends
-    const [shouldReloadAfterStream, setShouldReloadAfterStream] =
-        useState(false);
-    const streamingTimeoutRef = useRef(null);
+    const [shouldReloadAfterStream, setShouldReloadAfterStream] = useState(false);
 
     // Validation function to check message order integrity
-    const validateMessageOrder = (messages) => {
+    const validateMessageOrder = useCallback((messages) => {
         const issues = [];
-
         messages.forEach((msg, index) => {
             const expectedSender = index % 2 === 0 ? "user" : "bot";
             if (msg.sender !== expectedSender) {
@@ -49,13 +45,11 @@ export default function ChatPage() {
                 });
             }
         });
-
         if (issues.length > 0) {
             console.warn("Message order issues found:", issues);
         }
-
         return issues.length === 0;
-    };
+    }, []);
 
     // Cookie authentication check and set userId
     useEffect(() => {
@@ -75,6 +69,26 @@ export default function ChatPage() {
         }
     }, [navigate]);
 
+    // Memoized conversation list refresh
+    const refreshConversationList = useCallback(async (uid = userId) => {
+        if (!uid) return;
+        try {
+            const allConversations = await getAllConversations(uid);
+            const list = allConversations.map((chat) => ({
+                id: chat.id,
+                name: chat.title || `Chat ${chat.id ? chat.id.slice(-5) : "New"}`,
+                title: chat.title,
+                lastMessageSnippet:
+                    chat.messages && chat.messages.length > 0
+                        ? chat.messages[chat.messages.length - 1]?.content?.slice(0, 30) + "..."
+                        : "No messages yet",
+            }));
+            setChatRooms(list);
+        } catch (error) {
+            console.error("Error refreshing conversation list:", error);
+        }
+    }, [userId]);
+
     // Load chat data when ID or userId changes
     useEffect(() => {
         const loadChatData = async () => {
@@ -91,27 +105,16 @@ export default function ChatPage() {
                     const res = await getConversationById(id);
                     if (res && res.messages) {
                         setChatId(id);
-
-                        const normalizedMessages = res.messages.map(
-                            (msg, index) => {
-                                let sender = msg.sender?.toLowerCase?.().trim();
-
-                                if (sender === "assistant") sender = "bot";
-
-                                if (index % 2 === 0) {
-                                    if (sender !== "user") {
-                                        sender = "user";
-                                    }
-                                } else {
-                                    if (sender !== "bot") {
-                                        sender = "bot";
-                                    }
-                                }
-
-                                return { ...msg, sender };
+                        const normalizedMessages = res.messages.map((msg, index) => {
+                            let sender = msg.sender?.toLowerCase?.().trim();
+                            if (sender === "assistant") sender = "bot";
+                            if (index % 2 === 0) {
+                                if (sender !== "user") sender = "user";
+                            } else {
+                                if (sender !== "bot") sender = "bot";
                             }
-                        );
-
+                            return { ...msg, sender };
+                        });
                         validateMessageOrder(normalizedMessages);
                         setMessages(normalizedMessages);
                     } else {
@@ -125,43 +128,50 @@ export default function ChatPage() {
                 console.error("Error loading chat data:", error);
             }
         };
-
         loadChatData();
-    }, [id, userId]);
+    }, [id, userId, refreshConversationList, validateMessageOrder]);
 
-    const refreshConversationList = async (uid = userId) => {
-        if (!uid) return;
-        try {
-            const allConversations = await getAllConversations(uid);
-
-            const list = allConversations.map((chat) => ({
-                id: chat.id,
-                name:
-                    chat.title || `Chat ${chat.id ? chat.id.slice(-5) : "New"}`, // Use the actual title from database
-                title: chat.title, // Store the original title
-                lastMessageSnippet:
-                    chat.messages && chat.messages.length > 0
-                        ? chat.messages[
-                              chat.messages.length - 1
-                          ]?.content?.slice(0, 30) + "..."
-                        : "No messages yet",
-            }));
-
-            setChatRooms(list);
-        } catch (error) {
-            console.error("Error refreshing conversation list:", error);
+    // Optimized streaming message updater with batching
+    const updateStreamingMessage = useCallback((chunk) => {
+        streamingBufferRef.current += chunk;
+        
+        // Use requestAnimationFrame for smooth updates
+        if (currentStreamingMessageRef.current) {
+            cancelAnimationFrame(currentStreamingMessageRef.current);
         }
-    };
+        
+        currentStreamingMessageRef.current = requestAnimationFrame(() => {
+            const bufferedContent = streamingBufferRef.current;
+            
+            setMessages((prev) => {
+                const updated = [...prev];
+                const lastMessage = updated[updated.length - 1];
+                
+                if (lastMessage && lastMessage.sender === "bot" && lastMessage.tempId) {
+                    // Update existing message - create new object
+                    updated[updated.length - 1] = {
+                        ...lastMessage,
+                        content: bufferedContent,
+                    };
+                } else {
+                    // Create new bot message
+                    const botMessageId = Date.now();
+                    updated.push({
+                        sender: "bot",
+                        content: bufferedContent,
+                        timestamp: new Date().toISOString(),
+                        tempId: botMessageId,
+                    });
+                }
+                return updated;
+            });
+        });
+    }, []);
 
-    const handleRenameRoom = async (roomId, newName) => {
+    // Memoized rename handler
+    const handleRenameRoom = useCallback(async (roomId, newName) => {
         try {
-            // Call the backend API to rename the conversation
-            const updatedConversation = await renameConversation(
-                roomId,
-                newName
-            );
-
-            // Update the local state with the new name
+            const updatedConversation = await renameConversation(roomId, newName);
             setChatRooms((prev) =>
                 prev.map((room) =>
                     room.id === roomId
@@ -169,77 +179,65 @@ export default function ChatPage() {
                         : room
                 )
             );
-
             console.log(`Renamed room ${roomId} to ${newName}`);
             return updatedConversation;
         } catch (error) {
             console.error("Error renaming conversation:", error);
-            // Optionally show an error message to the user
             alert("Failed to rename conversation. Please try again.");
             throw error;
         }
-    };
+    }, []);
 
-    const handleDeleteRoom = async (roomId) => {
+    // Memoized delete handler
+    const handleDeleteRoom = useCallback(async (roomId) => {
         try {
-            // Call the backend API to delete the conversation
             await deleteConversation(roomId, userId);
-
-            // Update the local state by removing the conversation
             setChatRooms((prev) => prev.filter((room) => room.id !== roomId));
-
-            // If the deleted room is currently active, navigate away
             if (chatId === roomId) {
                 navigate("/", { replace: true });
             }
-
             console.log(`Deleted room ${roomId}`);
         } catch (error) {
             console.error("Error deleting conversation:", error);
-            // Optionally show an error message to the user
             alert("Failed to delete conversation. Please try again.");
             throw error;
         }
-    };
+    }, [userId, chatId, navigate]);
 
-    // Enhanced handleSend function with auto-reload after streaming
-    const handleSend = async (text, files = []) => {
+    // Optimized handleSend function with batching and throttling
+    const handleSend = useCallback(async (text, files = []) => {
         setIsLoadingInput(true);
         setShouldReloadAfterStream(false);
+        streamingBufferRef.current = ""; // Reset buffer
 
-        // Process files to extract image URLs if needed
+        // Process files
         const processedFiles = files.map(file => {
             if (file.type && file.type.startsWith('image/')) {
                 return {
                     ...file,
-                    url: file.url || file.src || file.preview // Handle different URL formats
+                    url: file.url || file.src || file.preview
                 };
             }
             return file;
         });
 
-        // Create temp user message with files and image
+        // Create temp user message
         const tempUserMessage = {
             sender: "user",
             content: text,
             timestamp: new Date().toISOString(),
             tempId: Date.now(),
             status: "pending",
-            files: processedFiles, // Files are included in the message
-            // If there's an image URL directly in the message (from your schema)
+            files: processedFiles,
             image: processedFiles.find(f => f.type && f.type.startsWith('image/'))?.url || null
         };
 
         try {
             let currentChatId = chatId;
-            if (
-                !currentChatId ||
-                currentChatId === "undefined" ||
-                currentChatId === "new"
-            ) {
-                // Pass files to createConversation
+            
+            // Handle new conversation creation
+            if (!currentChatId || currentChatId === "undefined" || currentChatId === "new") {
                 const newChat = await createConversation(userId, text, processedFiles);
-
                 currentChatId = newChat.id;
                 setChatId(newChat.id);
                 skipNextLoadRef.current = newChat.id;
@@ -256,17 +254,15 @@ export default function ChatPage() {
                 navigate(`/chat/${newChat.id}`, { replace: true });
             }
 
+            // Add user message and show typing
             setMessages((prev) => [...prev, tempUserMessage]);
             setIsBotTyping(true);
+            setIsStreaming(false);
             setIsLoadingInput(false);
 
-            let botMessageId = null;
             let isFirstChunk = true;
 
-            // Set streaming state to true when starting
-            setIsStreaming(true);
-
-            // Pass files to streamFromBackend
+            // Stream from backend with optimized chunk handling
             await streamFromBackend(
                 currentChatId,
                 userId,
@@ -274,47 +270,30 @@ export default function ChatPage() {
                 (chunk) => {
                     if (isFirstChunk) {
                         setIsBotTyping(false);
+                        setIsStreaming(true);
                         isFirstChunk = false;
                     }
 
-                    // Handle streaming chunks...
+                    // Use optimized batch updater
+                    updateStreamingMessage(chunk);
+
+                    // Reset timeout for reload after stream
                     if (streamingTimeoutRef.current) {
                         clearTimeout(streamingTimeoutRef.current);
                     }
-
                     streamingTimeoutRef.current = setTimeout(() => {
                         setShouldReloadAfterStream(true);
-                    }, 2000);
-
-                    setMessages((prev) => {
-                        const updated = [...prev];
-                        const botIndex = updated.findIndex(
-                            (msg) => msg.tempId === botMessageId
-                        );
-                        if (botIndex !== -1) {
-                            // CREATE NEW OBJECT — don't mutate
-                            const updatedMsg = {
-                                ...updated[botIndex],
-                                content: updated[botIndex].content + chunk,
-                            };
-                            updated[botIndex] = updatedMsg;
-                        } else {
-                            botMessageId = Date.now();
-                            updated.push({
-                                sender: "bot",
-                                content: chunk,
-                                timestamp: new Date().toISOString(),
-                                tempId: botMessageId,
-                            });
-                        }
-                        return updated;
-                    });
+                    }, 1000); // Reduced timeout for faster response
                 },
-                processedFiles // Files are passed as the last parameter
+                processedFiles
             );
 
-            // Set streaming state to false when done
+            // Cleanup streaming state
             setIsStreaming(false);
+            if (currentStreamingMessageRef.current) {
+                cancelAnimationFrame(currentStreamingMessageRef.current);
+                currentStreamingMessageRef.current = null;
+            }
 
             // Update message status
             setMessages((prev) =>
@@ -325,21 +304,21 @@ export default function ChatPage() {
                 )
             );
 
+            // Refresh conversation list
             await refreshConversationList();
+
         } catch (err) {
             console.error("Error sending message:", err);
             setShouldReloadAfterStream(false);
-            setIsStreaming(false); // Reset streaming state on error
+            setIsStreaming(false);
 
-            setMessages((prev) =>
-                prev.map((msg) =>
+            // Handle error state
+            setMessages((prev) => [
+                ...prev.map((msg) =>
                     msg.tempId === tempUserMessage.tempId
                         ? { ...msg, status: "failed", error: err.message }
                         : msg
-                )
-            );
-            setMessages((prev) => [
-                ...prev,
+                ),
                 {
                     sender: "system",
                     content: "Failed to send message. Please try again.",
@@ -350,60 +329,55 @@ export default function ChatPage() {
         } finally {
             setIsBotTyping(false);
             setIsLoadingInput(false);
-            setIsStreaming(false); // Ensure streaming state is reset
+            setIsStreaming(false);
+            streamingBufferRef.current = "";
         }
-    };
+    }, [chatId, userId, navigate, updateStreamingMessage, refreshConversationList]);
 
-    // Cleanup timeout on unmount
+    // Cleanup on unmount
     useEffect(() => {
         return () => {
             if (streamingTimeoutRef.current) {
                 clearTimeout(streamingTimeoutRef.current);
             }
+            if (currentStreamingMessageRef.current) {
+                cancelAnimationFrame(currentStreamingMessageRef.current);
+            }
         };
     }, []);
 
-    const handleFileUpload = (files) => {
+    // Memoized file upload handler
+    const handleFileUpload = useCallback((files) => {
         console.log("Files uploaded:", files);
-        // You can process the files here if needed
-        // For example, upload to your server and get URLs
         return files;
-    };
+    }, []);
 
-    const handleVoiceRecord = (audioBlob) => {
+    // Memoized voice record handler
+    const handleVoiceRecord = useCallback((audioBlob) => {
         console.log("Voice recorded:", audioBlob);
-    };
+    }, []);
 
-    const formatChatName = (room) => {
-        // First priority: use the actual title from database if it exists
+    // Memoized formatChatName function
+    const formatChatName = useCallback((room) => {
         if (room.title && room.title.trim() !== "") {
             return room.title;
         }
-
-        // Second priority: use the name field if it's not the default format
         if (room.name && room.name !== `Chat ${room.id?.slice(-5)}`) {
             return room.name;
         }
-
-        // Last resort: use the last message snippet or default
-        return room.lastMessageSnippet &&
-            room.lastMessageSnippet !== "No messages yet"
+        return room.lastMessageSnippet && room.lastMessageSnippet !== "No messages yet"
             ? room.lastMessageSnippet.slice(0, 30) + "..."
             : `Chat ${room.id?.slice(-5) || "New"}`;
-    };
+    }, []);
 
-    const getCurrentChatTitle = () => {
+    // Memoized current chat title
+    const currentChatTitle = useMemo(() => {
         if (!chatId || chatId === "undefined" || chatId === "new") {
             return "New Chat";
         }
-
         const currentChat = chatRooms.find((room) => room.id === chatId);
-        if (currentChat) {
-            return formatChatName(currentChat);
-        }
-
-        return `Chat ${chatId.slice(-5)}`;
-    };
+        return currentChat ? formatChatName(currentChat) : `Chat ${chatId.slice(-5)}`;
+    }, [chatId, chatRooms, formatChatName]);
 
     return (
         <div className="flex h-screen bg-white">
@@ -412,11 +386,7 @@ export default function ChatPage() {
                 chatRooms={chatRooms}
                 activeRoomId={chatId}
                 onSelectRoom={(roomId) =>
-                    navigate(
-                        roomId && roomId !== "undefined"
-                            ? `/chat/${roomId}`
-                            : "/"
-                    )
+                    navigate(roomId && roomId !== "undefined" ? `/chat/${roomId}` : "/")
                 }
                 onRenameRoom={handleRenameRoom}
                 onDeleteRoom={handleDeleteRoom}
@@ -430,7 +400,7 @@ export default function ChatPage() {
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-2">
                             <span className="font-medium text-gray-900 text-sm">
-                                {getCurrentChatTitle()}
+                                {currentChatTitle}
                             </span>
                         </div>
                     </div>
@@ -441,7 +411,7 @@ export default function ChatPage() {
                     isBotTyping={isBotTyping}
                     hasLoaded={hasLoaded}
                     user={user}
-                    isStreaming={isStreaming} // Pass the streaming state
+                    isStreaming={isStreaming}
                 />
                 <ChatInput
                     onSend={handleSend}
