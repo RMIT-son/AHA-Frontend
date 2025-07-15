@@ -100,16 +100,10 @@ export default function ChatPage() {
 
                                 if (index % 2 === 0) {
                                     if (sender !== "user") {
-                                        console.warn(
-                                            `Message at index ${index} corrected: ${sender} -> user`
-                                        );
                                         sender = "user";
                                     }
                                 } else {
                                     if (sender !== "bot") {
-                                        console.warn(
-                                            `Message at index ${index} corrected: ${sender} -> bot`
-                                        );
                                         sender = "bot";
                                     }
                                 }
@@ -213,14 +207,27 @@ export default function ChatPage() {
         setIsLoadingInput(true);
         setShouldReloadAfterStream(false);
 
-        // Create temp user message with files
+        // Process files to extract image URLs if needed
+        const processedFiles = files.map(file => {
+            if (file.type && file.type.startsWith('image/')) {
+                return {
+                    ...file,
+                    url: file.url || file.src || file.preview // Handle different URL formats
+                };
+            }
+            return file;
+        });
+
+        // Create temp user message with files and image
         const tempUserMessage = {
             sender: "user",
             content: text,
             timestamp: new Date().toISOString(),
             tempId: Date.now(),
             status: "pending",
-            files: files, // Files are included in the message
+            files: processedFiles, // Files are included in the message
+            // If there's an image URL directly in the message (from your schema)
+            image: processedFiles.find(f => f.type && f.type.startsWith('image/'))?.url || null
         };
 
         try {
@@ -231,7 +238,7 @@ export default function ChatPage() {
                 currentChatId === "new"
             ) {
                 // Pass files to createConversation
-                const newChat = await createConversation(userId, text, files);
+                const newChat = await createConversation(userId, text, processedFiles);
 
                 currentChatId = newChat.id;
                 setChatId(newChat.id);
@@ -303,7 +310,7 @@ export default function ChatPage() {
                         return updated;
                     });
                 },
-                files // Files are passed as the last parameter
+                processedFiles // Files are passed as the last parameter
             );
 
             // Set streaming state to false when done
@@ -358,6 +365,9 @@ export default function ChatPage() {
 
     const handleFileUpload = (files) => {
         console.log("Files uploaded:", files);
+        // You can process the files here if needed
+        // For example, upload to your server and get URLs
+        return files;
     };
 
     const handleVoiceRecord = (audioBlob) => {
