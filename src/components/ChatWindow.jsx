@@ -105,32 +105,6 @@ export default function ChatWindow({
                                                             message.content
                                                         }
                                                     />
-
-                                                    {/* Show streaming indicator */}
-                                                    {isStreamingMessage && (
-                                                        <div className="flex items-center gap-2 mt-3 text-xs text-orange-500">
-                                                            <div className="flex items-center gap-1">
-                                                                <div className="w-1 h-1 bg-orange-500 rounded-full animate-bounce"></div>
-                                                                <div
-                                                                    className="w-1 h-1 bg-orange-500 rounded-full animate-bounce"
-                                                                    style={{
-                                                                        animationDelay:
-                                                                            "0.1s",
-                                                                    }}
-                                                                ></div>
-                                                                <div
-                                                                    className="w-1 h-1 bg-orange-500 rounded-full animate-bounce"
-                                                                    style={{
-                                                                        animationDelay:
-                                                                            "0.2s",
-                                                                    }}
-                                                                ></div>
-                                                            </div>
-                                                            <span>
-                                                                AI is typing...
-                                                            </span>
-                                                        </div>
-                                                    )}
                                                 </div>
                                             </div>
                                         </div>

@@ -8,3 +8,4 @@ export { default as Account } from "./SettingPage/Account";
 export { default as Profile } from "./SettingPage/Profile";
 export { default as Appearance } from "./SettingPage/Appearance";
 export { default as SettingsPageSidebar } from "./SettingPage/SettingsPageSidebar";
+export {default as ChatLayout} from "./ChatLayout";
