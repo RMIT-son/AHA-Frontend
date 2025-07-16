@@ -1,11 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 
-export default function ChatInput({
-    onSend,
-    isLoading,
-    onFileUpload,
-    onVoiceRecord,
-}) {
+export default function ChatInput({ onSend, isLoading }) {
     const [message, setMessage] = useState("");
     const [isRecording, setIsRecording] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);

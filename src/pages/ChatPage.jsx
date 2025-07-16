@@ -28,6 +28,51 @@ export default function ChatPage() {
         useState(false);
     const streamingTimeoutRef = useRef(null);
 
+    // Helper function to create temporary image URLs from File objects
+    const createTempImageUrls = (files) => {
+        return files.map((file) => {
+            if (file.file && file.file instanceof File) {
+                // Create a temporary URL for the file
+                const tempUrl = URL.createObjectURL(file.file);
+                return {
+                    url: tempUrl,
+                    name: file.name || file.file.name,
+                    type: file.type || file.file.type,
+                    isTemporary: true, // Flag to identify temporary URLs
+                };
+            } else if (file.preview) {
+                // Use existing preview (base64 data URL)
+                return {
+                    url: file.preview,
+                    name: file.name,
+                    type: file.type,
+                    isTemporary: true,
+                };
+            }
+            return file;
+        });
+    };
+
+    // Cleanup temporary URLs when component unmounts
+    useEffect(() => {
+        return () => {
+            // Clean up any temporary URLs when component unmounts
+            messages.forEach((message) => {
+                if (message.files) {
+                    message.files.forEach((file) => {
+                        if (
+                            file.isTemporary &&
+                            file.url &&
+                            file.url.startsWith("blob:")
+                        ) {
+                            URL.revokeObjectURL(file.url);
+                        }
+                    });
+                }
+            });
+        };
+    }, []);
+
     // Validation function to check message order integrity
     const validateMessageOrder = (messages) => {
         const issues = [];
@@ -146,13 +191,16 @@ export default function ChatPage() {
         setIsLoadingInput(true);
         setShouldReloadAfterStream(false);
 
+        // Create temporary image URLs for immediate display
+        const tempImageUrls = createTempImageUrls(files);
+
         const tempUserMessage = {
             sender: "user",
             content: text,
             timestamp: new Date().toISOString(),
             tempId: Date.now(),
             status: "pending",
-            files: files,
+            files: tempImageUrls, // Use temporary URLs for immediate display
         };
 
         try {
@@ -230,6 +278,8 @@ export default function ChatPage() {
             );
 
             setIsStreaming(false);
+
+            // Update user message status while preserving files
             setMessages((prev) =>
                 prev.map((msg) =>
                     msg.tempId === tempUserMessage.tempId
@@ -237,6 +287,10 @@ export default function ChatPage() {
                         : msg
                 )
             );
+
+            // DON'T clean up temporary URLs here - keep them until page reload
+            // This ensures images stay visible during and after streaming
+
             await refreshConversationList();
         } catch (err) {
             console.error("Error sending message:", err);
@@ -258,6 +312,17 @@ export default function ChatPage() {
                     isError: true,
                 },
             ]);
+
+            // Clean up temporary URLs only on error
+            tempImageUrls.forEach((file) => {
+                if (
+                    file.isTemporary &&
+                    file.url &&
+                    file.url.startsWith("blob:")
+                ) {
+                    URL.revokeObjectURL(file.url);
+                }
+            });
         } finally {
             setIsBotTyping(false);
             setIsLoadingInput(false);
@@ -273,14 +338,6 @@ export default function ChatPage() {
             }
         };
     }, []);
-
-    const handleFileUpload = (files) => {
-        console.log("Files uploaded:", files);
-    };
-
-    const handleVoiceRecord = (audioBlob) => {
-        console.log("Voice recorded:", audioBlob);
-    };
 
     const formatChatName = (room) => {
         if (room.title && room.title.trim() !== "") {
@@ -315,12 +372,7 @@ export default function ChatPage() {
                 user={user}
                 isStreaming={isStreaming}
             />
-            <ChatInput
-                onSend={handleSend}
-                onFileUpload={handleFileUpload}
-                onVoiceRecord={handleVoiceRecord}
-                isLoading={isLoadingInput}
-            />
+            <ChatInput onSend={handleSend} isLoading={isLoadingInput} />
         </ChatLayout>
     );
 }

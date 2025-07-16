@@ -76,7 +76,6 @@ export const getAllConversations = async (userId) => {
         const res = await axios.get(
             `${app.dataURL}/api/conversations/user/${userId}`
         );
-        console.log("Fetched conversations:", res.data);
         return res.data;
     } catch (error) {
         console.error("Failed to load conversations", error);

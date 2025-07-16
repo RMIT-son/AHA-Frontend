@@ -50,6 +50,7 @@ const ChatLayout = ({
         if (!uid) return;
         try {
             const allConversations = await getAllConversations(uid);
+            console.log("Fetched conversations:", allConversations);
 
             const list = allConversations.map((chat) => ({
                 id: chat.id,
@@ -63,6 +64,8 @@ const ChatLayout = ({
                           ]?.content?.slice(0, 30) + "..."
                         : "No messages yet",
             }));
+
+            console.log("Loaded conversations:", list);
 
             setChatRooms(list);
         } catch (error) {
