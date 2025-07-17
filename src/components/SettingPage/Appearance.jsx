@@ -1,7 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { getUserProfile, updateUserTheme } from "../../controllers/user";
 
 const Appearance = () => {
     const [selectedMode, setSelectedMode] = useState("light");
+    const [loading, setLoading] = useState(true);
+    const [updating, setUpdating] = useState(false);
+    const [error, setError] = useState("");
 
     const themeOptions = [
         {
@@ -15,6 +19,25 @@ const Appearance = () => {
             desc: "Describe a desert at midnight.",
         },
     ];
+
+    // Fetch user's current theme preference on component mount
+    useEffect(() => {
+        const fetchUserTheme = async () => {
+            try {
+                setLoading(true);
+                const userData = await getUserProfile();
+                setSelectedMode(userData.theme || "light");
+                setError("");
+            } catch (err) {
+                setError("Failed to load theme preference");
+                console.error("Error fetching user theme:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUserTheme();
+    }, []);
 
     const getThemeStyles = (themeId) => {
         switch (themeId) {
@@ -42,8 +65,50 @@ const Appearance = () => {
         }
     };
 
+    const handleChangeTheme = async (themeId) => {
+        try {
+            setUpdating(true);
+            setError("");
+
+            // Update theme in database
+            await updateUserTheme(themeId);
+
+            // Update local state
+            setSelectedMode(themeId);
+
+            // Apply theme globally (you can expand this to update CSS variables)
+            document.documentElement.setAttribute("data-theme", themeId);
+        } catch (err) {
+            setError(err.message || "Failed to update theme");
+            console.error("Error updating theme:", err);
+        } finally {
+            setUpdating(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <div className="max-w-4xl bg-gray-50 p-8 border border-gray-200 rounded-2xl">
+                <div className="animate-pulse">
+                    <div className="h-6 bg-gray-200 rounded w-1/4 mb-6"></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="h-40 bg-gray-200 rounded-2xl"></div>
+                        <div className="h-40 bg-gray-200 rounded-2xl"></div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="max-w-4xl bg-gray-50 p-8 border border-gray-200 rounded-2xl space-y-8">
+            {/* Error Message */}
+            {error && (
+                <div className="bg-red-50 border border-red-200 rounded-md p-4">
+                    <div className="text-red-800 text-sm">{error}</div>
+                </div>
+            )}
+
             {/* Color mode section */}
             <div>
                 <h2 className="text-xl font-semibold mb-6 text-gray-900">
@@ -61,14 +126,16 @@ const Appearance = () => {
                                 className="flex flex-col items-center cursor-pointer"
                             >
                                 <button
-                                    onClick={() => setSelectedMode(theme.id)}
+                                    onClick={() => handleChangeTheme(theme.id)}
+                                    disabled={updating}
                                     className={`w-full max-w-sm rounded-2xl p-4 transition-all duration-200 border-2
                                         ${
                                             isSelected
                                                 ? styles.border
                                                 : "border-gray-200"
                                         }
-                                        hover:border-blue-400 hover:bg-white hover:shadow-md`}
+                                        hover:border-blue-400 hover:bg-white hover:shadow-md
+                                        disabled:opacity-50 disabled:cursor-not-allowed`}
                                 >
                                     <div
                                         className={`rounded-xl p-4 ${styles.chat} min-h-[100px] flex flex-col justify-between transition-all duration-200`}
@@ -134,6 +201,11 @@ const Appearance = () => {
 
                                 <p className="mt-3 text-sm font-medium text-gray-700">
                                     {theme.label}
+                                    {updating && isSelected && (
+                                        <span className="ml-2 text-blue-600">
+                                            (Updating...)
+                                        </span>
+                                    )}
                                 </p>
                             </div>
                         );

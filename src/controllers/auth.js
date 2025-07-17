@@ -5,7 +5,6 @@ import { app } from "../config/keys";
 // Login with email + password
 export const loginUser = async (email, password) => {
     try {
-        console.log("Logging in with email and password:", email, password);
         const response = await axios.post(
             `${app.dataURL}/api/auth/login`,
             { email, password },
