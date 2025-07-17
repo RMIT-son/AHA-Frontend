@@ -17,8 +17,11 @@ export default function ChatWindow({
     // State for image preview modal
     const [previewImage, setPreviewImage] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const isClosingModal = useRef(false);
 
     const positionAtBottomInstant = () => {
+        // Additional check before scrolling
+        if (isModalOpen || isClosingModal.current) return;
         if (scrollAreaRef.current) {
             scrollAreaRef.current.scrollTop =
                 scrollAreaRef.current.scrollHeight;
@@ -26,20 +29,32 @@ export default function ChatWindow({
     };
 
     const scrollToBottomSmooth = () => {
+        // Additional check before scrolling
+        if (isModalOpen || isClosingModal.current) return;
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
     useEffect(() => {
+        // Don't scroll when modal is open or being closed
+        if (isModalOpen || isClosingModal.current) return;
+
         const messagesIncreased =
             messages.length > previousMessagesLength.current;
+
         if (isNewConversation.current && messages.length > 0) {
             positionAtBottomInstant();
             isNewConversation.current = false;
         } else if (isBotTyping || messagesIncreased || isStreaming) {
-            scrollToBottomSmooth();
+            // Add a small delay to ensure modal state is properly set
+            setTimeout(() => {
+                if (!isModalOpen && !isClosingModal.current) {
+                    scrollToBottomSmooth();
+                }
+            }, 10);
         }
+
         previousMessagesLength.current = messages.length;
-    }, [messages, isBotTyping, isStreaming]);
+    }, [messages, isBotTyping, isStreaming]); // Removed isModalOpen from dependencies
 
     useEffect(() => {
         if (
@@ -61,8 +76,14 @@ export default function ChatWindow({
         );
     };
 
-    const ImageDisplay = ({ imageUrl, alt = "User uploaded image" }) => {
-        const handleImageClick = () => {
+    const ImageDisplay = ({
+        imageUrl,
+        alt = "User uploaded image",
+        scrollOnLoad = true,
+    }) => {
+        const handleImageClick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
             setPreviewImage({ url: imageUrl, alt });
             setIsModalOpen(true);
         };
@@ -80,7 +101,9 @@ export default function ChatWindow({
                         console.error("Failed to load image:", imageUrl);
                     }}
                     onLoad={() => {
-                        scrollToBottomSmooth();
+                        if (scrollOnLoad && !isModalOpen) {
+                            scrollToBottomSmooth();
+                        }
                     }}
                 />
             </div>
@@ -88,8 +111,14 @@ export default function ChatWindow({
     };
 
     const closeModal = () => {
+        isClosingModal.current = true;
         setIsModalOpen(false);
         setPreviewImage(null);
+
+        // Reset the flag after a longer delay to ensure scrolling doesn't happen
+        setTimeout(() => {
+            isClosingModal.current = false;
+        }, 500);
     };
 
     return (
@@ -134,6 +163,7 @@ export default function ChatWindow({
                                                             imageUrl={
                                                                 message.image
                                                             }
+                                                            scrollOnLoad={true}
                                                         />
                                                     </div>
                                                 )}

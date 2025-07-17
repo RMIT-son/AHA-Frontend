@@ -21,6 +21,15 @@ const MarkdownWrapper = ({ content }) => {
             "$1\n$2"
         );
 
+        // Ensure there's a space after "of" in numbered lists
+        processedContent = processedContent.replace(/\bof(\d+)/g, "of $1");
+
+        // Add space after punctuation if missing
+        processedContent = processedContent.replace(
+            /([a-zA-Z])\.(?=[A-Z])/g,
+            "$1. "
+        );
+
         return processedContent;
     };
 

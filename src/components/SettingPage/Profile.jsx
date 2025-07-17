@@ -1,10 +1,8 @@
-import React, { useState } from "react";
+import { useState } from "react";
 
 const Profile = () => {
     const [fullName, setFullName] = useState("Alex");
     const [nickname, setNickname] = useState("Alex");
-    const [workFunction, setWorkFunction] = useState("");
-    const [preferences, setPreferences] = useState("");
 
     return (
         <div className="max-w-4xl">

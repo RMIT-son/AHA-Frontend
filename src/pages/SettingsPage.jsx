@@ -4,7 +4,7 @@ import {
     Profile,
     Appearance,
     SettingsPageSidebar,
-    ChatLayout
+    ChatLayout,
 } from "../components";
 
 const SettingsPage = ({ section }) => {
@@ -18,15 +18,10 @@ const SettingsPage = ({ section }) => {
     };
 
     return (
-        <ChatLayout headerTitle="Settings">
+        <ChatLayout>
             <div className="flex-1 overflow-hidden">
-                <div className="h-full py-8 px-8">
+                <div className="h-full py-40 px-40">
                     <div className="w-full max-w-7xl mx-auto h-full">
-                        {/* Main Settings heading */}
-                        <h1 className="text-3xl font-semibold mb-8 text-gray-900">
-                            Settings
-                        </h1>
-
                         {/* Sidebar and Main content container */}
                         <div className="flex gap-2 h-full">
                             {/* Settings Sidebar */}
