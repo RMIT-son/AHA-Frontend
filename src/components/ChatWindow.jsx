@@ -18,10 +18,14 @@ export default function ChatWindow({
     const [previewImage, setPreviewImage] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const isClosingModal = useRef(false);
+    const scrollingEnabled = useRef(true);
+    // Track which images have already loaded to prevent re-scrolling
+    const loadedImages = useRef(new Set());
 
     const positionAtBottomInstant = () => {
         // Additional check before scrolling
-        if (isModalOpen || isClosingModal.current) return;
+        if (!scrollingEnabled.current || isModalOpen || isClosingModal.current)
+            return;
         if (scrollAreaRef.current) {
             scrollAreaRef.current.scrollTop =
                 scrollAreaRef.current.scrollHeight;
@@ -30,13 +34,15 @@ export default function ChatWindow({
 
     const scrollToBottomSmooth = () => {
         // Additional check before scrolling
-        if (isModalOpen || isClosingModal.current) return;
+        if (!scrollingEnabled.current || isModalOpen || isClosingModal.current)
+            return;
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
     useEffect(() => {
         // Don't scroll when modal is open or being closed
-        if (isModalOpen || isClosingModal.current) return;
+        if (!scrollingEnabled.current || isModalOpen || isClosingModal.current)
+            return;
 
         const messagesIncreased =
             messages.length > previousMessagesLength.current;
@@ -47,14 +53,18 @@ export default function ChatWindow({
         } else if (isBotTyping || messagesIncreased || isStreaming) {
             // Add a small delay to ensure modal state is properly set
             setTimeout(() => {
-                if (!isModalOpen && !isClosingModal.current) {
+                if (
+                    scrollingEnabled.current &&
+                    !isModalOpen &&
+                    !isClosingModal.current
+                ) {
                     scrollToBottomSmooth();
                 }
             }, 10);
         }
 
         previousMessagesLength.current = messages.length;
-    }, [messages, isBotTyping, isStreaming]); // Removed isModalOpen from dependencies
+    }, [messages, isBotTyping, isStreaming]);
 
     useEffect(() => {
         if (
@@ -63,6 +73,8 @@ export default function ChatWindow({
                 messages.length !== previousMessagesLength.current + 1)
         ) {
             isNewConversation.current = true;
+            // Clear loaded images cache when starting new conversation
+            loadedImages.current.clear();
         }
     }, [messages]);
 
@@ -84,8 +96,22 @@ export default function ChatWindow({
         const handleImageClick = (e) => {
             e.preventDefault();
             e.stopPropagation();
+            scrollingEnabled.current = false; // Disable scrolling immediately
             setPreviewImage({ url: imageUrl, alt });
             setIsModalOpen(true);
+        };
+
+        const handleImageLoad = () => {
+            // Only scroll if this image hasn't been loaded before
+            if (
+                scrollOnLoad &&
+                !isModalOpen &&
+                !isClosingModal.current &&
+                !loadedImages.current.has(imageUrl)
+            ) {
+                loadedImages.current.add(imageUrl);
+                scrollToBottomSmooth();
+            }
         };
 
         return (
@@ -100,11 +126,7 @@ export default function ChatWindow({
                         e.target.style.display = "none";
                         console.error("Failed to load image:", imageUrl);
                     }}
-                    onLoad={() => {
-                        if (scrollOnLoad && !isModalOpen) {
-                            scrollToBottomSmooth();
-                        }
-                    }}
+                    onLoad={handleImageLoad}
                 />
             </div>
         );
@@ -112,13 +134,23 @@ export default function ChatWindow({
 
     const closeModal = () => {
         isClosingModal.current = true;
+        scrollingEnabled.current = false; // Keep scrolling disabled during close
         setIsModalOpen(false);
         setPreviewImage(null);
 
-        // Reset the flag after a longer delay to ensure scrolling doesn't happen
+        // Prevent any focus-related scrolling after modal closes
+        setTimeout(() => {
+            // Blur any focused elements to prevent keyboard navigation scrolling
+            if (document.activeElement && document.activeElement.blur) {
+                document.activeElement.blur();
+            }
+        }, 50);
+
+        // Reset the flags after the modal has fully closed
         setTimeout(() => {
             isClosingModal.current = false;
-        }, 500);
+            scrollingEnabled.current = true; // Re-enable scrolling
+        }, 800); // Increased delay to ensure modal animation completes
     };
 
     return (
