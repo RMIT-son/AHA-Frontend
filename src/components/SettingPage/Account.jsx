@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { deleteAccount } from "../../controllers/user";
 import Cookies from "js-cookie";
 
@@ -7,7 +7,7 @@ const Account = () => {
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [error, setError] = useState("");
 
-    const handleLogoutAll = () => {
+    const handleLogout = () => {
         setIsLoggingOut(true);
 
         // Clear the user cookie (this is sufficient for logout)
@@ -76,19 +76,18 @@ const Account = () => {
                     </div>
                 )}
 
-                {/* Log out of all devices */}
+                {/* Log ouut*/}
                 <div className="flex justify-between items-center">
                     <div>
                         <p className="text-gray-900 font-medium">
-                            Log out of all devices
+                            Log out
                         </p>
                         <p className="text-sm text-gray-500 mt-1">
-                            This will sign you out of all devices where you're
-                            currently logged in.
+                            This will log you out from this device
                         </p>
                     </div>
                     <button
-                        onClick={handleLogoutAll}
+                        onClick={handleLogout}
                         className="px-6 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                     >
                         Log out

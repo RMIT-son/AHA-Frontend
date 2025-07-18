@@ -59,6 +59,7 @@ const handleAxiosError = (error) => {
  */
 export const getUserProfile = async () => {
     try {
+        // TODO: Get 
         const response = await axios.get(`${app.dataURL}/api/users/profile`, {
             headers: getAuthHeaders(),
         });

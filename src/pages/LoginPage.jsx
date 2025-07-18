@@ -15,7 +15,6 @@ export default function LoginPage() {
         if (res.success) {
             Cookies.set("user", JSON.stringify(res.data), { expires: 7 });
 
-            // Optionally store token, set context
             navigate("/"); // Redirect to home or chat
         } else {
             alert(res.message);

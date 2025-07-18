@@ -113,6 +113,11 @@ const Sidebar = ({
         }
     };
 
+    const handldLogout = () => {
+        // TODO: 
+        navigate("/login");
+    }
+
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = () => {
@@ -398,7 +403,7 @@ const Sidebar = ({
                                     <button
                                         className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-600 transition-colors"
                                         onClick={() => {
-                                            console.log("Signing out");
+
                                             navigate("/login");
                                         }}
                                     >
