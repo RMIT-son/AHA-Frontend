@@ -14,6 +14,8 @@ export default function ChatPage() {
     const { id } = useParams();
     const navigate = useNavigate();
     const skipNextLoadRef = useRef(null);
+    const activeStreamRef = useRef(null); // Track active streaming request
+    const currentChatIdRef = useRef(null); // Track current chat ID
 
     const [userId, setUserId] = useState(null);
     const [user, setUser] = useState(null);
@@ -27,6 +29,36 @@ export default function ChatPage() {
     const [shouldReloadAfterStream, setShouldReloadAfterStream] =
         useState(false);
     const streamingTimeoutRef = useRef(null);
+
+    // Update currentChatIdRef whenever chatId changes
+    useEffect(() => {
+        currentChatIdRef.current = chatId;
+    }, [chatId]);
+
+    // Cleanup active streams when component unmounts or chat changes
+    useEffect(() => {
+        return () => {
+            // Cancel any active streaming when component unmounts
+            if (activeStreamRef.current) {
+                activeStreamRef.current.cancelled = true;
+            }
+            if (streamingTimeoutRef.current) {
+                clearTimeout(streamingTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    // Cancel streaming when navigating to different chat
+    useEffect(() => {
+        if (
+            activeStreamRef.current &&
+            activeStreamRef.current.chatId !== chatId
+        ) {
+            activeStreamRef.current.cancelled = true;
+            setIsStreaming(false);
+            setIsBotTyping(false);
+        }
+    }, [chatId]);
 
     // Helper function to create temporary image URLs from File objects
     const createTempImageUrls = (files) => {
@@ -205,6 +237,7 @@ export default function ChatPage() {
 
         try {
             let currentChatId = chatId;
+
             if (
                 !currentChatId ||
                 currentChatId === "undefined" ||
@@ -214,16 +247,15 @@ export default function ChatPage() {
                 currentChatId = newChat.id;
                 setChatId(newChat.id);
                 skipNextLoadRef.current = newChat.id;
-                setChatRooms((prev) => [
-                    {
-                        id: newChat.id,
-                        name: newChat.title,
-                        lastMessageSnippet: text.slice(0, 30) + "...",
-                    },
-                    ...prev,
-                ]);
                 navigate(`/chat/${newChat.id}`, { replace: true });
             }
+
+            // Create a stream tracking object
+            const streamTracker = {
+                chatId: currentChatId,
+                cancelled: false,
+            };
+            activeStreamRef.current = streamTracker;
 
             setMessages((prev) => [...prev, tempUserMessage]);
             setIsBotTyping(true);
@@ -238,6 +270,17 @@ export default function ChatPage() {
                 userId,
                 text,
                 (chunk) => {
+                    // Check if this stream has been cancelled or if we're in a different chat
+                    if (
+                        streamTracker.cancelled ||
+                        currentChatIdRef.current !== currentChatId
+                    ) {
+                        console.log(
+                            "Stream cancelled or chat changed, ignoring chunk"
+                        );
+                        return;
+                    }
+
                     if (isFirstChunk) {
                         setIsBotTyping(false);
                         isFirstChunk = false;
@@ -277,21 +320,25 @@ export default function ChatPage() {
                 files
             );
 
-            setIsStreaming(false);
+            // Only continue if stream wasn't cancelled
+            if (
+                !streamTracker.cancelled &&
+                currentChatIdRef.current === currentChatId
+            ) {
+                setIsStreaming(false);
 
-            // Update user message status while preserving files
-            setMessages((prev) =>
-                prev.map((msg) =>
-                    msg.tempId === tempUserMessage.tempId
-                        ? { ...msg, status: "delivered" }
-                        : msg
-                )
-            );
+                // Update user message status while preserving files
+                setMessages((prev) =>
+                    prev.map((msg) =>
+                        msg.tempId === tempUserMessage.tempId
+                            ? { ...msg, status: "delivered" }
+                            : msg
+                    )
+                );
 
-            // DON'T clean up temporary URLs here - keep them until page reload
-            // This ensures images stay visible during and after streaming
-
-            await refreshConversationList();
+                // Always refresh conversation list after successful send
+                await refreshConversationList();
+            }
         } catch (err) {
             console.error("Error sending message:", err);
             setShouldReloadAfterStream(false);
@@ -327,6 +374,7 @@ export default function ChatPage() {
             setIsBotTyping(false);
             setIsLoadingInput(false);
             setIsStreaming(false);
+            activeStreamRef.current = null;
         }
     };
 
@@ -364,7 +412,13 @@ export default function ChatPage() {
     };
 
     return (
-        <ChatLayout activeRoomId={chatId} headerTitle={getCurrentChatTitle()}>
+        <ChatLayout
+            activeRoomId={chatId}
+            headerTitle={getCurrentChatTitle()}
+            chatRooms={chatRooms}
+            user={user}
+            onChatRoomsUpdate={refreshConversationList}
+        >
             <ChatWindow
                 messages={messages}
                 isBotTyping={isBotTyping}
