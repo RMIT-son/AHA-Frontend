@@ -8,8 +8,6 @@ const Account = () => {
     const [error, setError] = useState("");
 
     const handleLogout = () => {
-        setIsLoggingOut(true);
-
         // Clear the user cookie (this is sufficient for logout)
         Cookies.remove("user");
 
@@ -88,7 +86,7 @@ const Account = () => {
                     </div>
                     <button
                         onClick={handleLogout}
-                        className="px-6 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                        className="cursor-pointer px-6 py-2 text-gray-700 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                     >
                         Log out
                     </button>
@@ -108,7 +106,7 @@ const Account = () => {
                     <button
                         onClick={() => setShowDeleteConfirm(true)}
                         disabled={isDeleting}
-                        className="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:bg-red-400 disabled:cursor-not-allowed"
+                        className="cursor-pointer px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:bg-red-400 disabled:cursor-not-allowed"
                     >
                         {isDeleting ? "Deleting..." : "Delete account"}
                     </button>

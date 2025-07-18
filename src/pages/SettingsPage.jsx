@@ -11,8 +11,6 @@ const SettingsPage = ({ section }) => {
     const location = useLocation();
     const currentSection = section || location.pathname.split("/").pop();
 
-    // Get User from here then get 
-
     const views = {
         profile: <Profile />,
         appearance: <Appearance />,

@@ -13,6 +13,7 @@ export default function LoginPage() {
         e.preventDefault();
         const res = await loginUser(email, password);
         if (res.success) {
+            console.log("Login successful:", res.data);
             Cookies.set("user", JSON.stringify(res.data), { expires: 7 });
 
             navigate("/"); // Redirect to home or chat

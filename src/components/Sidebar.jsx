@@ -114,9 +114,9 @@ const Sidebar = ({
     };
 
     const handldLogout = () => {
-        // TODO: 
+        Cookies.remove("user");
         navigate("/login");
-    }
+    };
 
     // Close dropdown when clicking outside
     useEffect(() => {
@@ -396,16 +396,12 @@ const Sidebar = ({
                                     }}
                                 >
                                     Settings
-                                    {/* TODO: Update setting here */}
                                 </button>
 
                                 <div className="border-t border-gray-600">
                                     <button
                                         className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-600 transition-colors"
-                                        onClick={() => {
-
-                                            navigate("/login");
-                                        }}
+                                        onClick={handldLogout}
                                     >
                                         Sign out
                                     </button>

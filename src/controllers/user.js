@@ -21,34 +21,22 @@ const getAuthHeaders = () => {
 
     try {
         const userData = JSON.parse(userCookie);
+
+        // The cookie contains the user object with 'id' field (MongoDB ObjectId)
+        const token = userData.id;
+
+        if (!token) {
+            throw new Error("No user ID found in cookie");
+        }
+
+        console.log("Using user ID as token:", token); // Debug log
+
         return {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${userData.token}`,
+            Authorization: `Bearer ${token}`,
         };
     } catch (error) {
         throw new Error("Invalid user data");
-    }
-};
-
-/**
- * Handles axios errors and throws formatted error messages
- * @param {Error} error - The axios error object
- * @throws {Error} Formatted error with appropriate message
- */
-const handleAxiosError = (error) => {
-    if (error.response) {
-        // Server responded with error status
-        const message =
-            error.response.data?.detail ||
-            error.response.data?.message ||
-            `Request failed with status ${error.response.status}`;
-        throw new Error(message);
-    } else if (error.request) {
-        // Request was made but no response received
-        throw new Error("Network error: No response from server");
-    } else {
-        // Something else happened
-        throw new Error(error.message || "An unexpected error occurred");
     }
 };
 
@@ -59,7 +47,6 @@ const handleAxiosError = (error) => {
  */
 export const getUserProfile = async () => {
     try {
-        // TODO: Get 
         const response = await axios.get(`${app.dataURL}/api/users/profile`, {
             headers: getAuthHeaders(),
         });
@@ -67,7 +54,6 @@ export const getUserProfile = async () => {
         return response.data;
     } catch (error) {
         console.error("Error fetching user profile:", error);
-        handleAxiosError(error);
     }
 };
 
@@ -117,7 +103,6 @@ export const updateUserProfile = async (profileData) => {
         return updatedUser;
     } catch (error) {
         console.error("Error updating user profile:", error);
-        handleAxiosError(error);
     }
 };
 
@@ -152,7 +137,6 @@ export const updateUserTheme = async (theme) => {
         return updatedUser;
     } catch (error) {
         console.error("Error updating user theme:", error);
-        handleAxiosError(error);
     }
 };
 
@@ -178,6 +162,5 @@ export const deleteAccount = async () => {
         console.error("Error deleting account:", error);
         // Clear cookies even if API call fails
         Cookies.remove("user");
-        handleAxiosError(error);
     }
 };
