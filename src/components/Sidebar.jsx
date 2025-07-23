@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import ConversationModal from "./ConversationModal";
+import Cookies from "js-cookie";
 
 const Sidebar = ({
     isOpen,

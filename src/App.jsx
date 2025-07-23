@@ -1,5 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { ChatPage, LoginPage, RegisterPage, SettingsPage } from "./pages";
+import {
+    ChatPage,
+    LoginPage,
+    RegisterPage,
+    SettingsPage,
+    ForgotPasswordPage,
+    ResetPasswordPage,
+} from "./pages";
 
 function App() {
     return (
@@ -9,9 +16,14 @@ function App() {
                 <Route path="/" element={<ChatPage />} />
                 <Route path="/chat/:id" element={<ChatPage />} />
 
-                {/* Authentication Page */}
+                {/* Authentication Pages */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
+                <Route
+                    path="/forgot-password"
+                    element={<ForgotPasswordPage />}
+                />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
 
                 {/* Settings with nested routes */}
                 <Route path="/settings" element={<SettingsPage />}>
