@@ -8,14 +8,15 @@ import {
     getConversationById,
     getAllConversations,
     streamFromBackend,
+    sendVoiceMessage, // Updated to only transcribe
 } from "../controllers/chat";
 
 export default function ChatPage() {
     const { id } = useParams();
     const navigate = useNavigate();
     const skipNextLoadRef = useRef(null);
-    const activeStreamRef = useRef(null); // Track active streaming request
-    const currentChatIdRef = useRef(null); // Track current chat ID
+    const activeStreamRef = useRef(null);
+    const currentChatIdRef = useRef(null);
 
     const [userId, setUserId] = useState(null);
     const [user, setUser] = useState(null);
@@ -28,6 +29,13 @@ export default function ChatPage() {
     const [isStreaming, setIsStreaming] = useState(false);
     const [shouldReloadAfterStream, setShouldReloadAfterStream] =
         useState(false);
+    const [canSendNewMessage, setCanSendNewMessage] = useState(true);
+    const [isProcessingMessage, setIsProcessingMessage] = useState(false);
+
+    // New state for handling transcribed text
+    const [transcribedText, setTranscribedText] = useState("");
+    const [isTranscribing, setIsTranscribing] = useState(false);
+
     const streamingTimeoutRef = useRef(null);
 
     // Update currentChatIdRef whenever chatId changes
@@ -38,7 +46,6 @@ export default function ChatPage() {
     // Cleanup active streams when component unmounts or chat changes
     useEffect(() => {
         return () => {
-            // Cancel any active streaming when component unmounts
             if (activeStreamRef.current) {
                 activeStreamRef.current.cancelled = true;
             }
@@ -57,23 +64,53 @@ export default function ChatPage() {
             activeStreamRef.current.cancelled = true;
             setIsStreaming(false);
             setIsBotTyping(false);
+            setCanSendNewMessage(true);
+            setIsProcessingMessage(false);
         }
     }, [chatId]);
+
+    // Function to cancel current stream
+    const cancelCurrentStream = () => {
+        if (activeStreamRef.current) {
+            activeStreamRef.current.cancelled = true;
+            setIsStreaming(false);
+            setIsBotTyping(false);
+            setCanSendNewMessage(true);
+            setIsProcessingMessage(false);
+
+            // Clear any pending timeouts
+            if (streamingTimeoutRef.current) {
+                clearTimeout(streamingTimeoutRef.current);
+                streamingTimeoutRef.current = null;
+            }
+
+            // Add a system message indicating the stream was cancelled
+            setMessages((prev) => [
+                ...prev,
+                {
+                    sender: "system",
+                    content: "Message generation was cancelled.",
+                    timestamp: new Date().toISOString(),
+                    isInfo: true,
+                },
+            ]);
+
+            activeStreamRef.current = null;
+        }
+    };
 
     // Helper function to create temporary image URLs from File objects
     const createTempImageUrls = (files) => {
         return files.map((file) => {
             if (file.file && file.file instanceof File) {
-                // Create a temporary URL for the file
                 const tempUrl = URL.createObjectURL(file.file);
                 return {
                     url: tempUrl,
                     name: file.name || file.file.name,
                     type: file.type || file.file.type,
-                    isTemporary: true, // Flag to identify temporary URLs
+                    isTemporary: true,
                 };
             } else if (file.preview) {
-                // Use existing preview (base64 data URL)
                 return {
                     url: file.preview,
                     name: file.name,
@@ -88,7 +125,6 @@ export default function ChatPage() {
     // Cleanup temporary URLs when component unmounts
     useEffect(() => {
         return () => {
-            // Clean up any temporary URLs when component unmounts
             messages.forEach((message) => {
                 if (message.files) {
                     message.files.forEach((file) => {
@@ -100,6 +136,10 @@ export default function ChatPage() {
                             URL.revokeObjectURL(file.url);
                         }
                     });
+                }
+                // Clean up voice message URLs
+                if (message.audioUrl && message.audioUrl.startsWith("blob:")) {
+                    URL.revokeObjectURL(message.audioUrl);
                 }
             });
         };
@@ -220,7 +260,21 @@ export default function ChatPage() {
     };
 
     const handleSend = async (text, files = []) => {
+        // Prevent rapid submissions or submissions while processing
+        if (isProcessingMessage || isLoadingInput) {
+            return;
+        }
+
+        // If there's an active stream, cancel it first
+        if (isStreaming || !canSendNewMessage) {
+            cancelCurrentStream();
+            // Wait a brief moment for cleanup
+            await new Promise((resolve) => setTimeout(resolve, 100));
+        }
+
+        setIsProcessingMessage(true);
         setIsLoadingInput(true);
+        setCanSendNewMessage(false);
         setShouldReloadAfterStream(false);
 
         // Create temporary image URLs for immediate display
@@ -232,7 +286,7 @@ export default function ChatPage() {
             timestamp: new Date().toISOString(),
             tempId: Date.now(),
             status: "pending",
-            files: tempImageUrls, // Use temporary URLs for immediate display
+            files: tempImageUrls,
         };
 
         try {
@@ -326,6 +380,8 @@ export default function ChatPage() {
                 currentChatIdRef.current === currentChatId
             ) {
                 setIsStreaming(false);
+                setCanSendNewMessage(true);
+                setIsProcessingMessage(false);
 
                 // Update user message status while preserving files
                 setMessages((prev) =>
@@ -343,6 +399,8 @@ export default function ChatPage() {
             console.error("Error sending message:", err);
             setShouldReloadAfterStream(false);
             setIsStreaming(false);
+            setCanSendNewMessage(true);
+            setIsProcessingMessage(false);
             setMessages((prev) =>
                 prev.map((msg) =>
                     msg.tempId === tempUserMessage.tempId
@@ -374,7 +432,57 @@ export default function ChatPage() {
             setIsBotTyping(false);
             setIsLoadingInput(false);
             setIsStreaming(false);
+            setCanSendNewMessage(true);
+            setIsProcessingMessage(false);
             activeStreamRef.current = null;
+        }
+    };
+
+    // Updated voice message handler - now only transcribes
+    const handleVoiceMessage = async (audioBlob) => {
+        // Prevent voice messages while processing other messages
+        if (isTranscribing || isProcessingMessage || isLoadingInput) {
+            return;
+        }
+
+        setIsTranscribing(true);
+
+        try {
+            console.log("Starting voice transcription...");
+
+            // Call the voice transcription service
+            const result = await sendVoiceMessage(
+                null, // No conversation ID needed for transcription
+                userId,
+                audioBlob,
+                null // No streaming callback needed
+            );
+
+            console.log("Transcription result:", result);
+
+            if (result.success && result.transcribedText) {
+                // Set the transcribed text to be used by ChatInput
+                setTranscribedText(result.transcribedText);
+                console.log("Transcribed text set:", result.transcribedText);
+            } else {
+                throw new Error("No transcribed text received");
+            }
+        } catch (err) {
+            console.error("Error transcribing voice message:", err);
+
+            // Show error message in chat
+            setMessages((prev) => [
+                ...prev,
+                {
+                    sender: "system",
+                    content:
+                        "Failed to transcribe voice message. Please try again.",
+                    timestamp: new Date().toISOString(),
+                    isError: true,
+                },
+            ]);
+        } finally {
+            setIsTranscribing(false);
         }
     };
 
@@ -425,8 +533,20 @@ export default function ChatPage() {
                 hasLoaded={hasLoaded}
                 user={user}
                 isStreaming={isStreaming}
+                onCancelStream={cancelCurrentStream}
             />
-            <ChatInput onSend={handleSend} isLoading={isLoadingInput} />
+            <ChatInput
+                onSend={handleSend}
+                onVoiceRecord={handleVoiceMessage} // Updated voice handler
+                isLoading={isLoadingInput}
+                canSend={canSendNewMessage && !isProcessingMessage}
+                isStreaming={isStreaming}
+                onCancelStream={cancelCurrentStream}
+                isProcessing={isProcessingMessage}
+                transcribedText={transcribedText} // Pass transcribed text
+                onTranscribedTextUsed={() => setTranscribedText("")} // Clear after use
+                isTranscribing={isTranscribing} // Pass transcribing state
+            />
         </ChatLayout>
     );
 }

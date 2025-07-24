@@ -231,3 +231,74 @@ export const deleteConversation = async (conversationId, userId) => {
         throw error;
     }
 };
+
+const audioBlobToBase64 = (blob) => {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+            const dataUrl = reader.result;
+            // Extract just the base64 part (after the comma)
+            const base64Only = dataUrl.split(",")[1];
+            resolve(base64Only);
+        };
+        reader.onerror = (error) => reject(error);
+        reader.readAsDataURL(blob);
+    });
+};
+
+export const sendVoiceMessage = async (
+    conversationId,
+    userId,
+    audioBlob,
+    onChunk
+) => {
+    try {
+        console.log("Converting audio blob to base64...");
+
+        const base64Audio = await audioBlobToBase64(audioBlob);
+
+        console.log("Base64 audio length:", base64Audio.length);
+        console.log("Base64 preview:", base64Audio.substring(0, 50));
+
+        const response = await axios.post(
+            `${app.serverURL}/api/conversations/speech_to_text`,
+            {
+                audio: base64Audio,
+            },
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+
+        console.log("Transcription response:", response.data);
+        const transcribedText = response.data;
+
+        if (onChunk && transcribedText) {
+            onChunk(transcribedText);
+        }
+
+        return {
+            conversationId: conversationId,
+            success: true,
+            transcribedText: transcribedText,
+        };
+    } catch (error) {
+        console.error("Error sending voice message:", error);
+
+        if (error.response) {
+            console.error("Response data:", error.response.data);
+            console.error("Response status:", error.response.status);
+            throw new Error(
+                `HTTP ${error.response.status}: ${
+                    error.response.data?.detail || error.response.statusText
+                }`
+            );
+        } else if (error.request) {
+            throw new Error("Network error: No response received from server");
+        } else {
+            throw error;
+        }
+    }
+};

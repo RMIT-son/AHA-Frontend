@@ -36,9 +36,7 @@ export default function RegisterPage() {
 
                 <form onSubmit={handleSubmit} className="px-8 py-6">
                     <div className="flex items-center mb-4">
-                        <label className="w-40 text-gray-700">
-                            Full Name:
-                        </label>
+                        <label className="w-40 text-gray-700">Full Name:</label>
                         <input
                             type="text"
                             placeholder="Enter your full name"
@@ -93,7 +91,7 @@ export default function RegisterPage() {
 
                     <div className="flex items-center mb-6">
                         <label className="w-40 text-gray-700">
-                            Confirm Password :
+                            Confirm Password:
                         </label>
                         <div className="relative flex-1">
                             <input
