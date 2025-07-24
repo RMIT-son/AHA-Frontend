@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import MarkdownWrapper from "./MarkdownWrapper";
 import ImagePreviewModal from "./ImagePreviewModal";
+import VoiceMessageDisplay from "./VoiceMessageDisplay"; // Add this import
 
 export default function ChatWindow({
     messages,
@@ -8,6 +9,7 @@ export default function ChatWindow({
     hasLoaded,
     user,
     isStreaming,
+    onCancelStream,
 }) {
     const messagesEndRef = useRef(null);
     const scrollAreaRef = useRef(null);
@@ -20,7 +22,6 @@ export default function ChatWindow({
     const isClosingModal = useRef(false);
 
     const positionAtBottomInstant = () => {
-        // Additional check before scrolling
         if (isModalOpen || isClosingModal.current) return;
         if (scrollAreaRef.current) {
             scrollAreaRef.current.scrollTop =
@@ -29,13 +30,11 @@ export default function ChatWindow({
     };
 
     const scrollToBottomSmooth = () => {
-        // Additional check before scrolling
         if (isModalOpen || isClosingModal.current) return;
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
     useEffect(() => {
-        // Don't scroll when modal is open or being closed
         if (isModalOpen || isClosingModal.current) return;
 
         const messagesIncreased =
@@ -45,7 +44,6 @@ export default function ChatWindow({
             positionAtBottomInstant();
             isNewConversation.current = false;
         } else if (isBotTyping || messagesIncreased || isStreaming) {
-            // Add a small delay to ensure modal state is properly set
             setTimeout(() => {
                 if (!isModalOpen && !isClosingModal.current) {
                     scrollToBottomSmooth();
@@ -54,7 +52,7 @@ export default function ChatWindow({
         }
 
         previousMessagesLength.current = messages.length;
-    }, [messages, isBotTyping, isStreaming]); // Removed isModalOpen from dependencies
+    }, [messages, isBotTyping, isStreaming]);
 
     useEffect(() => {
         if (
@@ -115,7 +113,6 @@ export default function ChatWindow({
         setIsModalOpen(false);
         setPreviewImage(null);
 
-        // Reset the flag after a longer delay to ensure scrolling doesn't happen
         setTimeout(() => {
             isClosingModal.current = false;
         }, 500);
@@ -156,75 +153,161 @@ export default function ChatWindow({
                                     >
                                         {isUser ? (
                                             <div>
-                                                {/* Display image if present */}
-                                                {message.image && (
-                                                    <div className="mb-2">
-                                                        <ImageDisplay
-                                                            imageUrl={
-                                                                message.image
-                                                            }
-                                                            scrollOnLoad={true}
-                                                        />
-                                                    </div>
-                                                )}
+                                                {/* Check if this is a voice message */}
+                                                {message.isVoiceMessage ? (
+                                                    <VoiceMessageDisplay
+                                                        message={message}
+                                                        isUser={true}
+                                                    />
+                                                ) : (
+                                                    <>
+                                                        {/* Display image if present */}
+                                                        {message.image && (
+                                                            <div className="mb-2">
+                                                                <ImageDisplay
+                                                                    imageUrl={
+                                                                        message.image
+                                                                    }
+                                                                    scrollOnLoad={
+                                                                        true
+                                                                    }
+                                                                />
+                                                            </div>
+                                                        )}
 
-                                                {/* Display multiple files if present */}
-                                                {message.files &&
-                                                    message.files.length >
-                                                        0 && (
-                                                        <div className="mb-2 space-y-2">
-                                                            {message.files.map(
-                                                                (
-                                                                    file,
-                                                                    fileIndex
-                                                                ) => (
-                                                                    <ImageDisplay
-                                                                        key={
+                                                        {/* Display multiple files if present */}
+                                                        {message.files &&
+                                                            message.files
+                                                                .length > 0 && (
+                                                                <div className="mb-2 space-y-2">
+                                                                    {message.files.map(
+                                                                        (
+                                                                            file,
                                                                             fileIndex
-                                                                        }
-                                                                        imageUrl={
-                                                                            file.url ||
-                                                                            file
-                                                                        }
-                                                                        alt={
-                                                                            file.name ||
-                                                                            `Image ${
-                                                                                fileIndex +
-                                                                                1
-                                                                            }`
-                                                                        }
-                                                                    />
-                                                                )
+                                                                        ) => (
+                                                                            <ImageDisplay
+                                                                                key={
+                                                                                    fileIndex
+                                                                                }
+                                                                                imageUrl={
+                                                                                    file.url ||
+                                                                                    file
+                                                                                }
+                                                                                alt={
+                                                                                    file.name ||
+                                                                                    `Image ${
+                                                                                        fileIndex +
+                                                                                        1
+                                                                                    }`
+                                                                                }
+                                                                            />
+                                                                        )
+                                                                    )}
+                                                                </div>
                                                             )}
-                                                        </div>
-                                                    )}
 
-                                                {/* Message bubble wraps content only */}
-                                                <div className="inline-flex items-center bg-[#1a1a1a] text-white rounded-2xl px-3 py-3 max-w-full shadow-md">
-                                                    <AvatarInside user={user} />
-                                                    <span className="ml-2 break-words whitespace-pre-wrap text-sm">
-                                                        {message.content}
-                                                    </span>
-                                                </div>
+                                                        {/* Regular text message bubble */}
+                                                        <div className="inline-flex items-center bg-[#1a1a1a] text-white rounded-2xl px-3 py-3 max-w-full shadow-md">
+                                                            <AvatarInside
+                                                                user={user}
+                                                            />
+                                                            <span className="ml-2 break-words whitespace-pre-wrap text-sm">
+                                                                {
+                                                                    message.content
+                                                                }
+                                                            </span>
+                                                        </div>
+                                                    </>
+                                                )}
                                             </div>
                                         ) : (
                                             <div className="max-w-[90%] pl-2">
                                                 <div className="relative">
-                                                    <div className="relative">
-                                                        <MarkdownWrapper
-                                                            key={`${
-                                                                message.tempId ||
-                                                                message.id ||
-                                                                index
-                                                            }-${
-                                                                message.content
-                                                                    ?.length ||
-                                                                0
+                                                    {/* Add streaming indicator and cancel button for streaming messages */}
+                                                    {isStreamingMessage && (
+                                                        <div className="absolute -top-8 left-0 flex items-center gap-2">
+                                                            <div className="flex items-center gap-1 text-xs text-blue-600">
+                                                                <div className="flex space-x-0.5">
+                                                                    <div className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"></div>
+                                                                    <div
+                                                                        className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"
+                                                                        style={{
+                                                                            animationDelay:
+                                                                                "0.2s",
+                                                                        }}
+                                                                    ></div>
+                                                                    <div
+                                                                        className="w-1 h-1 bg-blue-500 rounded-full animate-pulse"
+                                                                        style={{
+                                                                            animationDelay:
+                                                                                "0.4s",
+                                                                        }}
+                                                                    ></div>
+                                                                </div>
+                                                                <span>
+                                                                    Generating...
+                                                                </span>
+                                                            </div>
+                                                            {onCancelStream && (
+                                                                <button
+                                                                    onClick={
+                                                                        onCancelStream
+                                                                    }
+                                                                    className="text-xs bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-2 py-0.5 rounded-full transition-colors duration-200 flex items-center gap-1"
+                                                                    title="Cancel response generation"
+                                                                >
+                                                                    <svg
+                                                                        className="w-2.5 h-2.5"
+                                                                        fill="none"
+                                                                        stroke="currentColor"
+                                                                        viewBox="0 0 24 24"
+                                                                    >
+                                                                        <path
+                                                                            strokeLinecap="round"
+                                                                            strokeLinejoin="round"
+                                                                            strokeWidth={
+                                                                                2
+                                                                            }
+                                                                            d="M6 18L18 6M6 6l12 12"
+                                                                        />
+                                                                    </svg>
+                                                                    Cancel
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                    )}
+
+                                                    <div
+                                                        className={`relative ${
+                                                            isStreamingMessage
+                                                                ? "mt-4"
+                                                                : ""
+                                                        }`}
+                                                    >
+                                                        {/* Add visual indicator for streaming messages */}
+                                                        <div
+                                                            className={`${
+                                                                isStreamingMessage
+                                                                    ? "animate-pulse border-l-2 border-blue-400 pl-3"
+                                                                    : ""
                                                             }`}
-                                                            content={
-                                                                message.content
-                                                            }
-                                                        />
+                                                        >
+                                                            <MarkdownWrapper
+                                                                key={`${
+                                                                    message.tempId ||
+                                                                    message.id ||
+                                                                    index
+                                                                }-${
+                                                                    message
+                                                                        .content
+                                                                        ?.length ||
+                                                                    0
+                                                                }`}
+                                                                content={
+                                                                    message.content
+                                                                }
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -233,6 +316,7 @@ export default function ChatWindow({
                                 );
                             })}
 
+                            {/* Show typing indicator only when not streaming */}
                             {isBotTyping && !isStreaming && (
                                 <div className="max-w-[90%] flex flex-col pl-9">
                                     <div className="flex space-x-1 mt-2">
@@ -248,6 +332,59 @@ export default function ChatWindow({
                                     </div>
                                 </div>
                             )}
+
+                            {/* Global streaming status with cancel option */}
+                            {isStreaming &&
+                                messages.length > 0 &&
+                                !messages[messages.length - 1]?.content && (
+                                    <div className="flex items-center justify-center py-4">
+                                        <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex space-x-1">
+                                                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                                    <div
+                                                        className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
+                                                        style={{
+                                                            animationDelay:
+                                                                "0.2s",
+                                                        }}
+                                                    ></div>
+                                                    <div
+                                                        className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
+                                                        style={{
+                                                            animationDelay:
+                                                                "0.4s",
+                                                        }}
+                                                    ></div>
+                                                </div>
+                                                <span className="text-sm text-blue-700 font-medium">
+                                                    Preparing response...
+                                                </span>
+                                            </div>
+                                            {onCancelStream && (
+                                                <button
+                                                    onClick={onCancelStream}
+                                                    className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded-full transition-colors duration-200 flex items-center gap-1"
+                                                >
+                                                    <svg
+                                                        className="w-3 h-3"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M6 18L18 6M6 6l12 12"
+                                                        />
+                                                    </svg>
+                                                    Cancel
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                         </div>
                     </div>
                 )}

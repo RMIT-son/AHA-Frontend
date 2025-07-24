@@ -1,6 +1,17 @@
 import { useState, useEffect, useRef } from "react";
 
-export default function ChatInput({ onSend, isLoading }) {
+export default function ChatInput({
+    onSend,
+    onVoiceRecord,
+    isLoading,
+    canSend = true,
+    isStreaming = false,
+    onCancelStream,
+    isProcessing = false,
+    transcribedText = "", // New prop for transcribed text
+    onTranscribedTextUsed, // Callback when transcribed text is used
+    isTranscribing = false, // New prop for transcription state
+}) {
     const [message, setMessage] = useState("");
     const [isRecording, setIsRecording] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
@@ -13,12 +24,51 @@ export default function ChatInput({ onSend, isLoading }) {
     const mediaRecorderRef = useRef(null);
     const inputBubbleRef = useRef(null);
 
+    // Handle transcribed text updates
+    useEffect(() => {
+        if (transcribedText && transcribedText.trim()) {
+            // Append transcribed text to existing message or set it
+            setMessage((prev) => {
+                const newMessage = prev
+                    ? `${prev} ${transcribedText}`
+                    : transcribedText;
+                return newMessage;
+            });
+
+            // Focus the textarea
+            if (textareaRef.current) {
+                textareaRef.current.focus();
+                // Set cursor to end
+                setTimeout(() => {
+                    const textarea = textareaRef.current;
+                    if (textarea) {
+                        textarea.setSelectionRange(
+                            textarea.value.length,
+                            textarea.value.length
+                        );
+                    }
+                }, 0);
+            }
+
+            // Notify parent that transcribed text was used
+            if (onTranscribedTextUsed) {
+                onTranscribedTextUsed();
+            }
+        }
+    }, [transcribedText, onTranscribedTextUsed]);
+
     const handleSubmit = (e) => {
         e.preventDefault();
-        if ((!message.trim() && uploadedFiles.length === 0) || isLoading)
+        // Prevent submission if loading, processing, or no content
+        if (
+            (!message.trim() && uploadedFiles.length === 0) ||
+            isLoading ||
+            isProcessing
+        ) {
             return;
+        }
 
-        // Pass both message and files to parent
+        // If streaming, this will cancel and send new message
         onSend(message, uploadedFiles);
         setMessage("");
         setUploadedFiles([]);
@@ -27,7 +77,16 @@ export default function ChatInput({ onSend, isLoading }) {
     const handleKeyDown = (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
+            // Prevent submission if processing
+            if (isProcessing || isLoading) {
+                return;
+            }
             handleSubmit(e);
+        }
+        // Add Escape key to cancel streaming
+        if (e.key === "Escape" && isStreaming) {
+            e.preventDefault();
+            onCancelStream?.();
         }
     };
 
@@ -94,10 +153,6 @@ export default function ChatInput({ onSend, isLoading }) {
 
             // Set initial file data without preview (will be updated when reader finishes)
             setUploadedFiles([fileData]);
-
-            if (onFileUpload) {
-                onFileUpload([fileData]);
-            }
         } else {
             alert(`Upload error: ${validation.error}`);
         }
@@ -250,9 +305,17 @@ export default function ChatInput({ onSend, isLoading }) {
 
             mediaRecorder.onstop = () => {
                 const audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-                if (onVoiceRecord) {
+
+                // Call the voice handler instead of a generic callback
+                if (onVoiceRecord && audioBlob.size > 0) {
                     onVoiceRecord(audioBlob);
+                } else {
+                    console.warn(
+                        "No voice handler provided or empty recording"
+                    );
                 }
+
+                // Clean up the stream
                 stream.getTracks().forEach((track) => track.stop());
             };
 
@@ -348,9 +411,140 @@ export default function ChatInput({ onSend, isLoading }) {
         }
     };
 
+    // Determine what to show based on current state
+    const getPlaceholderText = () => {
+        if (isRecording) return "Recording...";
+        if (isTranscribing) return "Transcribing voice..."; // New transcribing state
+        if (isProcessing) return "Processing your message...";
+        if (isStreaming)
+            return "AI is responding... (Press Escape or send to interrupt)";
+        return "How can I help you today?";
+    };
+
+    const getInputButtonState = () => {
+        if (isTranscribing) {
+            return {
+                canSend: false,
+                buttonText: "Transcribing...",
+                buttonColor: "bg-blue-200 text-blue-600 cursor-not-allowed",
+                disabled: true,
+            };
+        }
+
+        if (isProcessing) {
+            return {
+                canSend: false,
+                buttonText: "Processing...",
+                buttonColor: "bg-gray-200 text-gray-400 cursor-not-allowed",
+                disabled: true,
+            };
+        }
+
+        if (isStreaming) {
+            return {
+                canSend: true, // Allow sending to interrupt
+                buttonText: "Interrupt & Send",
+                buttonColor: "bg-red-500 hover:bg-red-600 text-white",
+                disabled: false,
+            };
+        }
+
+        if (isLoading) {
+            return {
+                canSend: false,
+                buttonText: "Loading...",
+                buttonColor: "bg-gray-200 text-gray-400 cursor-not-allowed",
+                disabled: true,
+            };
+        }
+
+        if (
+            (message.trim() || uploadedFiles.length > 0) &&
+            canSend &&
+            !isRecording
+        ) {
+            return {
+                canSend: true,
+                buttonText: "Send message",
+                buttonColor: "bg-orange-500 hover:bg-orange-600 text-white",
+                disabled: false,
+            };
+        }
+
+        return {
+            canSend: false,
+            buttonText: "Send message",
+            buttonColor: "bg-gray-200 text-gray-400 cursor-not-allowed",
+            disabled: true,
+        };
+    };
+
+    const buttonState = getInputButtonState();
+
     return (
         <div className="border-t border-gray-200 bg-white px-6 py-4">
             <div className="max-w-4xl mx-auto">
+                {/* Show streaming status */}
+                {isStreaming && (
+                    <div className="mb-3 flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+                        <div className="flex items-center gap-2">
+                            <div className="flex space-x-1">
+                                <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                                <div
+                                    className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
+                                    style={{ animationDelay: "0.2s" }}
+                                ></div>
+                                <div
+                                    className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
+                                    style={{ animationDelay: "0.4s" }}
+                                ></div>
+                            </div>
+                            <span className="text-sm text-blue-700 font-medium">
+                                AI is responding...
+                            </span>
+                        </div>
+                        <button
+                            onClick={onCancelStream}
+                            className="text-xs bg-red-100 hover:bg-red-200 text-red-700 px-3 py-1 rounded-full transition-colors duration-200 flex items-center gap-1"
+                        >
+                            <svg
+                                className="w-3 h-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M6 18L18 6M6 6l12 12"
+                                />
+                            </svg>
+                            Stop (Esc)
+                        </button>
+                    </div>
+                )}
+
+                {/* Show transcribing status */}
+                {isTranscribing && (
+                    <div className="mb-3 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+                        <div className="flex space-x-1">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                            <div
+                                className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
+                                style={{ animationDelay: "0.2s" }}
+                            ></div>
+                            <div
+                                className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"
+                                style={{ animationDelay: "0.4s" }}
+                            ></div>
+                        </div>
+                        <span className="text-sm text-blue-700 font-medium">
+                            Transcribing your voice message...
+                        </span>
+                    </div>
+                )}
+
                 <div className="relative">
                     {/* Main input container - CLAUDE STYLE */}
                     <div
@@ -408,11 +602,7 @@ export default function ChatInput({ onSend, isLoading }) {
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value)}
                                 onKeyDown={handleKeyDown}
-                                placeholder={
-                                    isRecording
-                                        ? "Recording..."
-                                        : "How can I help you today?"
-                                }
+                                placeholder={getPlaceholderText()}
                                 className="w-full bg-transparent outline-none text-gray-900 placeholder-gray-500 resize-none overflow-hidden text-base leading-relaxed px-5 py-4 pb-2"
                                 style={{
                                     minHeight: "56px",
@@ -421,7 +611,12 @@ export default function ChatInput({ onSend, isLoading }) {
                                         ? "150px"
                                         : "120px",
                                 }}
-                                disabled={isLoading || isRecording}
+                                disabled={
+                                    isLoading ||
+                                    isRecording ||
+                                    isProcessing ||
+                                    isTranscribing
+                                }
                                 tabIndex={0}
                             />
 
@@ -532,7 +727,11 @@ export default function ChatInput({ onSend, isLoading }) {
                                     onClick={handleFileUploadClick}
                                     className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
                                     title="Attach file"
-                                    disabled={isLoading}
+                                    disabled={
+                                        isLoading ||
+                                        isProcessing ||
+                                        isTranscribing
+                                    }
                                 >
                                     <svg
                                         className="w-5 h-5"
@@ -560,14 +759,22 @@ export default function ChatInput({ onSend, isLoading }) {
                                     className={`p-2 rounded-lg transition-all duration-200 ${
                                         isRecording
                                             ? "bg-red-500 text-white animate-pulse"
+                                            : isTranscribing
+                                            ? "bg-blue-500 text-white animate-pulse"
                                             : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
                                     }`}
                                     title={
                                         isRecording
                                             ? "Stop recording"
+                                            : isTranscribing
+                                            ? "Transcribing..."
                                             : "Start voice recording"
                                     }
-                                    disabled={isLoading}
+                                    disabled={
+                                        isLoading ||
+                                        isProcessing ||
+                                        isTranscribing
+                                    }
                                 >
                                     {isRecording ? (
                                         <svg
@@ -576,6 +783,26 @@ export default function ChatInput({ onSend, isLoading }) {
                                             viewBox="0 0 24 24"
                                         >
                                             <path d="M6 6h12v12H6z" />
+                                        </svg>
+                                    ) : isTranscribing ? (
+                                        <svg
+                                            className="w-5 h-5 animate-spin"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <circle
+                                                className="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                strokeWidth="4"
+                                            ></circle>
+                                            <path
+                                                className="opacity-75"
+                                                fill="currentColor"
+                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                            ></path>
                                         </svg>
                                     ) : (
                                         <svg
@@ -598,23 +825,11 @@ export default function ChatInput({ onSend, isLoading }) {
                                 <button
                                     type="submit"
                                     onClick={handleSubmit}
-                                    className={`p-2 rounded-lg transition-all duration-200 ${
-                                        (message.trim() ||
-                                            uploadedFiles.length > 0) &&
-                                        !isLoading &&
-                                        !isRecording
-                                            ? "bg-orange-500 hover:bg-orange-600 text-white"
-                                            : "bg-gray-200 text-gray-400 cursor-not-allowed"
-                                    }`}
-                                    disabled={
-                                        (!message.trim() &&
-                                            uploadedFiles.length === 0) ||
-                                        isLoading ||
-                                        isRecording
-                                    }
-                                    title="Send message"
+                                    className={`p-2 rounded-lg transition-all duration-200 ${buttonState.buttonColor}`}
+                                    disabled={buttonState.disabled}
+                                    title={buttonState.buttonText}
                                 >
-                                    {isLoading ? (
+                                    {isLoading || isProcessing ? (
                                         <svg
                                             className="animate-spin w-4 h-4"
                                             fill="none"
@@ -633,6 +848,46 @@ export default function ChatInput({ onSend, isLoading }) {
                                                 fill="currentColor"
                                                 d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                                             ></path>
+                                        </svg>
+                                    ) : isTranscribing ? (
+                                        <svg
+                                            className="animate-spin w-4 h-4"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <circle
+                                                className="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                strokeWidth="4"
+                                            ></circle>
+                                            <path
+                                                className="opacity-75"
+                                                fill="currentColor"
+                                                d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                            ></path>
+                                        </svg>
+                                    ) : isStreaming ? (
+                                        <svg
+                                            className="w-4 h-4"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                            />
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M9 10l2 2 4-4"
+                                            />
                                         </svg>
                                     ) : (
                                         <svg
