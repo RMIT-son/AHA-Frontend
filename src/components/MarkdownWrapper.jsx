@@ -9,9 +9,36 @@ const MarkdownWrapper = ({ content }) => {
     const preprocessContent = (rawContent) => {
         let processedContent = rawContent;
 
-        // Ensure there's a newline before numbered list
+        // Fix numbered lists without proper line breaks
+        // This handles cases like "1. Item2. Item3. Item" -> "1. Item\n2. Item\n3. Item"
+        processedContent = processedContent.replace(
+            /(\d+\.\s[^0-9]+?)(\d+\.\s)/g,
+            "$1\n$2"
+        );
+
+        // Ensure there's a newline before numbered list with bold
         processedContent = processedContent.replace(
             /([^\n])(\d\. \*\*)/g,
+            "$1\n$2"
+        );
+
+        // Fix numbered lists without bold that are concatenated
+        // Match pattern like "Action figures2. Building blocks3. Stuffed animals"
+        processedContent = processedContent.replace(
+            /([a-zA-Z\s]+)(\d+\.\s)/g,
+            (match, p1, p2) => {
+                // Don't add newline if it's already the start of a numbered item
+                if (p1.match(/^\d+\.\s/)) {
+                    return match;
+                }
+                return p1 + "\n" + p2;
+            }
+        );
+
+        // Handle cases where items end without punctuation before next number
+        // Like "Action figures2." -> "Action figures\n2."
+        processedContent = processedContent.replace(
+            /([a-zA-Z])(\d+\.)/g,
             "$1\n$2"
         );
 
@@ -29,6 +56,9 @@ const MarkdownWrapper = ({ content }) => {
             /([a-zA-Z])\.(?=[A-Z])/g,
             "$1. "
         );
+
+        // Clean up any double newlines that might have been created
+        processedContent = processedContent.replace(/\n\n+/g, "\n");
 
         return processedContent;
     };
