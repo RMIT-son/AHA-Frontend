@@ -36,7 +36,7 @@ const getAuthHeaders = () => {
             Authorization: `Bearer ${token}`,
         };
     } catch (error) {
-        throw new Error("Invalid user data");
+        throw new Error("Invalid user data", { cause: error });
     }
 };
 

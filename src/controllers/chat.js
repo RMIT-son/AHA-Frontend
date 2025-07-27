@@ -126,7 +126,7 @@ export async function streamFromBackend(
 
     try {
         const response = await fetch(
-            `${app.serverURL}/api/conversations/${conversationId}/${userId}/stream`,
+            `${app.dataURL}/api/conversations/${conversationId}/${userId}/stream`,
             {
                 method: "POST",
                 headers: {
@@ -261,7 +261,7 @@ export const sendVoiceMessage = async (
         console.log("Base64 preview:", base64Audio.substring(0, 50));
 
         const response = await axios.post(
-            `${app.serverURL}/api/conversations/speech_to_text`,
+            `${app.dataURL}/api/conversations/speech_to_text`,
             {
                 audio: base64Audio,
             },
