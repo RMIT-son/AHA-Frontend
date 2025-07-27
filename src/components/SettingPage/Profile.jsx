@@ -14,7 +14,15 @@ const Profile = () => {
         const fetchUserData = async () => {
             try {
                 setLoading(true);
+                console.log("Fetching user profile...");
                 const userData = await getUserProfile();
+                
+                console.log("User profile data:", userData);
+
+                if (!userData) {
+                    throw new Error("No user data returned");
+                }
+
                 setFullName(userData.fullName || "");
                 setNickname(userData.nickname || "");
                 setError("");

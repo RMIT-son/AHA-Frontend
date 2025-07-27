@@ -2,21 +2,25 @@ import { useState } from "react";
 import Cookies from "js-cookie";
 import { Link, useNavigate } from "react-router-dom";
 import { loginUser } from "../controllers/auth";
+import { useDispatch } from "react-redux";
 
 export default function LoginPage() {
     const [showPassword, setShowPassword] = useState(false);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+
     const navigate = useNavigate();
+    const dispatch = useDispatch();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         const res = await loginUser(email, password);
+        console.log(res.success, res.data);
         if (res.success) {
-            console.log("Login successful:", res.data);
+            dispatch({ type: "LOGIN", payload: res.data });
             Cookies.set("user", JSON.stringify(res.data), { expires: 7 });
 
-            navigate("/"); // Redirect to home or chat
+            navigate("/");
         } else {
             alert(res.message);
         }

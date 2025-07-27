@@ -47,10 +47,12 @@ const getAuthHeaders = () => {
  */
 export const getUserProfile = async () => {
     try {
+        console.log("Get User Profile called");
         const response = await axios.get(`${app.dataURL}/api/users/profile`, {
             headers: getAuthHeaders(),
         });
 
+        console.log("User Profile Response:", response.data);
         return response.data;
     } catch (error) {
         console.error("Error fetching user profile:", error);

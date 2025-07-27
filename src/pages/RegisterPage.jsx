@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../controllers/auth";
+import { useDispatch } from "react-redux";
 
 export default function RegisterPage() {
     const [showPassword, setShowPassword] = useState(false);
@@ -10,7 +11,9 @@ export default function RegisterPage() {
     const [phone, setPhone] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+
     const navigate = useNavigate();
+    const dispatch = useDispatch();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -21,6 +24,7 @@ export default function RegisterPage() {
 
         const res = await registerUser({ fullName, email, password, phone });
         if (res.success) {
+            dispatch({type: "REGISTER", payload: res.data});
             navigate("/login");
         } else {
             alert(res.message);
