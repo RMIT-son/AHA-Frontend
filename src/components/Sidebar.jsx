@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux"; // Add this import
 import ConversationModal from "./ConversationModal";
 import Cookies from "js-cookie";
 
@@ -22,13 +23,13 @@ const Sidebar = ({
         roomName: "",
     });
     const navigate = useNavigate();
+    const dispatch = useDispatch(); // Add this hook
 
     // Get user display name and initial from user prop
     const displayName = user?.fullName || user?.name || "User";
     const displayInitial = displayName.charAt(0).toUpperCase();
 
     // Replace the formatChatName function in your Sidebar.jsx
-
     const formatChatName = (room) => {
         // First priority: use the actual title from database if it exists
         if (room.title && room.title.trim() !== "") {
@@ -114,9 +115,22 @@ const Sidebar = ({
         }
     };
 
-    const handldLogout = () => {
-        Cookies.remove("user");
-        navigate("/login");
+    // Fixed logout function
+    const handleLogout = () => {
+        try {
+            // Remove the cookie
+            Cookies.remove("user");
+
+            // Update Redux store to clear user data
+            dispatch({ type: "LOGOUT" });
+
+            // Navigate to login page
+            navigate("/login");
+        } catch (error) {
+            console.error("Error during logout:", error);
+            // Force navigation even if there's an error
+            navigate("/login");
+        }
     };
 
     // Close dropdown when clicking outside
@@ -402,7 +416,7 @@ const Sidebar = ({
                                 <div className="border-t border-gray-600">
                                     <button
                                         className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-600 transition-colors"
-                                        onClick={handldLogout}
+                                        onClick={handleLogout}
                                     >
                                         Sign out
                                     </button>

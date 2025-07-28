@@ -8,6 +8,8 @@ const fileToBase64 = (file) => {
         reader.onload = () => resolve(reader.result);
         reader.onerror = (error) => reject(error);
         reader.readAsDataURL(file);
+
+        console.log("File type:", file.type);
     });
 };
 
@@ -32,8 +34,7 @@ const processFilesForBackend = async (files) => {
             processedFiles.push({
                 name: fileData.name,
                 type: fileData.type,
-                size: fileData.size,
-                data: base64Data, // base64 string including data:image/jpeg;base64, prefix
+                file: base64Data, // base64 string including data:image/jpeg;base64, prefix
             });
         } catch (error) {
             console.error(`Error processing file ${fileData.name}:`, error);
@@ -126,7 +127,7 @@ export async function streamFromBackend(
 
     try {
         const response = await fetch(
-            `${app.dataURL}/api/conversations/${conversationId}/${userId}/stream`,
+            `${app.serverURL}/api/conversations/${conversationId}/${userId}/stream`,
             {
                 method: "POST",
                 headers: {
@@ -261,7 +262,7 @@ export const sendVoiceMessage = async (
         console.log("Base64 preview:", base64Audio.substring(0, 50));
 
         const response = await axios.post(
-            `${app.dataURL}/api/conversations/speech_to_text`,
+            `${app.serverURL}/api/conversations/speech_to_text`,
             {
                 audio: base64Audio,
             },

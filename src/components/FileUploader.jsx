@@ -13,7 +13,7 @@ export default function FileUploader({
 
     // File validation - Images, PDFs, text files, CSVs
     const validateFile = (file) => {
-        const maxSize = 10 * 1024 * 1024; // 10MB
+        const maxSize = 25 * 1024 * 1024; // 25MB
         const allowedTypes = [
             "image/jpeg",
             "image/png",
@@ -25,10 +25,12 @@ export default function FileUploader({
             "application/json",
             "text/csv",
             "application/csv",
+            "text/tab-separated-values",
+
         ];
 
         if (file.size > maxSize) {
-            return { valid: false, error: `File size must be less than 10MB` };
+            return { valid: false, error: `File size must be less than 25MB` };
         }
 
         if (!allowedTypes.includes(file.type)) {

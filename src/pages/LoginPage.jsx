@@ -36,7 +36,7 @@ export default function LoginPage() {
                 <form onSubmit={handleSubmit} className="px-8 py-6">
                     <div className="flex items-center mb-4">
                         <label className="w-40 text-gray-700">
-                            Email Address :
+                            Email Address:
                         </label>
                         <input
                             type="email"
@@ -48,7 +48,7 @@ export default function LoginPage() {
                     </div>
 
                     <div className="flex items-center mb-4">
-                        <label className="w-40 text-gray-700">Password :</label>
+                        <label className="w-40 text-gray-700">Password:</label>
                         <div className="relative flex-1">
                             <input
                                 type={showPassword ? "text" : "password"}

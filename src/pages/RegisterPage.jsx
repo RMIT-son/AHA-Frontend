@@ -64,7 +64,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="flex items-center mb-4">
-                        <label className="w-40 text-gray-700">Phone no :</label>
+                        <label className="w-40 text-gray-700">Phone no:</label>
                         <input
                             type="text"
                             placeholder="Enter your phone number"
@@ -75,7 +75,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div className="flex items-center mb-4">
-                        <label className="w-40 text-gray-700">Password :</label>
+                        <label className="w-40 text-gray-700">Password:</label>
                         <div className="relative flex-1">
                             <input
                                 type={showPassword ? "text" : "password"}
