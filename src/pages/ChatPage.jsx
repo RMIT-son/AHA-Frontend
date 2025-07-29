@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ChatWindow, ChatInput, ChatLayout } from "../components";
 import {
     useAuth,
@@ -8,6 +9,9 @@ import {
 } from "../hooks";
 
 export default function ChatPage() {
+    // Web search state
+    const [webSearchEnabled, setWebSearchEnabled] = useState(false);
+
     const chatState = useChatState();
     const {
         userId,
@@ -67,6 +71,28 @@ export default function ChatPage() {
         messages,
     });
 
+    // Enhanced send handler that includes web search options
+    const handleSendWithOptions = (message, files, options = {}) => {
+        const { webSearchEnabled: searchEnabled } = options;
+
+        // You can add logic here to handle web search
+        // For example, add a flag to the message or modify the API call
+        console.log("Sending message with options:", {
+            message,
+            files,
+            webSearchEnabled: searchEnabled,
+        });
+
+        // Call the original handler - you might want to modify this
+        // to pass the web search flag to your backend
+        handleSend(message, files, { webSearchEnabled: searchEnabled });
+    };
+
+    // Toggle web search
+    const handleWebSearchToggle = () => {
+        setWebSearchEnabled((prev) => !prev);
+    };
+
     return (
         <ChatLayout
             activeRoomId={chatId}
@@ -84,7 +110,7 @@ export default function ChatPage() {
                 onCancelStream={cancelCurrentStream}
             />
             <ChatInput
-                onSend={handleSend}
+                onSend={handleSendWithOptions}
                 onVoiceRecord={handleVoiceMessage}
                 isLoading={isLoadingInput}
                 canSend={canSendNewMessage && !isProcessingMessage}
@@ -94,6 +120,10 @@ export default function ChatPage() {
                 transcribedText={transcribedText}
                 onTranscribedTextUsed={() => setTranscribedText("")}
                 isTranscribing={isTranscribing}
+                // Web search props
+                enableWebSearch={true} // Set to true to enable the feature
+                webSearchEnabled={webSearchEnabled}
+                onWebSearchToggle={handleWebSearchToggle}
             />
         </ChatLayout>
     );

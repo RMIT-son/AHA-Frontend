@@ -22,8 +22,6 @@ const ChatLayout = ({
             if (onChatRoomsUpdate) {
                 await onChatRoomsUpdate();
             }
-
-            console.log(`Renamed room ${roomId} to ${newName}`);
         } catch (error) {
             console.error("Error renaming conversation:", error);
             alert("Failed to rename conversation. Please try again.");
@@ -44,8 +42,6 @@ const ChatLayout = ({
             if (activeRoomId === roomId) {
                 navigate("/", { replace: true });
             }
-
-            console.log(`Deleted room ${roomId}`);
         } catch (error) {
             console.error("Error deleting conversation:", error);
             alert("Failed to delete conversation. Please try again.");

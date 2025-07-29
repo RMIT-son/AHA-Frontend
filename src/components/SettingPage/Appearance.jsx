@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { getUserProfile, updateUserTheme } from "../../controllers/user";
 
-const Appearance = () => {
+const Appearance = ({ user: userProp, onUserUpdate }) => {
     const [selectedMode, setSelectedMode] = useState("light");
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
@@ -25,8 +25,20 @@ const Appearance = () => {
         const fetchUserTheme = async () => {
             try {
                 setLoading(true);
-                const userData = await getUserProfile();
-                setSelectedMode(userData.theme || "light");
+                let userData;
+
+                // Prioritize user prop over API call
+                if (userProp && userProp.theme !== undefined) {
+                    console.log("Using user prop:", userProp);
+                    userData = userProp;
+                } else {
+                    console.log("Fetching user data from API...");
+                    userData = await getUserProfile();
+                }
+
+                // Set the selected mode based on user's preference
+                const userTheme = userData.theme || "light";
+                setSelectedMode(userTheme);
                 setError("");
             } catch (err) {
                 setError("Failed to load theme preference");
@@ -37,7 +49,7 @@ const Appearance = () => {
         };
 
         fetchUserTheme();
-    }, []);
+    }, [userProp]);
 
     const getThemeStyles = (themeId) => {
         switch (themeId) {
@@ -73,11 +85,20 @@ const Appearance = () => {
             // Update theme in database
             await updateUserTheme(themeId);
 
-            // Update local state
+            // Update local state to show selection
             setSelectedMode(themeId);
 
-            // Apply theme globally (you can expand this to update CSS variables)
-            document.documentElement.setAttribute("data-theme", themeId);
+            // Call parent update callback if provided
+            if (onUserUpdate) {
+                try {
+                    await onUserUpdate();
+                } catch (updateError) {
+                    console.warn(
+                        "Failed to refresh parent user data:",
+                        updateError
+                    );
+                }
+            }
         } catch (err) {
             setError(err.message || "Failed to update theme");
             console.error("Error updating theme:", err);
@@ -131,7 +152,7 @@ const Appearance = () => {
                                     className={`w-full max-w-sm rounded-2xl p-4 transition-all duration-200 border-2
                                         ${
                                             isSelected
-                                                ? styles.border
+                                                ? "border-blue-500 shadow-lg"
                                                 : "border-gray-200"
                                         }
                                         hover:border-blue-400 hover:bg-white hover:shadow-md
@@ -201,9 +222,14 @@ const Appearance = () => {
 
                                 <p className="mt-3 text-sm font-medium text-gray-700">
                                     {theme.label}
+                                    {isSelected && (
+                                        <span className="ml-2 text-blue-600 font-semibold">
+                                            ✓ Selected
+                                        </span>
+                                    )}
                                     {updating && isSelected && (
                                         <span className="ml-2 text-blue-600">
-                                            (Updating...)
+                                            (Saving...)
                                         </span>
                                     )}
                                 </p>

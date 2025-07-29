@@ -9,6 +9,7 @@ import {
     ChatLayout,
 } from "../components";
 import { getAllConversations } from "../controllers/chat";
+import { getUserProfile } from "../controllers/user";
 
 const SettingsPage = ({ section }) => {
     const location = useLocation();
@@ -19,23 +20,45 @@ const SettingsPage = ({ section }) => {
     const [userId, setUserId] = useState(null);
     const [user, setUser] = useState(null);
     const [chatRooms, setChatRooms] = useState([]);
+    const [userLoading, setUserLoading] = useState(true);
 
-    // Cookie authentication check and set userId
+    // Cookie authentication check and fetch fresh user data
     useEffect(() => {
-        const userCookie = Cookies.get("user");
-        if (!userCookie) {
-            alert("Please log in to access the settings.");
-            navigate("/login");
-            return;
-        }
-        try {
-            const userData = JSON.parse(userCookie);
-            setUserId(userData.id);
-            setUser(userData);
-        } catch (err) {
-            console.error("❌ Failed to parse user cookie:", err);
-            navigate("/login");
-        }
+        const initializeUser = async () => {
+            const userCookie = Cookies.get("user");
+            if (!userCookie) {
+                alert("Please log in to access the settings.");
+                navigate("/login");
+                return;
+            }
+
+            try {
+                const userData = JSON.parse(userCookie);
+                setUserId(userData.id);
+
+                // Always fetch fresh user data from database
+                try {
+                    const freshUserData = await getUserProfile();
+                    setUser(freshUserData);
+                    console.log("Fresh user data loaded:", freshUserData);
+                    console.log(
+                        "User theme from database:",
+                        freshUserData.theme
+                    );
+                } catch (error) {
+                    console.error("Failed to fetch fresh user data:", error);
+                    // Fallback to cookie data if API fails
+                    setUser(userData);
+                }
+            } catch (err) {
+                console.error("❌ Failed to parse user cookie:", err);
+                navigate("/login");
+            } finally {
+                setUserLoading(false);
+            }
+        };
+
+        initializeUser();
     }, [navigate]);
 
     // Load conversations for sidebar
@@ -68,11 +91,50 @@ const SettingsPage = ({ section }) => {
         }
     }, [userId]);
 
-    const views = {
-        profile: <Profile />,
-        appearance: <Appearance />,
-        account: <Account />,
+    // Function to refresh user data after updates
+    const refreshUserData = async () => {
+        try {
+            console.log("Refreshing user data...");
+            const freshUserData = await getUserProfile();
+            setUser(freshUserData);
+            console.log("User data refreshed:", freshUserData);
+            return freshUserData;
+        } catch (error) {
+            console.error("Failed to refresh user data:", error);
+            throw error;
+        }
     };
+
+    // Pass user data and refresh function to all components
+    const views = {
+        profile: <Profile user={user} onUserUpdate={refreshUserData} />,
+        appearance: <Appearance user={user} onUserUpdate={refreshUserData} />,
+        account: <Account user={user} onUserUpdate={refreshUserData} />,
+    };
+
+    // Show loading state while fetching user data
+    if (userLoading || !user) {
+        return (
+            <ChatLayout
+                headerTitle="Settings"
+                chatRooms={[]}
+                user={null}
+                onChatRoomsUpdate={() => {}}
+            >
+                <div className="flex-1 overflow-hidden">
+                    <div className="h-full py-40 px-40">
+                        <div className="w-full max-w-7xl mx-auto h-full">
+                            <div className="flex items-center justify-center h-full">
+                                <div className="animate-pulse text-gray-500">
+                                    Loading settings...
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </ChatLayout>
+        );
+    }
 
     return (
         <ChatLayout
@@ -93,7 +155,7 @@ const SettingsPage = ({ section }) => {
 
                             {/* Main content */}
                             <div className="flex-1 ml-4">
-                                {views[currentSection] || <Profile />}
+                                {views[currentSection] || views.profile}
                             </div>
                         </div>
                     </div>

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import MarkdownWrapper from "./MarkdownWrapper";
 import ImagePreviewModal from "./ImagePreviewModal";
-import VoiceMessageDisplay from "./VoiceMessageDisplay"; // Add this import
+import VoiceMessageDisplay from "./VoiceMessageDisplay";
 
 export default function ChatWindow({
     messages,
@@ -21,6 +21,9 @@ export default function ChatWindow({
     const [isModalOpen, setIsModalOpen] = useState(false);
     const isClosingModal = useRef(false);
 
+    // State for optimized message rendering during streaming
+    const [processedMessages, setProcessedMessages] = useState(messages);
+
     const positionAtBottomInstant = () => {
         if (isModalOpen || isClosingModal.current) return;
         if (scrollAreaRef.current) {
@@ -34,13 +37,26 @@ export default function ChatWindow({
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
+    // Handle message processing for streaming
+    useEffect(() => {
+        if (isStreaming && messages.length > 0) {
+            const lastMessage = messages[messages.length - 1];
+            if (lastMessage.sender !== "user" && lastMessage.content) {
+                // Force re-render of markdown with updated content during streaming
+                setProcessedMessages([...messages]);
+            }
+        } else {
+            setProcessedMessages(messages);
+        }
+    }, [messages, isStreaming]);
+
     useEffect(() => {
         if (isModalOpen || isClosingModal.current) return;
 
         const messagesIncreased =
-            messages.length > previousMessagesLength.current;
+            processedMessages.length > previousMessagesLength.current;
 
-        if (isNewConversation.current && messages.length > 0) {
+        if (isNewConversation.current && processedMessages.length > 0) {
             positionAtBottomInstant();
             isNewConversation.current = false;
         } else if (isBotTyping || messagesIncreased || isStreaming) {
@@ -51,18 +67,18 @@ export default function ChatWindow({
             }, 10);
         }
 
-        previousMessagesLength.current = messages.length;
-    }, [messages, isBotTyping, isStreaming]);
+        previousMessagesLength.current = processedMessages.length;
+    }, [processedMessages, isBotTyping, isStreaming]);
 
     useEffect(() => {
         if (
-            messages.length === 0 ||
+            processedMessages.length === 0 ||
             (previousMessagesLength.current > 0 &&
-                messages.length !== previousMessagesLength.current + 1)
+                processedMessages.length !== previousMessagesLength.current + 1)
         ) {
             isNewConversation.current = true;
         }
-    }, [messages]);
+    }, [processedMessages]);
 
     const AvatarInside = ({ user }) => {
         const initial =
@@ -124,10 +140,10 @@ export default function ChatWindow({
                 ref={scrollAreaRef}
                 className="flex-1 overflow-y-auto bg-white"
             >
-                {messages.length === 0 ? (
+                {processedMessages.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full px-4">
                         <div className="text-center max-w-2xl">
-                            <h1 className="text-3xl font-light text-gray-800 mb-4">
+                        <h1 className="text-3xl font-light text-gray-800 mb-4">
                                 Hello! How can I assist you today?
                             </h1>
                         </div>
@@ -135,10 +151,10 @@ export default function ChatWindow({
                 ) : (
                     <div className="max-w-3xl mx-auto px-4 py-8">
                         <div className="space-y-6">
-                            {messages.map((message, index) => {
+                            {processedMessages.map((message, index) => {
                                 const isUser = message.sender === "user";
                                 const isLastMessage =
-                                    index === messages.length - 1;
+                                    index === processedMessages.length - 1;
                                 const isStreamingMessage =
                                     isLastMessage && !isUser && isStreaming;
 
@@ -306,6 +322,9 @@ export default function ChatWindow({
                                                                 content={
                                                                     message.content
                                                                 }
+                                                                isStreaming={
+                                                                    isStreamingMessage
+                                                                }
                                                             />
                                                         </div>
                                                     </div>
@@ -335,8 +354,9 @@ export default function ChatWindow({
 
                             {/* Global streaming status with cancel option */}
                             {isStreaming &&
-                                messages.length > 0 &&
-                                !messages[messages.length - 1]?.content && (
+                                processedMessages.length > 0 &&
+                                !processedMessages[processedMessages.length - 1]
+                                    ?.content && (
                                     <div className="flex items-center justify-center py-4">
                                         <div className="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
                                             <div className="flex items-center gap-2">

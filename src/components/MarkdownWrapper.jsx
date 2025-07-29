@@ -1,69 +1,64 @@
 import ReactMarkdown from "react-markdown";
 import rehypeSanitize from "rehype-sanitize";
 
-const MarkdownWrapper = ({ content }) => {
+const MarkdownWrapper = ({ content, isStreaming = false }) => {
     // Handle empty or null content
     if (!content) return null;
 
-    // Function to handle incomplete markdown gracefully
-    const preprocessContent = (rawContent) => {
-        let processedContent = rawContent;
+    let text = content;
 
-        // Fix numbered lists without proper line breaks
-        // This handles cases like "1. Item2. Item3. Item" -> "1. Item\n2. Item\n3. Item"
-        processedContent = processedContent.replace(
-            /(\d+\.\s[^0-9]+?)(\d+\.\s)/g,
-            "$1\n$2"
-        );
+    // Fix cases like "of10 bugs:" => "of 10 bugs:"
+    text = text.replace(/([a-zA-Z])(\d+)/g, "$1 $2");
 
-        // Ensure there's a newline before numbered list with bold
-        processedContent = processedContent.replace(
-            /([^\n])(\d\. \*\*)/g,
-            "$1\n$2"
-        );
+    // Handle cases where words are directly concatenated without space
+    // Like "asthmaPlease" => "asthma Please"
+    text = text.replace(/([a-z])([A-Z][a-z]+)/g, "$1 $2");
 
-        // Fix numbered lists without bold that are concatenated
-        // Match pattern like "Action figures2. Building blocks3. Stuffed animals"
-        processedContent = processedContent.replace(
-            /([a-zA-Z\s]+)(\d+\.\s)/g,
-            (match, p1, p2) => {
-                // Don't add newline if it's already the start of a numbered item
-                if (p1.match(/^\d+\.\s/)) {
-                    return match;
-                }
-                return p1 + "\n" + p2;
-            }
-        );
+    // Fix the specific issue: "**AI Farm Overview**The" should be "**AI Farm Overview**\n\nThe"
+    text = text.replace(/(\*\*AI Farm Overview\*\*)The/g, "$1\n\nThe");
+    text = text.replace(
+        /(\*\*Professional Context \(Image Description\)\*\*)The/g,
+        "$1\n\nThe"
+    );
 
-        // Handle cases where items end without punctuation before next number
-        // Like "Action figures2." -> "Action figures\n2."
-        processedContent = processedContent.replace(
-            /([a-zA-Z])(\d+\.)/g,
-            "$1\n$2"
-        );
+    // Handle horizontal rules first to prevent interference
+    text = text.replace(/([a-z]):---(\*\*)/g, "$1:\n\n---\n\n$2");
+    text = text.replace(/([a-z])\.---(\*\*)/g, "$1.\n\n---\n\n$2");
+    text = text.replace(/([a-z])\.---([A-Z])/g, "$1.\n\n---\n\n$2");
+    text = text.replace(/---([A-Z])/g, "---\n\n$1");
 
-        // Optionally fix spacing if missing after colon
-        processedContent = processedContent.replace(
-            /(:)(\d\. \*\*)/g,
-            "$1\n$2"
-        );
+    // ONLY fix the most critical spacing issues without touching bold syntax
+    // Fix components followed by bold headers
+    text = text.replace(/([a-z]):(\*\*\d+\.)/g, "$1:\n\n$2");
 
-        // Ensure there's a space after "of" in numbered lists
-        processedContent = processedContent.replace(/\bof(\d+)/g, "of $1");
+    // Fix periods followed by bold headers
+    text = text.replace(/([a-z])\.(\*\*\d+\.)/g, "$1.\n\n$2");
 
-        // Add space after punctuation if missing
-        processedContent = processedContent.replace(
-            /([a-zA-Z])\.(?=[A-Z])/g,
-            "$1. "
-        );
+    // Fix bold headers followed by dashes - but don't touch the bold syntax itself
+    text = text.replace(/(\*\*[^*]+\*\*)(-\s)/g, "$1\n\n$2");
 
-        // Clean up any double newlines that might have been created
-        processedContent = processedContent.replace(/\n\n+/g, "\n");
+    // Convert bullet points to consistent format
+    text = text.replace(/^\* /gm, "- ");
+    text = text.replace(/\n\* /g, "\n- ");
 
-        return processedContent;
-    };
+    // Fix bullet points after periods
+    text = text.replace(/([a-z])\.(-\s+[A-Z])/g, "$1.\n$2");
 
-    const processedContent = preprocessContent(content);
+    // Simple numbered list fixes
+    text = text.replace(/([a-z:])(\d+\.\s+)/g, "$1\n$2");
+    text = text.replace(/([a-z])(\d+\.\s+[A-Z])/g, "$1\n$2");
+    text = text.replace(/(\d+\.\s+[^0-9\n]+?)(?=\d+\.)/g, "$1\n");
+    text = text.replace(
+        /(\d+\.\s+[^0-9]+?)\s+(Please|Let\s+me|Remember|Note|Important|Also)\s+/gi,
+        "$1\n\n$2 "
+    );
+    text = text.replace(/(\d+\.)([A-Z])/g, "$1 $2");
+
+    // Clean up excessive newlines
+    text = text.replace(/\n{4,}/g, "\n\n");
+    text = text.trim();
+
+    const processedContent = text;
 
     return (
         <div className="markdown-content">
@@ -76,32 +71,47 @@ const MarkdownWrapper = ({ content }) => {
                         </p>
                     ),
                     h1: ({ children }) => (
-                        <h1 className="text-xl font-bold mb-4 text-gray-900">
+                        <h1 className="text-2xl font-bold mb-6 text-gray-900 border-b border-gray-200 pb-2">
                             {children}
                         </h1>
                     ),
                     h2: ({ children }) => (
-                        <h2 className="text-lg font-bold mb-3 text-gray-900">
+                        <h2 className="text-xl font-bold mb-4 text-gray-900">
                             {children}
                         </h2>
                     ),
                     h3: ({ children }) => (
-                        <h3 className="text-base font-bold mb-2 text-gray-900">
+                        <h3 className="text-lg font-bold mb-3 text-gray-900">
                             {children}
                         </h3>
                     ),
+                    h4: ({ children }) => (
+                        <h4 className="text-base font-bold mb-2 text-gray-900">
+                            {children}
+                        </h4>
+                    ),
+                    h5: ({ children }) => (
+                        <h5 className="text-sm font-bold mb-2 text-gray-900">
+                            {children}
+                        </h5>
+                    ),
+                    h6: ({ children }) => (
+                        <h6 className="text-sm font-bold mb-2 text-gray-600">
+                            {children}
+                        </h6>
+                    ),
                     ul: ({ children }) => (
-                        <ul className="list-disc list-outside mb-4 space-y-1 pl-6">
+                        <ul className="list-disc list-outside mb-4 space-y-2 pl-6">
                             {children}
                         </ul>
                     ),
                     ol: ({ children }) => (
-                        <ol className="list-decimal list-outside mb-4 space-y-1 pl-6">
+                        <ol className="list-decimal list-outside mb-4 space-y-2 pl-6">
                             {children}
                         </ol>
                     ),
                     li: ({ children }) => (
-                        <li className="leading-relaxed pl-2 text-gray-900">
+                        <li className="leading-relaxed pl-1 text-gray-900">
                             {children}
                         </li>
                     ),
@@ -109,7 +119,7 @@ const MarkdownWrapper = ({ content }) => {
                         // Handle inline code
                         if (inline) {
                             return (
-                                <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">
+                                <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800 border">
                                     {children}
                                 </code>
                             );
@@ -122,14 +132,14 @@ const MarkdownWrapper = ({ content }) => {
                         return (
                             <div className="relative mb-4">
                                 {language && (
-                                    <div className="bg-gray-200 px-3 py-1 text-xs font-medium text-gray-600 rounded-t-lg border-b">
+                                    <div className="bg-gray-700 text-gray-200 px-3 py-2 text-xs font-medium rounded-t-lg border-b border-gray-600">
                                         {language}
                                     </div>
                                 )}
                                 <code
-                                    className={`block bg-gray-100 p-3 ${
+                                    className={`block bg-gray-900 text-gray-100 p-4 ${
                                         language ? "rounded-b-lg" : "rounded-lg"
-                                    } text-sm font-mono text-gray-800 whitespace-pre-wrap overflow-x-auto`}
+                                    } text-sm font-mono whitespace-pre-wrap overflow-x-auto border border-gray-600`}
                                 >
                                     {children}
                                 </code>
@@ -140,54 +150,54 @@ const MarkdownWrapper = ({ content }) => {
                         <div className="mb-4">{children}</div>
                     ),
                     blockquote: ({ children }) => (
-                        <blockquote className="border-l-4 border-gray-300 pl-4 italic mb-4 text-gray-700">
+                        <blockquote className="border-l-4 border-blue-400 pl-4 italic mb-4 text-gray-700 bg-blue-50 py-2 rounded-r">
                             {children}
                         </blockquote>
                     ),
                     strong: ({ children }) => (
-                        <strong className="font-semibold text-gray-900">
+                        <strong className="font-bold text-gray-900">
                             {children}
                         </strong>
                     ),
                     em: ({ children }) => (
-                        <em className="italic">{children}</em>
+                        <em className="italic text-gray-800">{children}</em>
                     ),
                     a: ({ href, children }) => (
                         <a
                             href={href}
-                            className="text-blue-600 hover:text-blue-800 underline"
+                            className="text-blue-600 hover:text-blue-800 underline hover:no-underline transition-colors"
                             target="_blank"
                             rel="noopener noreferrer"
                         >
                             {children}
                         </a>
                     ),
-                    hr: () => <hr className="border-gray-200 my-6" />,
+                    hr: () => <hr className="border-gray-300 my-8" />,
                     table: ({ children }) => (
-                        <div className="overflow-x-auto mb-4">
-                            <table className="min-w-full border border-gray-200 rounded-lg">
-                                {children}
-                            </table>
+                        <div className="overflow-x-auto mb-4 border border-gray-200 rounded-lg">
+                            <table className="min-w-full">{children}</table>
                         </div>
                     ),
                     thead: ({ children }) => (
                         <thead className="bg-gray-50">{children}</thead>
                     ),
                     tbody: ({ children }) => (
-                        <tbody className="divide-y divide-gray-200">
+                        <tbody className="divide-y divide-gray-200 bg-white">
                             {children}
                         </tbody>
                     ),
                     tr: ({ children }) => (
-                        <tr className="hover:bg-gray-50">{children}</tr>
+                        <tr className="hover:bg-gray-50 transition-colors">
+                            {children}
+                        </tr>
                     ),
                     td: ({ children }) => (
-                        <td className="px-4 py-2 text-sm text-gray-900 border-r border-gray-200 last:border-r-0">
+                        <td className="px-4 py-3 text-sm text-gray-900 border-r border-gray-200 last:border-r-0">
                             {children}
                         </td>
                     ),
                     th: ({ children }) => (
-                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-r border-gray-200 last:border-r-0">
+                        <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 border-r border-gray-200 last:border-r-0">
                             {children}
                         </th>
                     ),

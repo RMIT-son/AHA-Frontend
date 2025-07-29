@@ -20,6 +20,10 @@ export default function ChatInput({
     transcribedText = "",
     onTranscribedTextUsed,
     isTranscribing = false,
+    // New props for web search
+    enableWebSearch = false,
+    onWebSearchToggle,
+    webSearchEnabled = false,
 }) {
     const [message, setMessage] = useState("");
     const [uploadedFiles, setUploadedFiles] = useState([]);
@@ -42,7 +46,7 @@ export default function ChatInput({
         isDragOver,
         setIsDragOver,
         isDisabled: isLoading || isProcessing || isTranscribing,
-        maxFiles: MAX_FILES, // Pass max files to FileUploader
+        maxFiles: MAX_FILES,
     });
 
     // Wrapper for file selection with limit check
@@ -50,20 +54,17 @@ export default function ChatInput({
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
-        // Check if adding these files would exceed the limit
         const totalFiles = uploadedFiles.length + files.length;
         if (totalFiles > MAX_FILES) {
             alert(
                 `You can only upload a maximum of ${MAX_FILES} files. You currently have ${uploadedFiles.length} file(s) uploaded.`
             );
-            // Reset the input
             if (fileInputRef.current) {
                 fileInputRef.current.value = "";
             }
             return;
         }
 
-        // If within limit, proceed with original handler
         originalHandleFileSelect(e);
     };
 
@@ -120,7 +121,8 @@ export default function ChatInput({
             return;
         }
 
-        onSend(message, uploadedFiles);
+        // Pass web search state along with the message
+        onSend(message, uploadedFiles, { webSearchEnabled });
         setMessage("");
         setUploadedFiles([]);
     };
@@ -278,7 +280,11 @@ export default function ChatInput({
                 <div className="relative">
                     <div
                         ref={inputBubbleRef}
-                        className={`relative bg-white rounded-3xl border border-gray-300 shadow-sm transition-colors duration-200 ${
+                        className={`relative bg-white rounded-3xl border transition-colors duration-200 ${
+                            webSearchEnabled
+                                ? "border-blue-300 shadow-blue-100 shadow-sm"
+                                : "border-gray-300 shadow-sm"
+                        } ${
                             isDragOver ? "border-orange-400 bg-orange-50" : ""
                         }`}
                         style={{ minHeight: "60px" }}
@@ -286,6 +292,7 @@ export default function ChatInput({
                         <DragOverlay isDragOver={isDragOver} />
 
                         <div className="relative">
+                            {/* Main text input area */}
                             <textarea
                                 ref={textareaRef}
                                 rows="1"
@@ -293,13 +300,15 @@ export default function ChatInput({
                                 onChange={(e) => setMessage(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder={getPlaceholderText()}
-                                className="w-full bg-transparent outline-none text-gray-900 placeholder-gray-500 resize-none overflow-hidden text-base leading-relaxed px-5 py-4 pb-2"
+                                className={`w-full bg-transparent outline-none text-gray-900 resize-none overflow-hidden text-base leading-relaxed px-5 pt-4 ${
+                                    webSearchEnabled
+                                        ? "placeholder-blue-400"
+                                        : "placeholder-gray-500"
+                                }`}
                                 style={{
                                     minHeight: "56px",
                                     maxHeight: "200px",
-                                    paddingRight: isRecording
-                                        ? "150px"
-                                        : "120px",
+                                    paddingBottom: "56px", // Space for bottom button row
                                 }}
                                 disabled={
                                     isLoading ||
@@ -321,122 +330,167 @@ export default function ChatInput({
                                 formatTime={formatTime}
                             />
 
-                            {/* Action buttons */}
-                            <div className="absolute right-3 top-4 flex items-center gap-1">
-                                {/* File upload button */}
-                                <button
-                                    type="button"
-                                    onClick={handleFileUploadClick}
-                                    className={`p-2 rounded-lg transition-all duration-200 ${
-                                        isFileUploadDisabled()
-                                            ? "text-gray-300 cursor-not-allowed"
-                                            : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
-                                    }`}
-                                    title={getFileUploadTitle()}
-                                    disabled={isFileUploadDisabled()}
-                                >
-                                    <svg
-                                        className="w-5 h-5"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
-                                        />
-                                    </svg>
-                                </button>
-
-                                {/* Voice recording button */}
-                                <VoiceButton />
-
-                                {/* Send button */}
-                                <button
-                                    type="submit"
-                                    onClick={handleSubmit}
-                                    className={`p-2 rounded-lg transition-all duration-200 ${buttonState.buttonColor}`}
-                                    disabled={buttonState.disabled}
-                                    title={buttonState.buttonText}
-                                >
-                                    {isLoading || isProcessing ? (
-                                        <svg
-                                            className="animate-spin w-4 h-4"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
+                            {/* Bottom button row */}
+                            <div className="absolute bottom-3 left-0 right-0 flex items-center justify-between px-4">
+                                {/* Left side - Research button */}
+                                <div className="flex items-center">
+                                    {enableWebSearch && (
+                                        <button
+                                            onClick={onWebSearchToggle}
+                                            className={`
+                                                flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border
+                                                ${
+                                                    webSearchEnabled
+                                                        ? "bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-150"
+                                                        : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-150"
+                                                }
+                                            `}
+                                            disabled={
+                                                isLoading ||
+                                                isProcessing ||
+                                                isStreaming
+                                            }
+                                            title={
+                                                webSearchEnabled
+                                                    ? "Web search enabled - Click to disable"
+                                                    : "Click to enable web search"
+                                            }
                                         >
-                                            <circle
-                                                className="opacity-25"
-                                                cx="12"
-                                                cy="12"
-                                                r="10"
+                                            <svg
+                                                className={`w-3.5 h-3.5 transition-colors duration-200 ${
+                                                    webSearchEnabled
+                                                        ? "text-blue-600"
+                                                        : "text-gray-500"
+                                                }`}
+                                                fill="none"
                                                 stroke="currentColor"
-                                                strokeWidth="4"
-                                            ></circle>
-                                            <path
-                                                className="opacity-75"
-                                                fill="currentColor"
-                                                d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                            ></path>
-                                        </svg>
-                                    ) : isTranscribing ? (
-                                        <svg
-                                            className="animate-spin w-4 h-4"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <circle
-                                                className="opacity-25"
-                                                cx="12"
-                                                cy="12"
-                                                r="10"
-                                                stroke="currentColor"
-                                                strokeWidth="4"
-                                            ></circle>
-                                            <path
-                                                className="opacity-75"
-                                                fill="currentColor"
-                                                d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                            ></path>
-                                        </svg>
-                                    ) : isStreaming ? (
-                                        <svg
-                                            className="w-4 h-4"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                            />
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M9 10l2 2 4-4"
-                                            />
-                                        </svg>
-                                    ) : (
-                                        <svg
-                                            className="w-4 h-4"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
-                                            />
-                                        </svg>
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <circle cx="11" cy="11" r="8" />
+                                                <path d="M21 21l-4.35-4.35" />
+                                            </svg>
+                                            <span>Research</span>
+                                        </button>
                                     )}
-                                </button>
+                                </div>
+
+                                {/* Right side - Action buttons */}
+                                <div className="flex items-center gap-1">
+                                    {/* File upload button */}
+                                    <button
+                                        type="button"
+                                        onClick={handleFileUploadClick}
+                                        className={`p-2 rounded-lg transition-all duration-200 ${
+                                            isFileUploadDisabled()
+                                                ? "text-gray-300 cursor-not-allowed"
+                                                : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                                        }`}
+                                        title={getFileUploadTitle()}
+                                        disabled={isFileUploadDisabled()}
+                                    >
+                                        <svg
+                                            className="w-5 h-5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"
+                                            />
+                                        </svg>
+                                    </button>
+
+                                    {/* Voice recording button */}
+                                    <VoiceButton />
+
+                                    {/* Send button */}
+                                    <button
+                                        type="submit"
+                                        onClick={handleSubmit}
+                                        className={`p-2 rounded-lg transition-all duration-200 ${buttonState.buttonColor}`}
+                                        disabled={buttonState.disabled}
+                                        title={buttonState.buttonText}
+                                    >
+                                        {isLoading || isProcessing ? (
+                                            <svg
+                                                className="animate-spin w-4 h-4"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <circle
+                                                    className="opacity-25"
+                                                    cx="12"
+                                                    cy="12"
+                                                    r="10"
+                                                    stroke="currentColor"
+                                                    strokeWidth="4"
+                                                ></circle>
+                                                <path
+                                                    className="opacity-75"
+                                                    fill="currentColor"
+                                                    d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                ></path>
+                                            </svg>
+                                        ) : isTranscribing ? (
+                                            <svg
+                                                className="animate-spin w-4 h-4"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <circle
+                                                    className="opacity-25"
+                                                    cx="12"
+                                                    cy="12"
+                                                    r="10"
+                                                    stroke="currentColor"
+                                                    strokeWidth="4"
+                                                ></circle>
+                                                <path
+                                                    className="opacity-75"
+                                                    fill="currentColor"
+                                                    d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                ></path>
+                                            </svg>
+                                        ) : isStreaming ? (
+                                            <svg
+                                                className="w-4 h-4"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                />
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M9 10l2 2 4-4"
+                                                />
+                                            </svg>
+                                        ) : (
+                                            <svg
+                                                className="w-4 h-4"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                                                />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
