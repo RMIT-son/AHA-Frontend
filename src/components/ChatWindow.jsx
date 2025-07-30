@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import MarkdownWrapper from "./MarkdownWrapper";
 import ImagePreviewModal from "./ImagePreviewModal";
+import MarkdownWrapper from "./MarkdownWrapper";
 
 export default function ChatWindow({
     messages,
@@ -8,6 +8,7 @@ export default function ChatWindow({
     hasLoaded,
     user,
     isStreaming,
+    onCancelStream,
 }) {
     const messagesEndRef = useRef(null);
     const scrollAreaRef = useRef(null);
@@ -54,7 +55,7 @@ export default function ChatWindow({
         }
 
         previousMessagesLength.current = messages.length;
-    }, [messages, isBotTyping, isStreaming]); // Removed isModalOpen from dependencies
+    }, [messages, isBotTyping, isStreaming]);
 
     useEffect(() => {
         if (
@@ -123,6 +124,75 @@ export default function ChatWindow({
 
     return (
         <>
+            <style jsx>{`
+                .streaming-cursor::after {
+                    content: "▊";
+                    animation: blink 1s infinite;
+                    color: #3b82f6;
+                }
+
+                @keyframes blink {
+                    0%,
+                    50% {
+                        opacity: 1;
+                    }
+                    51%,
+                    100% {
+                        opacity: 0;
+                    }
+                }
+
+                .prose code {
+                    background-color: #f3f4f6;
+                    padding: 0.125rem 0.25rem;
+                    border-radius: 0.25rem;
+                    font-size: 0.875rem;
+                }
+
+                .prose pre {
+                    background-color: #f9fafb;
+                    border: 1px solid #e5e7eb;
+                    border-radius: 0.5rem;
+                    padding: 1rem;
+                    overflow-x: auto;
+                    margin: 1rem 0;
+                }
+
+                .prose pre code {
+                    background: none;
+                    padding: 0;
+                    border-radius: 0;
+                    font-size: 0.875rem;
+                    color: #374151;
+                }
+
+                .prose ul {
+                    margin: 0.5rem 0;
+                    padding-left: 1rem;
+                }
+
+                .prose li {
+                    margin: 0.25rem 0;
+                }
+
+                .prose h1,
+                .prose h2,
+                .prose h3 {
+                    color: #1f2937;
+                    margin-top: 1.5rem;
+                    margin-bottom: 0.75rem;
+                }
+
+                .prose a {
+                    color: #2563eb;
+                    text-decoration: underline;
+                }
+
+                .prose a:hover {
+                    color: #1d4ed8;
+                }
+            `}</style>
+
             <div
                 ref={scrollAreaRef}
                 className="flex-1 overflow-y-auto bg-white"
@@ -210,19 +280,27 @@ export default function ChatWindow({
                                         ) : (
                                             <div className="max-w-[90%] pl-2">
                                                 <div className="relative">
+                                                    {/* Cancel button for streaming messages */}
+                                                    {isStreamingMessage &&
+                                                        onCancelStream && (
+                                                            <button
+                                                                onClick={
+                                                                    onCancelStream
+                                                                }
+                                                                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-sm bg-white rounded-full w-6 h-6 flex items-center justify-center shadow-sm border"
+                                                                title="Cancel streaming"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        )}
+
                                                     <div className="relative">
                                                         <MarkdownWrapper
-                                                            key={`${
-                                                                message.tempId ||
-                                                                message.id ||
-                                                                index
-                                                            }-${
-                                                                message.content
-                                                                    ?.length ||
-                                                                0
-                                                            }`}
                                                             content={
                                                                 message.content
+                                                            }
+                                                            isStreaming={
+                                                                isStreamingMessage
                                                             }
                                                         />
                                                     </div>
