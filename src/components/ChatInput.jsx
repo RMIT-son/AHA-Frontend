@@ -308,7 +308,6 @@ export default function ChatInput({
                                 style={{
                                     minHeight: "56px",
                                     maxHeight: "200px",
-                                    paddingBottom: "56px", // Space for bottom button row
                                 }}
                                 disabled={
                                     isLoading ||
@@ -319,11 +318,6 @@ export default function ChatInput({
                                 tabIndex={0}
                             />
 
-                            <FilePreview
-                                uploadedFiles={uploadedFiles}
-                                removeFile={removeFile}
-                            />
-
                             <RecordingIndicator
                                 isRecording={isRecording}
                                 recordingTime={recordingTime}
@@ -331,7 +325,7 @@ export default function ChatInput({
                             />
 
                             {/* Bottom button row */}
-                            <div className="absolute bottom-3 left-0 right-0 flex items-center justify-between px-4">
+                            <div className="pb-4 flex items-center justify-between px-4">
                                 {/* Left side - Research button */}
                                 <div className="flex items-center">
                                     {enableWebSearch && (
@@ -492,6 +486,16 @@ export default function ChatInput({
                                     </button>
                                 </div>
                             </div>
+
+                            {/* File Preview Row - Third line */}
+                            {uploadedFiles.length > 0 && (
+                                <div className="px-4">
+                                    <FilePreview
+                                        uploadedFiles={uploadedFiles}
+                                        removeFile={removeFile}
+                                    />
+                                </div>
+                            )}
                         </div>
                     </div>
 

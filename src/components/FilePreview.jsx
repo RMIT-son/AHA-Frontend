@@ -54,7 +54,7 @@ export default function FilePreview({ uploadedFiles, removeFile }) {
     if (uploadedFiles.length === 0) return null;
 
     return (
-        <div className="px-5 pb-4">
+        <div className="pb-4">
             <div className="flex flex-wrap gap-2">
                 {uploadedFiles.map((fileData) => (
                     <div key={fileData.id} className="relative group">
