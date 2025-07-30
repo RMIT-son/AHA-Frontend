@@ -23,7 +23,8 @@
     "react-router-dom": "^7.6.2",
     "redux": "^5.0.1",
     "redux-devtools-extension": "^2.13.9",
-    "rehype-sanitize": "^6.0.0"
+    "rehype-sanitize": "^6.0.0",
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
