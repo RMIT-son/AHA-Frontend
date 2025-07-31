@@ -56,23 +56,32 @@ const processFilesForBackend = async (files) => {
   return processedFiles;
 };
 
-export const createConversation = async (user_id, message, files = []) => {
+export const createConversation = async (user_id, content, files = []) => {
   try {
     // Process files to base64
     const processedFiles = await processFilesForBackend(files);
 
-    const requestBody = {
-      content: message,
-      files: processedFiles, // Send array of file objects
-      timestamp: new Date().toISOString(),
-    };
+    // Create FormData for multipart/form-data request
+    const formData = new FormData();
+    
+    // Add text content and timestamp
+    if (content) {
+        formData.append('content', content);
+    }
+    
+    // Add files to FormData
+    processedFiles.forEach((file) => {
+        formData.append('files', file);
+    });
+    
+    console.log('Sending files:', processedFiles.map(f => ({ name: f.name, type: f.type, size: f.size })));
 
     const res = await axios.post(
       `${app.dataURL}/api/conversations/create/${user_id}`,
-      requestBody,
+      formData,
       {
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "multipart/form-data",
         },
       }
     );
@@ -326,19 +335,24 @@ export const sendVoiceMessage = async (
 };
 
 export async function streamWebSearch(conversationId, query, onChunk) {
+  const formData = new FormData();
+    
+  // Add text content and timestamp
+  if (query) {
+      formData.append('content', query);
+    }
+  formData.append('timestamp', new Date().toISOString());
     try {
         const response = await fetch(
             `${app.dataURL}/api/conversations/${conversationId}/web/search`,
             {
                 method: "POST",
                 headers: {
-                    "Content-Type": "application/json",
                     Accept: "text/event-stream",
+                    "Cache-Control": "no-cache",
+                    Connection: "keep-alive",
                 },
-                body: JSON.stringify({
-                    content: query,
-                    timestamp: new Date().toISOString(),
-                }),
+                body: formData
             }
         );
 
