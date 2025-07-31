@@ -595,7 +595,7 @@ export default function ChatInput({
                         multiple
                         className="hidden"
                         onChange={handleFileSelect}
-                        accept="image/*,application/pdf,text/plain,application/json,text/csv"
+                        accept="image/*,application/pdf,text/plain,application/json,text/csv,audio/wav,audio/mpeg,.wav,.mp3"
                     />
                 </div>
             </div>

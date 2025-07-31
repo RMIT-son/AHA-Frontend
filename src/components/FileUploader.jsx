@@ -26,8 +26,11 @@ export default function FileUploader({
             "text/csv",
             "application/csv",
             "text/tab-separated-values",
-
+            "audio/wav",
+            "audio/x-wav",
+            "audio/mpeg"
         ];
+
 
         if (file.size > maxSize) {
             return { valid: false, error: `File size must be less than 25MB` };
