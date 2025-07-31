@@ -2,6 +2,7 @@ import {
     createConversation,
     streamFromBackend,
     sendVoiceMessage,
+    streamWebSearch
 } from "../controllers/chat";
 
 export default function useMessageHandler(chatState) {
@@ -61,7 +62,8 @@ export default function useMessageHandler(chatState) {
         }
     };
 
-    const handleSend = async (text, files = []) => {
+    const handleSend = async (text, files = [], options = {}) => {
+        const { webSearchEnabled = false } = options;
         if (isProcessingMessage || isLoadingInput) return;
 
         if (isStreaming || !canSendNewMessage) {
@@ -109,6 +111,103 @@ export default function useMessageHandler(chatState) {
             let botMessageId = null;
             let isFirstChunk = true;
             setIsStreaming(true);
+
+            if (webSearchEnabled) {
+                try {
+                    await streamWebSearch(
+                        currentChatId,
+                        text,
+                        (chunk) => {
+                            if (streamTracker.cancelled || currentChatIdRef.current !== currentChatId) {
+                                console.log("Web search cancelled or chat changed, ignoring chunk");
+                                return;
+                            }
+                        
+                            // optional: debounce auto reload
+                            if (streamingTimeoutRef.current) {
+                                clearTimeout(streamingTimeoutRef.current);
+                            }
+                            streamingTimeoutRef.current = setTimeout(() => {
+                                setShouldReloadAfterStream(true);
+                            }, 2000);
+                        
+                            setMessages((prev) => {
+                                const updated = [...prev];
+                                const botIndex = updated.findIndex(
+                                    (msg) => msg.tempId === botMessageId
+                                );
+                                if (botIndex !== -1) {
+                                    const updatedMsg = {
+                                        ...updated[botIndex],
+                                        content: updated[botIndex].content + chunk,
+                                    };
+                                    updated[botIndex] = updatedMsg;
+                                } else {
+                                    botMessageId = Date.now();
+                                    updated.push({
+                                        sender: "bot",
+                                        content: chunk,
+                                        timestamp: new Date().toISOString(),
+                                        tempId: botMessageId,
+                                        source: "websearch",
+                                    });
+                                }
+                                return updated;
+                            });
+                                }
+                            );
+                
+                    if (!streamTracker.cancelled && currentChatIdRef.current === currentChatId) {
+                        setIsStreaming(false);
+                        setCanSendNewMessage(true);
+                        setIsProcessingMessage(false);
+                    
+                        setMessages((prev) =>
+                            prev.map((msg) =>
+                                msg.tempId === tempUserMessage.tempId
+                                    ? { ...msg, status: "delivered" }
+                                    : msg
+                            )
+                        );
+                    
+                        await refreshConversationList();
+                    }
+                } catch (err) {
+                    console.error("Web search streaming error:", err);
+                    setShouldReloadAfterStream(false);
+                    setIsStreaming(false);
+                    setCanSendNewMessage(true);
+                    setIsProcessingMessage(false);
+                
+                    setMessages((prev) =>
+                        prev.map((msg) =>
+                            msg.tempId === tempUserMessage.tempId
+                                ? { ...msg, status: "failed", error: err.message }
+                                : msg
+                        )
+                    );
+                
+                    setMessages((prev) => [
+                        ...prev,
+                        {
+                            sender: "system",
+                            content: "Web search failed. Please try again.",
+                            timestamp: new Date().toISOString(),
+                            isError: true,
+                        },
+                    ]);
+                } finally {
+                    setIsBotTyping(false);
+                    setIsLoadingInput(false);
+                    setIsStreaming(false);
+                    setCanSendNewMessage(true);
+                    setIsProcessingMessage(false);
+                    activeStreamRef.current = null;
+                }
+                return;
+            }
+
+
 
             await streamFromBackend(
                 currentChatId,

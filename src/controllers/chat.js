@@ -324,3 +324,65 @@ export const sendVoiceMessage = async (
     }
   }
 };
+
+export async function streamWebSearch(conversationId, query, onChunk) {
+    try {
+        const response = await fetch(
+            `${app.dataURL}/api/conversations/${conversationId}/web/search`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "text/event-stream",
+                },
+                body: JSON.stringify({
+                    content: query,
+                    timestamp: new Date().toISOString(),
+                }),
+            }
+        );
+
+        if (!response.ok || !response.body) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+
+                let eventEndIndex;
+                while ((eventEndIndex = buffer.indexOf("\n\n")) !== -1) {
+                    const event = buffer.slice(0, eventEndIndex);
+                    buffer = buffer.slice(eventEndIndex + 2);
+                    processSSEEvent(event, onChunk);
+                }
+
+                // Fallback for servers that don't send \n\n
+                if (!buffer.includes("\n\n") && buffer.includes("\n")) {
+                    const lines = buffer.split("\n");
+                    buffer = lines.pop() || "";
+
+                    for (const line of lines) {
+                        if (line.trim().startsWith("data: ")) {
+                            const data = line.trim().slice(6);
+                            if (data === "[DONE]") return;
+                            onChunk?.(data);
+                        }
+                    }
+                }
+            }
+        } finally {
+            reader.releaseLock();
+        }
+    } catch (error) {
+        console.error("Streaming error:", error);
+        throw error;
+    }
+}
