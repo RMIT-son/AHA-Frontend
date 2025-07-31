@@ -1,14 +1,12 @@
 import { useEffect, useRef, useState } from "react";
+import MarkdownTranslator from "./MarkdownTranslator";
 import ImagePreviewModal from "./ImagePreviewModal";
-import MarkdownWrapper from "./MarkdownWrapper";
 
 export default function ChatWindow({
     messages,
     isBotTyping,
-    hasLoaded,
     user,
     isStreaming,
-    onCancelStream,
 }) {
     const messagesEndRef = useRef(null);
     const scrollAreaRef = useRef(null);
@@ -19,10 +17,14 @@ export default function ChatWindow({
     const [previewImage, setPreviewImage] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const isClosingModal = useRef(false);
+    const scrollingEnabled = useRef(true);
+    // Track which images have already loaded to prevent re-scrolling
+    const loadedImages = useRef(new Set());
 
     const positionAtBottomInstant = () => {
         // Additional check before scrolling
-        if (isModalOpen || isClosingModal.current) return;
+        if (!scrollingEnabled.current || isModalOpen || isClosingModal.current)
+            return;
         if (scrollAreaRef.current) {
             scrollAreaRef.current.scrollTop =
                 scrollAreaRef.current.scrollHeight;
@@ -31,13 +33,15 @@ export default function ChatWindow({
 
     const scrollToBottomSmooth = () => {
         // Additional check before scrolling
-        if (isModalOpen || isClosingModal.current) return;
+        if (!scrollingEnabled.current || isModalOpen || isClosingModal.current)
+            return;
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
     useEffect(() => {
         // Don't scroll when modal is open or being closed
-        if (isModalOpen || isClosingModal.current) return;
+        if (!scrollingEnabled.current || isModalOpen || isClosingModal.current)
+            return;
 
         const messagesIncreased =
             messages.length > previousMessagesLength.current;
@@ -48,7 +52,11 @@ export default function ChatWindow({
         } else if (isBotTyping || messagesIncreased || isStreaming) {
             // Add a small delay to ensure modal state is properly set
             setTimeout(() => {
-                if (!isModalOpen && !isClosingModal.current) {
+                if (
+                    scrollingEnabled.current &&
+                    !isModalOpen &&
+                    !isClosingModal.current
+                ) {
                     scrollToBottomSmooth();
                 }
             }, 10);
@@ -64,6 +72,8 @@ export default function ChatWindow({
                 messages.length !== previousMessagesLength.current + 1)
         ) {
             isNewConversation.current = true;
+            // Clear loaded images cache when starting new conversation
+            loadedImages.current.clear();
         }
     }, [messages]);
 
@@ -85,8 +95,22 @@ export default function ChatWindow({
         const handleImageClick = (e) => {
             e.preventDefault();
             e.stopPropagation();
+            scrollingEnabled.current = false; // Disable scrolling immediately
             setPreviewImage({ url: imageUrl, alt });
             setIsModalOpen(true);
+        };
+
+        const handleImageLoad = () => {
+            // Only scroll if this image hasn't been loaded before
+            if (
+                scrollOnLoad &&
+                !isModalOpen &&
+                !isClosingModal.current &&
+                !loadedImages.current.has(imageUrl)
+            ) {
+                loadedImages.current.add(imageUrl);
+                scrollToBottomSmooth();
+            }
         };
 
         return (
@@ -101,11 +125,7 @@ export default function ChatWindow({
                         e.target.style.display = "none";
                         console.error("Failed to load image:", imageUrl);
                     }}
-                    onLoad={() => {
-                        if (scrollOnLoad && !isModalOpen) {
-                            scrollToBottomSmooth();
-                        }
-                    }}
+                    onLoad={handleImageLoad}
                 />
             </div>
         );
@@ -113,86 +133,27 @@ export default function ChatWindow({
 
     const closeModal = () => {
         isClosingModal.current = true;
+        scrollingEnabled.current = false; // Keep scrolling disabled during close
         setIsModalOpen(false);
         setPreviewImage(null);
 
-        // Reset the flag after a longer delay to ensure scrolling doesn't happen
+        // Prevent any focus-related scrolling after modal closes
+        setTimeout(() => {
+            // Blur any focused elements to prevent keyboard navigation scrolling
+            if (document.activeElement && document.activeElement.blur) {
+                document.activeElement.blur();
+            }
+        }, 50);
+
+        // Reset the flags after the modal has fully closed
         setTimeout(() => {
             isClosingModal.current = false;
-        }, 500);
+            scrollingEnabled.current = true; // Re-enable scrolling
+        }, 800); // Increased delay to ensure modal animation completes
     };
 
     return (
         <>
-            <style jsx>{`
-                .streaming-cursor::after {
-                    content: "▊";
-                    animation: blink 1s infinite;
-                    color: #3b82f6;
-                }
-
-                @keyframes blink {
-                    0%,
-                    50% {
-                        opacity: 1;
-                    }
-                    51%,
-                    100% {
-                        opacity: 0;
-                    }
-                }
-
-                .prose code {
-                    background-color: #f3f4f6;
-                    padding: 0.125rem 0.25rem;
-                    border-radius: 0.25rem;
-                    font-size: 0.875rem;
-                }
-
-                .prose pre {
-                    background-color: #f9fafb;
-                    border: 1px solid #e5e7eb;
-                    border-radius: 0.5rem;
-                    padding: 1rem;
-                    overflow-x: auto;
-                    margin: 1rem 0;
-                }
-
-                .prose pre code {
-                    background: none;
-                    padding: 0;
-                    border-radius: 0;
-                    font-size: 0.875rem;
-                    color: #374151;
-                }
-
-                .prose ul {
-                    margin: 0.5rem 0;
-                    padding-left: 1rem;
-                }
-
-                .prose li {
-                    margin: 0.25rem 0;
-                }
-
-                .prose h1,
-                .prose h2,
-                .prose h3 {
-                    color: #1f2937;
-                    margin-top: 1.5rem;
-                    margin-bottom: 0.75rem;
-                }
-
-                .prose a {
-                    color: #2563eb;
-                    text-decoration: underline;
-                }
-
-                .prose a:hover {
-                    color: #1d4ed8;
-                }
-            `}</style>
-
             <div
                 ref={scrollAreaRef}
                 className="flex-1 overflow-y-auto bg-white"
@@ -212,8 +173,6 @@ export default function ChatWindow({
                                 const isUser = message.sender === "user";
                                 const isLastMessage =
                                     index === messages.length - 1;
-                                const isStreamingMessage =
-                                    isLastMessage && !isUser && isStreaming;
 
                                 return (
                                     <div
@@ -269,7 +228,7 @@ export default function ChatWindow({
                                                         </div>
                                                     )}
 
-                                                {/* Message bubble wraps content only */}
+                                                {/* User message bubble */}
                                                 <div className="inline-flex items-center bg-[#1a1a1a] text-white rounded-2xl px-3 py-3 max-w-full shadow-md">
                                                     <AvatarInside user={user} />
                                                     <span className="ml-2 break-words whitespace-pre-wrap text-sm">
@@ -280,28 +239,12 @@ export default function ChatWindow({
                                         ) : (
                                             <div className="max-w-[90%] pl-2">
                                                 <div className="relative">
-                                                    {/* Cancel button for streaming messages */}
-                                                    {isStreamingMessage &&
-                                                        onCancelStream && (
-                                                            <button
-                                                                onClick={
-                                                                    onCancelStream
-                                                                }
-                                                                className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 text-sm bg-white rounded-full w-6 h-6 flex items-center justify-center shadow-sm border"
-                                                                title="Cancel streaming"
-                                                            >
-                                                                ✕
-                                                            </button>
-                                                        )}
-
-                                                    <div className="relative">
-                                                        <MarkdownWrapper
+                                                    <div className="relative text-gray-800">
+                                                        <MarkdownTranslator
                                                             content={
                                                                 message.content
                                                             }
-                                                            isStreaming={
-                                                                isStreamingMessage
-                                                            }
+                                                            className="text-sm leading-relaxed"
                                                         />
                                                     </div>
                                                 </div>
@@ -311,8 +254,9 @@ export default function ChatWindow({
                                 );
                             })}
 
+                            {/* Bot typing indicator */}
                             {isBotTyping && !isStreaming && (
-                                <div className="max-w-[90%] flex flex-col pl-9">
+                                <div className="max-w-[90%] pl-2">
                                     <div className="flex space-x-1 mt-2">
                                         <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"></div>
                                         <div
