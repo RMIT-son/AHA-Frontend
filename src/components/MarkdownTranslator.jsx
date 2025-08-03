@@ -1,52 +1,26 @@
-import React from "react";
+import React, { useMemo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
 
-const MarkdownTranslator = ({ content, className = "" }) => {
-    // Enhanced content cleaning to fix spacing issues from streaming
-    const cleanContent = content
-        // First, remove the streaming data format
-        ?.replace(/data:\s*/g, "") // Remove "data: " prefixes
-        ?.replace(/\[DONE\]/g, "") // Remove [DONE] markers
+const MarkdownTranslator = ({ content, className = "", isStreaming = false }) => {
 
-        // Fix spacing issues with emojis and text concatenation (but avoid breaking numbers)
-        ?.replace(/([a-zA-Z])(\d+)(?!\d)/g, "$1 $2") // Add space between word and number, but not within numbers
-        ?.replace(/(🥤)\s*([A-Z])/g, "$1\n\n$2") // Specific fix for 🥤 emoji
-        ?.replace(/([🌟💊🤒🤕🦠🤧🥴🚽💨❤️😴😊])\s*([A-Z])/g, "$1\n\n$2") // Line break after other emojis before capital letter
-        ?.replace(/([.!?])\s*([A-Z])/g, "$1 $2") // Ensure space after sentence endings within same paragraph
-
-        // Handle numbered lists that get streamed as one line
-        ?.replace(/(\d+)\.\s*/g, "\n$1. ") // Convert "1. " to newline + "1. "
-        ?.replace(/^(\d+)\.\s*/, "$1. ") // Fix first numbered item
-
-        // Handle bullet lists that get streamed as one line
-        ?.replace(/\s*-\s*([^-\n])/g, "\n- $1") // Convert " - item" to newline + "- item"
-        ?.replace(/^-\s*/, "- ") // Fix first bullet item
-
-        // Clean up excessive whitespace while preserving line structure
-        ?.split("\n") // Split into lines
-        .map((line) => line.replace(/\s+/g, " ").trim()) // Clean each line individually
-        .filter((line) => line.length > 0) // Remove empty lines
-        .join("\n") // Rejoin with newlines
-
-        ?.replace(/\s+(['"])/g, "$1") // Remove spaces before quotes
-        ?.replace(/(['"])\s+/g, "$1 "); // Ensure single space after quotes
-
-    const components = {
-        // Custom code block renderer
+    const components = useMemo(() => ({
         code({ node, inline, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || "");
+            const codeContent = String(children).replace(/\n$/, "");
+            
             return !inline && match ? (
                 <SyntaxHighlighter
                     style={tomorrow}
                     language={match[1]}
                     PreTag="div"
                     className="rounded-md my-2"
+                    showLineNumbers={!isStreaming}
                     {...props}
                 >
-                    {String(children).replace(/\n$/, "")}
+                    {codeContent}
                 </SyntaxHighlighter>
             ) : (
                 <code
@@ -188,13 +162,58 @@ const MarkdownTranslator = ({ content, className = "" }) => {
         hr() {
             return <hr className="my-4 border-gray-300" />;
         },
-    };
+    }), [isStreaming]);
+
+    // Process content for streaming to handle incomplete markdown gracefully
+    const processedContent = useMemo(() => {
+        if (!content) return "";
+        
+        let processedText = content;
+        
+        // Handle incomplete markdown during streaming
+        if (isStreaming) {
+            // Count code block markers to ensure proper rendering
+            const codeBlockMatches = processedText.match(/```/g) || [];
+            const openCodeBlocks = codeBlockMatches.length;
+            
+            // If we have an odd number of code block markers, the block is incomplete
+            if (openCodeBlocks % 2 !== 0) {
+                // Let ReactMarkdown handle it gracefully - don't modify
+            }
+            
+            // Handle incomplete list items
+            if (processedText.match(/\n[-*+]\s*$/)) {
+                processedText += " ";
+            }
+            
+            // Handle incomplete numbered lists
+            if (processedText.match(/\n\d+\.\s*$/)) {
+                processedText += " ";
+            }
+            
+            // Handle incomplete headers
+            if (processedText.match(/\n#+\s*$/)) {
+                processedText += " ";
+            }
+        }
+        
+        return processedText;
+    }, [content, isStreaming]);
 
     return (
-        <div className={`prose prose-sm max-w-none ${className}`}>
-            <ReactMarkdown components={components} remarkPlugins={[remarkGfm]}>
-                {cleanContent || ""}
+        <div className={`prose prose-sm max-w-none ${className} ${isStreaming ? 'streaming-markdown' : ''}`}>
+            <ReactMarkdown 
+                components={components} 
+                remarkPlugins={[remarkGfm]}
+                skipHtml={false}
+            >
+                {processedContent}
             </ReactMarkdown>
+            {isStreaming && (
+                <span className="inline-flex items-center ml-1">
+                    <span className="w-2 h-4 bg-blue-500 animate-pulse opacity-75 rounded-sm"></span>
+                </span>
+            )}
         </div>
     );
 };

@@ -31,7 +31,7 @@ import { getConversationById } from "../controllers/chat";
  *   setHasLoaded: setLoadedState
  * });
  *
- * @author Your Team Name
+ * @author AHA
  * @since 1.0.0
  */
 export default function useChatData({

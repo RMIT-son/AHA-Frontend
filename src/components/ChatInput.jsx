@@ -28,6 +28,8 @@ export default function ChatInput({
     const [message, setMessage] = useState("");
     const [uploadedFiles, setUploadedFiles] = useState([]);
     const [isDragOver, setIsDragOver] = useState(false);
+    const [searchResults, setSearchResults] = useState([]);
+    const [isSearching, setIsSearching] = useState(false);
 
     const textareaRef = useRef(null);
 
@@ -125,6 +127,8 @@ export default function ChatInput({
         onSend(message, uploadedFiles, { webSearchEnabled });
         setMessage("");
         setUploadedFiles([]);
+        // Clear search results when sending
+        setSearchResults([]);
     };
 
     const handleKeyDown = (e) => {
@@ -182,6 +186,41 @@ export default function ChatInput({
         if (isStreaming)
             return "AI is responding... (Press Escape or send to interrupt)";
         return "How can I help you today?";
+    };
+
+    // Fixed research functionality
+    const handleResearch = async () => {
+        if (!message.trim() || !conversationId) return;
+        
+        setIsSearching(true);
+        setSearchResults([]);
+
+        try {
+            await streamWebSearch(conversationId, message, (chunk) => {
+                setSearchResults((prev) => [...prev, chunk]);
+            });
+        } catch (error) {
+            console.error('Search failed:', error);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const handleResearchClick = async () => {
+        if (!webSearchEnabled) {
+            // Enable web search first
+            onWebSearchToggle();
+            // Then perform search if there's a message
+            if (message.trim()) {
+                await handleResearch();
+            }
+        } else {
+            // Disable web search
+            onWebSearchToggle();
+            // Clear search results
+            setSearchResults([]);
+            setIsSearching(false);
+        }
     };
 
     const getInputButtonState = () => {
@@ -330,41 +369,52 @@ export default function ChatInput({
                                 <div className="flex items-center">
                                     {enableWebSearch && (
                                         <button
-                                            onClick={onWebSearchToggle}
+                                            onClick={handleResearchClick}
                                             className={`
                                                 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border
-                                                ${
-                                                    webSearchEnabled
-                                                        ? "bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-150"
-                                                        : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-150"
+                                                ${webSearchEnabled
+                                                    ? "bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-150"
+                                                    : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-150"
                                                 }
                                             `}
-                                            disabled={
-                                                isLoading ||
-                                                isProcessing ||
-                                                isStreaming
-                                            }
-                                            title={
-                                                webSearchEnabled
-                                                    ? "Web search enabled - Click to disable"
-                                                    : "Click to enable web search"
+                                            disabled={isLoading || isProcessing || isStreaming || isSearching}
+                                            title={webSearchEnabled
+                                                ? "Web search enabled - Click to disable"
+                                                : "Click to enable web search"
                                             }
                                         >
-                                            <svg
-                                                className={`w-3.5 h-3.5 transition-colors duration-200 ${
-                                                    webSearchEnabled
-                                                        ? "text-blue-600"
-                                                        : "text-gray-500"
-                                                }`}
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <circle cx="11" cy="11" r="8" />
-                                                <path d="M21 21l-4.35-4.35" />
-                                            </svg>
-                                            <span>Research</span>
-                                        </button>
+                                            {isSearching ? (
+                                                <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24">
+                                                    <circle 
+                                                        className="opacity-25" 
+                                                        cx="12" 
+                                                        cy="12" 
+                                                        r="10" 
+                                                        stroke="currentColor" 
+                                                        strokeWidth="4"
+                                                        fill="none"
+                                                    />
+                                                    <circle 
+                                                        className="opacity-75" 
+                                                        cx="12" 
+                                                        cy="12" 
+                                                        r="10" 
+                                                        stroke="currentColor" 
+                                                        strokeWidth="4"
+                                                        fill="none"
+                                                        strokeDasharray="31.416"
+                                                        strokeDashoffset="23.562"
+                                                        strokeLinecap="round"
+                                                    />
+                                                </svg>
+                                            ) : (
+                                                <svg className={`w-3.5 h-3.5 transition-colors duration-200 ${webSearchEnabled ? "text-blue-600" : "text-gray-500"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <circle cx="11" cy="11" r="8" />
+                                                    <path d="M21 21l-4.35-4.35" />
+                                                </svg>
+                                            )}
+                                            <span>{isSearching ? "Searching..." : "Research"}</span>
+                                        </button>   
                                     )}
                                 </div>
 
@@ -425,7 +475,7 @@ export default function ChatInput({
                                                 <path
                                                     className="opacity-75"
                                                     fill="currentColor"
-                                                    d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                    d="M12 2a10 10 0 100 20 10 10 0 000-20zM2 12a10 10 0 0110-10v4a6 6 0 00-6 6H2z"
                                                 ></path>
                                             </svg>
                                         ) : isTranscribing ? (
@@ -445,7 +495,7 @@ export default function ChatInput({
                                                 <path
                                                     className="opacity-75"
                                                     fill="currentColor"
-                                                    d="M4 12a8 8 0 818-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                                    d="M12 2a10 10 0 100 20 10 10 0 000-20zM2 12a10 10 0 0110-10v4a6 6 0 00-6 6H2z"
                                                 ></path>
                                             </svg>
                                         ) : isStreaming ? (
@@ -499,6 +549,45 @@ export default function ChatInput({
                         </div>
                     </div>
 
+                    {/* Search Results Section */}
+                    {isSearching && (
+                        <div className="mt-3 flex items-center gap-2 text-gray-500 text-sm">
+                            <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span>Searching the web...</span>
+                        </div>
+                    )}
+                    
+                    {searchResults.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                            <div className="text-sm text-gray-600 font-medium mb-2">
+                                Search Results ({searchResults.length})
+                            </div>
+                            {searchResults.map((result, index) => (
+                                <div key={index} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+                                    <a 
+                                        href={result.url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="text-blue-600 font-medium hover:underline text-sm"
+                                    >
+                                        {result.title}
+                                    </a>
+                                    <p className="text-gray-600 text-sm mt-1 line-clamp-2">
+                                        {result.snippet}
+                                    </p>
+                                    {result.url && (
+                                        <p className="text-gray-400 text-xs mt-1 truncate">
+                                            {result.url}
+                                        </p>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
                     {/* Hidden file input */}
                     <input
                         ref={fileInputRef}
@@ -506,7 +595,7 @@ export default function ChatInput({
                         multiple
                         className="hidden"
                         onChange={handleFileSelect}
-                        accept="image/*,application/pdf,text/plain,application/json,text/csv"
+                        accept="image/*,application/pdf,text/plain,application/json,text/csv,audio/wav,audio/mpeg,.wav,.mp3"
                     />
                 </div>
             </div>

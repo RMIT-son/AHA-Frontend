@@ -56,31 +56,40 @@ const processFilesForBackend = async (files) => {
     return processedFiles;
 };
 
-export const createConversation = async (user_id, message, files = []) => {
-    try {
-        // Process files to base64
-        const processedFiles = await processFilesForBackend(files);
+export const createConversation = async (user_id, content, files = []) => {
+  try {
+    // Process files to base64
+    const processedFiles = await processFilesForBackend(files);
 
-        const requestBody = {
-            content: message,
-            files: processedFiles, // Send array of file objects
-            timestamp: new Date().toISOString(),
-        };
-
-        const res = await axios.post(
-            `${app.dataURL}/api/conversations/create/${user_id}`,
-            requestBody,
-            {
-                headers: {
-                    "Content-Type": "application/json",
-                },
-            }
-        );
-        return res.data;
-    } catch (error) {
-        console.error("Failed to create conversation", error);
-        throw error;
+    // Create FormData for multipart/form-data request
+    const formData = new FormData();
+    
+    // Add text content and timestamp
+    if (content) {
+        formData.append('content', content);
     }
+    
+    // Add files to FormData
+    processedFiles.forEach((file) => {
+        formData.append('files', file);
+    });
+    
+    console.log('Sending files:', processedFiles.map(f => ({ name: f.name, type: f.type, size: f.size })));
+
+    const res = await axios.post(
+      `${app.dataURL}/api/conversations/create/${user_id}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
+    return res.data;
+  } catch (error) {
+    console.error("Failed to create conversation", error);
+    throw error;
+  }
 };
 
 export const getAllConversations = async (userId) => {
@@ -333,3 +342,70 @@ export const sendVoiceMessage = async (
         }
     }
 };
+
+export async function streamWebSearch(conversationId, query, onChunk) {
+  const formData = new FormData();
+    
+  // Add text content and timestamp
+  if (query) {
+      formData.append('content', query);
+    }
+  formData.append('timestamp', new Date().toISOString());
+    try {
+        const response = await fetch(
+            `${app.dataURL}/api/conversations/${conversationId}/web/search`,
+            {
+                method: "POST",
+                headers: {
+                    Accept: "text/event-stream",
+                    "Cache-Control": "no-cache",
+                    Connection: "keep-alive",
+                },
+                body: formData
+            }
+        );
+
+        if (!response.ok || !response.body) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+
+                let eventEndIndex;
+                while ((eventEndIndex = buffer.indexOf("\n\n")) !== -1) {
+                    const event = buffer.slice(0, eventEndIndex);
+                    buffer = buffer.slice(eventEndIndex + 2);
+                    processSSEEvent(event, onChunk);
+                }
+
+                // Fallback for servers that don't send \n\n
+                if (!buffer.includes("\n\n") && buffer.includes("\n")) {
+                    const lines = buffer.split("\n");
+                    buffer = lines.pop() || "";
+
+                    for (const line of lines) {
+                        if (line.trim().startsWith("data: ")) {
+                            const data = line.trim().slice(6);
+                            if (data === "[DONE]") return;
+                            onChunk?.(data);
+                        }
+                    }
+                }
+            }
+        } finally {
+            reader.releaseLock();
+        }
+    } catch (error) {
+        console.error("Streaming error:", error);
+        throw error;
+    }
+}
