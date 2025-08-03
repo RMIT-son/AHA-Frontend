@@ -247,6 +247,12 @@ export default function ChatWindow({
                                 const isUser = message.sender === "user";
                                 const isLastMessage =
                                     index === messages.length - 1;
+                                // Check if this is the last bot message and streaming is active
+                                const isCurrentlyStreaming =
+                                    isStreaming &&
+                                    !isUser &&
+                                    isLastMessage &&
+                                    message.tempId;
 
                                 return (
                                     <div
@@ -348,6 +354,9 @@ export default function ChatWindow({
                                                                 message.content
                                                             }
                                                             className="text-sm leading-relaxed"
+                                                            isStreaming={
+                                                                isCurrentlyStreaming
+                                                            }
                                                         />
                                                     </div>
                                                 </div>

@@ -22,10 +22,10 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",
-    "react-redux": "^9.2.0",
+    "react-redux": "^9",
     "react-router-dom": "^7.6.2",
     "react-syntax-highlighter": "^15.6.1",
-    "redux": "^5.0.1",
+    "redux": "^5",
     "redux-devtools-extension": "^2.13.9",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1"
