@@ -92,6 +92,9 @@ export default function ChatWindow({
         alt = "User uploaded image",
         scrollOnLoad = true,
     }) => {
+        const [imageError, setImageError] = useState(false);
+        const [imageLoaded, setImageLoaded] = useState(false);
+
         const handleImageClick = (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -101,6 +104,7 @@ export default function ChatWindow({
         };
 
         const handleImageLoad = () => {
+            setImageLoaded(true);
             // Only scroll if this image hasn't been loaded before
             if (
                 scrollOnLoad &&
@@ -113,18 +117,68 @@ export default function ChatWindow({
             }
         };
 
+        const handleImageError = (e) => {
+            console.error("Failed to load image:", imageUrl);
+            setImageError(true);
+        };
+
+        // Don't render anything if there's an error
+        if (imageError) {
+            return (
+                <div className="mt-2 max-w-md p-4 border border-red-200 rounded-lg bg-red-50">
+                    <div className="flex items-center gap-2 text-red-600">
+                        <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                        </svg>
+                        <span className="text-sm">Failed to load image</span>
+                    </div>
+                </div>
+            );
+        }
+
         return (
             <div className="mt-2 max-w-md">
+                {!imageLoaded && (
+                    <div
+                        className="animate-pulse bg-gray-200 rounded-lg"
+                        style={{ height: "200px", maxWidth: "400px" }}
+                    >
+                        <div className="flex items-center justify-center h-full">
+                            <svg
+                                className="w-8 h-8 text-gray-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                />
+                            </svg>
+                        </div>
+                    </div>
+                )}
                 <img
                     src={imageUrl}
                     alt={alt}
-                    className="rounded-lg max-w-full h-auto shadow-sm border border-gray-200 cursor-pointer hover:shadow-lg transition-shadow duration-200"
+                    className={`rounded-lg max-w-full h-auto shadow-sm border border-gray-200 cursor-pointer hover:shadow-lg transition-all duration-200 ${
+                        imageLoaded ? "opacity-100" : "opacity-0 absolute"
+                    }`}
                     style={{ maxHeight: "400px" }}
                     onClick={handleImageClick}
-                    onError={(e) => {
-                        e.target.style.display = "none";
-                        console.error("Failed to load image:", imageUrl);
-                    }}
+                    onError={handleImageError}
                     onLoad={handleImageLoad}
                 />
             </div>
@@ -150,6 +204,26 @@ export default function ChatWindow({
             isClosingModal.current = false;
             scrollingEnabled.current = true; // Re-enable scrolling
         }, 800); // Increased delay to ensure modal animation completes
+    };
+
+    // Helper function to extract image URL from file object
+    const getImageUrl = (file) => {
+        // Handle different possible data structures
+        if (typeof file === "string") {
+            return file; // Direct URL string
+        }
+
+        // Check for common URL properties
+        return file.url || file.file || file.src || file.path || null;
+    };
+
+    // Helper function to get image name/alt text
+    const getImageAlt = (file, index) => {
+        if (typeof file === "string") {
+            return `Image ${index + 1}`;
+        }
+
+        return file.name || file.alt || `Image ${index + 1}`;
     };
 
     return (
@@ -185,13 +259,14 @@ export default function ChatWindow({
                                     >
                                         {isUser ? (
                                             <div>
-                                                {/* Display image if present */}
+                                                {/* Display single image if present */}
                                                 {message.image && (
                                                     <div className="mb-2">
                                                         <ImageDisplay
                                                             imageUrl={
                                                                 message.image
                                                             }
+                                                            alt="User uploaded image"
                                                             scrollOnLoad={true}
                                                         />
                                                     </div>
@@ -206,35 +281,63 @@ export default function ChatWindow({
                                                                 (
                                                                     file,
                                                                     fileIndex
-                                                                ) => (
-                                                                    <ImageDisplay
-                                                                        key={
-                                                                            fileIndex
-                                                                        }
-                                                                        imageUrl={
-                                                                            file.url ||
+                                                                ) => {
+                                                                    const imageUrl =
+                                                                        getImageUrl(
                                                                             file
-                                                                        }
-                                                                        alt={
-                                                                            file.name ||
-                                                                            `Image ${
-                                                                                fileIndex +
-                                                                                1
-                                                                            }`
-                                                                        }
-                                                                    />
-                                                                )
+                                                                        );
+                                                                    const imageAlt =
+                                                                        getImageAlt(
+                                                                            file,
+                                                                            fileIndex
+                                                                        );
+
+                                                                    // Only render if we have a valid URL
+                                                                    if (
+                                                                        !imageUrl
+                                                                    ) {
+                                                                        console.warn(
+                                                                            "No valid image URL found for file:",
+                                                                            file
+                                                                        );
+                                                                        return null;
+                                                                    }
+
+                                                                    return (
+                                                                        <ImageDisplay
+                                                                            key={
+                                                                                fileIndex
+                                                                            }
+                                                                            imageUrl={
+                                                                                imageUrl
+                                                                            }
+                                                                            alt={
+                                                                                imageAlt
+                                                                            }
+                                                                            scrollOnLoad={
+                                                                                true
+                                                                            }
+                                                                        />
+                                                                    );
+                                                                }
                                                             )}
                                                         </div>
                                                     )}
 
-                                                {/* User message bubble */}
-                                                <div className="inline-flex items-center bg-[#1a1a1a] text-white rounded-2xl px-3 py-3 max-w-full shadow-md">
-                                                    <AvatarInside user={user} />
-                                                    <span className="ml-2 break-words whitespace-pre-wrap text-sm">
-                                                        {message.content}
-                                                    </span>
-                                                </div>
+                                                {/* User message bubble - only show if there's content */}
+                                                {message.content &&
+                                                    message.content.trim() && (
+                                                        <div className="inline-flex items-center bg-[#1a1a1a] text-white rounded-2xl px-3 py-3 max-w-full shadow-md">
+                                                            <AvatarInside
+                                                                user={user}
+                                                            />
+                                                            <span className="ml-2 break-words whitespace-pre-wrap text-sm">
+                                                                {
+                                                                    message.content
+                                                                }
+                                                            </span>
+                                                        </div>
+                                                    )}
                                             </div>
                                         ) : (
                                             <div className="max-w-[90%] pl-2">

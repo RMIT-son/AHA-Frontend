@@ -10,20 +10,29 @@ const MarkdownTranslator = ({ content, className = "" }) => {
         // First, remove the streaming data format
         ?.replace(/data:\s*/g, "") // Remove "data: " prefixes
         ?.replace(/\[DONE\]/g, "") // Remove [DONE] markers
-        ?.replace(/\s+/g, " ") // Replace multiple spaces with single space
-        ?.replace(/\s+([.,!?;:])/g, "$1") // Remove spaces before punctuation
-        ?.replace(/([.,!?;:])\s+/g, "$1 ") // Ensure single space after punctuation
-        ?.replace(/\s*-\s*/g, "-") // Fix hyphenated words
-        ?.replace(/\s+(['"])/g, "$1") // Remove spaces before quotes
-        ?.replace(/(['"])\s+/g, "$1 ") // Ensure single space after quotes
 
-        // Convert numbered lists to proper markdown format
-        ?.replace(
-            /(\d+)\.\s+([^0-9\n]+?)(?=\s+\d+\.|$)/g,
-            (match, num, content) => {
-                return `${num}. ${content.trim()}\n`;
-            }
-        )
+        // Fix spacing issues with emojis and text concatenation (but avoid breaking numbers)
+        ?.replace(/([a-zA-Z])(\d+)(?!\d)/g, "$1 $2") // Add space between word and number, but not within numbers
+        ?.replace(/(🥤)\s*([A-Z])/g, "$1\n\n$2") // Specific fix for 🥤 emoji
+        ?.replace(/([🌟💊🤒🤕🦠🤧🥴🚽💨❤️😴😊])\s*([A-Z])/g, "$1\n\n$2") // Line break after other emojis before capital letter
+        ?.replace(/([.!?])\s*([A-Z])/g, "$1 $2") // Ensure space after sentence endings within same paragraph
+
+        // Handle numbered lists that get streamed as one line
+        ?.replace(/(\d+)\.\s*/g, "\n$1. ") // Convert "1. " to newline + "1. "
+        ?.replace(/^(\d+)\.\s*/, "$1. ") // Fix first numbered item
+
+        // Handle bullet lists that get streamed as one line
+        ?.replace(/\s*-\s*([^-\n])/g, "\n- $1") // Convert " - item" to newline + "- item"
+        ?.replace(/^-\s*/, "- ") // Fix first bullet item
+
+        // Clean up excessive whitespace while preserving line structure
+        ?.split("\n") // Split into lines
+        .map((line) => line.replace(/\s+/g, " ").trim()) // Clean each line individually
+        .filter((line) => line.length > 0) // Remove empty lines
+        .join("\n") // Rejoin with newlines
+
+        ?.replace(/\s+(['"])/g, "$1") // Remove spaces before quotes
+        ?.replace(/(['"])\s+/g, "$1 "); // Ensure single space after quotes
 
     const components = {
         // Custom code block renderer
