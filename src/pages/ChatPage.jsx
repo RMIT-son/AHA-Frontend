@@ -9,9 +9,12 @@ import {
 } from "../hooks";
 
 export default function ChatPage() {
+    console.log("🏠 ChatPage render started");
+
     // Web search state
     const [webSearchEnabled, setWebSearchEnabled] = useState(false);
 
+    console.log("🔧 Initializing chat state");
     const chatState = useChatState();
     const {
         userId,
@@ -43,9 +46,25 @@ export default function ChatPage() {
         getCurrentChatTitle,
     } = chatState;
 
+    console.log("📊 ChatPage state:", {
+        userId,
+        chatId,
+        messagesCount: messages.length,
+        isBotTyping,
+        isLoadingInput,
+        hasLoaded,
+        isStreaming,
+        canSendNewMessage,
+        isProcessingMessage,
+        isTranscribing,
+        webSearchEnabled,
+    });
+
     // Custom hooks for different concerns
+    console.log("🔐 Initializing useAuth");
     useAuth(navigate, setUserId, setUser);
 
+    console.log("📚 Initializing useChatData");
     useChatData({
         id,
         userId,
@@ -57,9 +76,11 @@ export default function ChatPage() {
         setHasLoaded,
     });
 
+    console.log("💬 Initializing useMessageHandler");
     const { handleSend, handleVoiceMessage, cancelCurrentStream } =
         useMessageHandler(chatState);
 
+    console.log("🧹 Initializing useCleanupEffects");
     useCleanupEffects({
         activeStreamRef,
         streamingTimeoutRef,
@@ -73,25 +94,58 @@ export default function ChatPage() {
 
     // Enhanced send handler that includes web search options
     const handleSendWithOptions = (message, files, options = {}) => {
-        const { webSearchEnabled: searchEnabled } = options;
-
-        // You can add logic here to handle web search
-        // For example, add a flag to the message or modify the API call
-        console.log("Sending message with options:", {
-            message,
-            files,
-            webSearchEnabled: searchEnabled,
+        console.log("📤 handleSendWithOptions called:", {
+            messageLength: message?.length,
+            filesCount: files?.length,
+            options,
+            webSearchEnabled,
         });
 
-        // Call the original handler - you might want to modify this
-        // to pass the web search flag to your backend
-        handleSend(message, files, { webSearchEnabled: searchEnabled });
+        const { webSearchEnabled: searchEnabled } = options;
+
+        console.log("🔍 Processing send options:", {
+            searchEnabled,
+            globalWebSearchEnabled: webSearchEnabled,
+            finalSearchEnabled: searchEnabled || webSearchEnabled,
+        });
+
+        // Log file details
+        if (files && files.length > 0) {
+            console.log(
+                "📎 Files being sent:",
+                files.map((file, index) => ({
+                    index,
+                    type: typeof file,
+                    isString: typeof file === "string",
+                    hasUrl: !!file?.url,
+                    hasFile: !!file?.file,
+                    hasSrc: !!file?.src,
+                    hasPath: !!file?.path,
+                    fileName: file?.name,
+                    fileSize: file?.size,
+                    preview:
+                        typeof file === "string"
+                            ? file.substring(0, 50) + "..."
+                            : "object",
+                }))
+            );
+        }
+
+        // Call the original handler
+        console.log("🚀 Calling handleSend with processed options");
+        handleSend(message, files, {
+            webSearchEnabled: searchEnabled || webSearchEnabled,
+        });
+        console.log("✅ handleSend call completed");
     };
 
     // Toggle web search
     const handleWebSearchToggle = () => {
+        console.log("🔄 Toggling web search:", !webSearchEnabled);
         setWebSearchEnabled((prev) => !prev);
     };
+
+    console.log("🎨 Rendering ChatPage components");
 
     return (
         <ChatLayout
@@ -118,10 +172,13 @@ export default function ChatPage() {
                 onCancelStream={cancelCurrentStream}
                 isProcessing={isProcessingMessage}
                 transcribedText={transcribedText}
-                onTranscribedTextUsed={() => setTranscribedText("")}
+                onTranscribedTextUsed={() => {
+                    console.log("🎤 Transcribed text used, clearing");
+                    setTranscribedText("");
+                }}
                 isTranscribing={isTranscribing}
                 // Web search props
-                enableWebSearch={true} // Set to true to enable the feature
+                enableWebSearch={true}
                 webSearchEnabled={webSearchEnabled}
                 onWebSearchToggle={handleWebSearchToggle}
             />

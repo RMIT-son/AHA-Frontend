@@ -16,13 +16,20 @@ const MarkdownTranslator = ({
         let processed = content;
 
         try {
-            // Check if this looks like a single-line numbered list (common during streaming)
-            const isSingleLineList =
+            // Check if this looks like a single-line list (common during streaming)
+            const isSingleLineNumberedList =
                 content.includes("1.") &&
                 content.includes("2.") &&
                 !content.includes("\n");
 
-            if (isSingleLineList) {
+            // Check if this looks like a single-line bulleted list with bold headers
+            const isSingleLineBulletList =
+                content.includes("* **") &&
+                content.match(/\* \*\*[^*]+\*\*:/g) &&
+                content.match(/\* \*\*[^*]+\*\*:/g).length > 1 &&
+                !content.includes("\n");
+
+            if (isSingleLineNumberedList) {
                 // Fix spacing issues like "are10" -> "are 10"
                 processed = processed.replace(/([a-zA-Z])(\d+)/g, "$1 $2");
 
@@ -33,7 +40,6 @@ const MarkdownTranslator = ({
                 processed = processed.replace(/(\d+\.\s)/g, "\n$1");
 
                 // Fix cases where text runs into next sentence after emoji
-                // Use a more comprehensive emoji pattern that catches compound emojis like 🌬️
                 processed = processed.replace(
                     /([\u{1F000}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]+)([A-Z])/gu,
                     "$1\n\n$2"
@@ -47,7 +53,57 @@ const MarkdownTranslator = ({
                     /(uses?:)\n(\d+\.\s)/gi,
                     "$1\n\n$2"
                 );
+            } else if (isSingleLineBulletList) {
+                // Handle bulleted lists with bold headers
+
+                // First, fix any text that runs into bullet points after periods or colons
+                processed = processed.replace(
+                    /([.:])\s*\*\s*\*\*/g,
+                    "$1\n* **"
+                );
+
+                // Insert line breaks before bullet points with bold headers
+                // This pattern matches: "- **Header**: content" or "* **Header**: content"
+                processed = processed.replace(
+                    /([.!?:])\s*[-*]\s*\*\*([^*]+)\*\*:/g,
+                    "$1\n* **$2**:"
+                );
+
+                // Also handle cases where bullet points are right after text without punctuation
+                processed = processed.replace(
+                    /([a-zA-Z0-9)])\s*[-*]\s*\*\*([^*]+)\*\*:/g,
+                    "$1\n* **$2**:"
+                );
+
+                // Fix cases where emojis run into the next bullet point
+                processed = processed.replace(
+                    /([\u{1F000}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]+)\s*[-*]\s*\*\*([^*]+)\*\*:/gu,
+                    "$1\n* **$2**:"
+                );
+
+                // Handle "Overall," or similar transition words that should be on new lines
+                processed = processed.replace(
+                    /([.!?:])\s*(Overall|In conclusion|Finally|Additionally|Furthermore),/gi,
+                    "$1\n\n$2,"
+                );
+
+                // Clean up any double newlines that might have been created
+                processed = processed.replace(/\n\n\n+/g, "\n\n");
+
+                // Clean up: remove the leading newline if it exists
+                processed = processed.replace(/^\n/, "");
             }
+
+            // General fixes for streaming content
+
+            // Fix spacing issues like "are10" -> "are 10" (for all content)
+            processed = processed.replace(/([a-zA-Z])(\d+)/g, "$1 $2");
+
+            // Fix cases where text runs into next sentence after emoji (for all content)
+            processed = processed.replace(
+                /([\u{1F000}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]+)([A-Z][a-z])/gu,
+                "$1\n\n$2"
+            );
         } catch (error) {
             console.warn("❌ Error processing markdown content:", error);
             processed = content;
