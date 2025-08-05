@@ -409,3 +409,12 @@ export async function streamWebSearch(conversationId, query, onChunk) {
         throw error;
     }
 }
+
+
+export async function voiceSpeaker () {
+    // TODO: This function will handle the voice speaker functionality when the user click on the speaker icon
+}
+
+export async function searchAllChats () {
+    // TODO: This function will handle searching context through all chats
+}

@@ -228,6 +228,8 @@ const Sidebar = ({
                         </svg>
                         {isOpen && <span>New chat</span>}
                     </button>
+
+                    {/* TODO: Implement chatting box - Search for all Chat */}
                 </div>
 
                 {/* Recents Section */}

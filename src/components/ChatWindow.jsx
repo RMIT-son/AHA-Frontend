@@ -8,6 +8,13 @@ export default function ChatWindow({
     user,
     isStreaming,
 }) {
+    console.log("🔄 ChatWindow render:", {
+        messagesLength: messages.length,
+        isBotTyping,
+        isStreaming,
+        timestamp: new Date().toISOString(),
+    });
+
     const messagesEndRef = useRef(null);
     const scrollAreaRef = useRef(null);
     const previousMessagesLength = useRef(0);
@@ -26,13 +33,19 @@ export default function ChatWindow({
     const scrollTimeoutRef = useRef(null);
     const lastScrollTime = useRef(0);
 
-    const positionAtBottomInstant = useCallback(() => {
-        console.log("📍 positionAtBottomInstant called:", {
-            scrollingEnabled: scrollingEnabled.current,
-            isModalOpen,
-            isClosingModal: isClosingModal.current,
+    // Speaker handler function
+    const handleSpeaker = useCallback((message, messageIndex) => {
+        console.log("🔊 Speaker clicked for message:", {
+            index: messageIndex,
+            content: message.content,
+            sender: message.sender,
+            messageId: message.id || message.tempId,
+            fullMessage: message,
         });
+        
+    }, []);
 
+    const positionAtBottomInstant = useCallback(() => {
         if (
             !scrollingEnabled.current ||
             isModalOpen ||
@@ -50,18 +63,11 @@ export default function ChatWindow({
     }, [isModalOpen]);
 
     const scrollToBottomSmooth = useCallback(() => {
-        console.log("🔽 scrollToBottomSmooth called:", {
-            scrollingEnabled: scrollingEnabled.current,
-            isModalOpen,
-            isClosingModal: isClosingModal.current,
-        });
-
         if (
             !scrollingEnabled.current ||
             isModalOpen ||
             isClosingModal.current
         ) {
-            console.log("⛔ scrollToBottomSmooth blocked");
             return;
         }
 
@@ -103,7 +109,6 @@ export default function ChatWindow({
             isModalOpen ||
             isClosingModal.current
         ) {
-            console.log("⛔ Main scroll effect blocked");
             return;
         }
 
@@ -114,8 +119,7 @@ export default function ChatWindow({
             positionAtBottomInstant();
             isNewConversation.current = false;
         } else if (isBotTyping || messagesIncreased || isStreaming) {
-            isStreaming, scrollToBottomSmooth();
-        } else {
+            scrollToBottomSmooth();
         }
 
         previousMessagesLength.current = messages.length;
@@ -129,17 +133,11 @@ export default function ChatWindow({
 
     // Reset conversation state when needed
     useEffect(() => {
-        console.log("🔄 Conversation reset effect:", {
-            messagesLength: messages.length,
-            previousLength: previousMessagesLength.current,
-        });
-
         if (
             messages.length === 0 ||
             (previousMessagesLength.current > 0 &&
                 messages.length < previousMessagesLength.current)
         ) {
-            console.log("🗑️ Resetting conversation state");
             isNewConversation.current = true;
             loadedImages.current.clear();
         }
@@ -148,6 +146,7 @@ export default function ChatWindow({
     // Cleanup timeouts on unmount
     useEffect(() => {
         return () => {
+            console.log("🧹 ChatWindow cleanup");
             if (scrollTimeoutRef.current) {
                 clearTimeout(scrollTimeoutRef.current);
             }
@@ -156,7 +155,6 @@ export default function ChatWindow({
 
     // Memoize AvatarInside to prevent unnecessary re-renders
     const AvatarInside = useMemo(() => {
-        console.log("👤 AvatarInside memoized");
         return ({ user }) => {
             const initial =
                 user?.fullName?.charAt(0) || user?.email?.charAt(0) || "A";
@@ -167,6 +165,33 @@ export default function ChatWindow({
             );
         };
     }, []);
+
+    // Speaker Icon Component
+    const SpeakerIcon = useCallback(
+        ({ onClick, className = "" }) => (
+            <button
+                onClick={onClick}
+                className={`p-1.5 rounded-full hover:bg-gray-100 transition-colors duration-200 opacity-60 hover:opacity-100 ${className}`}
+                title="Read message aloud"
+            >
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-gray-500"
+                >
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                </svg>
+            </button>
+        ),
+        []
+    );
 
     // Optimized ImageDisplay component with debug logging
     const ImageDisplay = useCallback(
@@ -419,83 +444,111 @@ export default function ChatWindow({
             });
 
             return (
-                <div key={messageKey} className="flex justify-start">
+                <div
+                    key={messageKey}
+                    className={isUser ? "" : "group relative mb-6"}
+                >
                     {isUser ? (
-                        <div>
-                            {/* Single image */}
-                            {message.image && (
-                                <div className="mb-2">
-                                    <ImageDisplay
-                                        imageUrl={message.image}
-                                        alt="User uploaded image"
-                                        scrollOnLoad={true}
-                                        messageId={messageKey}
-                                    />
-                                </div>
-                            )}
+                        <div className="flex justify-start">
+                            <div>
+                                {/* Single image */}
+                                {message.image && (
+                                    <div className="mb-2 mt-10">
+                                        <ImageDisplay
+                                            imageUrl={message.image}
+                                            alt="User uploaded image"
+                                            scrollOnLoad={true}
+                                            messageId={messageKey}
+                                        />
+                                    </div>
+                                )}
 
-                            {/* Multiple files */}
-                            {message.files && message.files.length > 0 && (
-                                <div className="mb-2 space-y-2">
-                                    {message.files.map((file, fileIndex) => {
-                                        const imageUrl = getImageUrl(file);
-                                        const imageAlt = getImageAlt(
-                                            file,
-                                            fileIndex
-                                        );
+                                {/* Multiple files */}
+                                {message.files && message.files.length > 0 && (
+                                    <div className="mb-2 space-y-2">
+                                        {message.files.map(
+                                            (file, fileIndex) => {
+                                                const imageUrl =
+                                                    getImageUrl(file);
+                                                const imageAlt = getImageAlt(
+                                                    file,
+                                                    fileIndex
+                                                );
 
-                                        console.log(
-                                            `📎 Processing file ${fileIndex}:`,
-                                            {
-                                                file,
-                                                imageUrl:
-                                                    imageUrl?.substring(0, 50) +
-                                                    "...",
-                                                imageAlt,
+                                                console.log(
+                                                    `📎 Processing file ${fileIndex}:`,
+                                                    {
+                                                        file,
+                                                        imageUrl:
+                                                            imageUrl?.substring(
+                                                                0,
+                                                                50
+                                                            ) + "...",
+                                                        imageAlt,
+                                                    }
+                                                );
+
+                                                if (!imageUrl) {
+                                                    console.warn(
+                                                        "⚠️ No valid image URL found for file:",
+                                                        file
+                                                    );
+                                                    return null;
+                                                }
+
+                                                return (
+                                                    <ImageDisplay
+                                                        key={`${messageKey}-file-${fileIndex}`}
+                                                        imageUrl={imageUrl}
+                                                        alt={imageAlt}
+                                                        scrollOnLoad={true}
+                                                        messageId={`${messageKey}-${fileIndex}`}
+                                                    />
+                                                );
                                             }
-                                        );
+                                        )}
+                                    </div>
+                                )}
 
-                                        if (!imageUrl) {
-                                            console.warn(
-                                                "⚠️ No valid image URL found for file:",
-                                                file
-                                            );
-                                            return null;
-                                        }
-
-                                        return (
-                                            <ImageDisplay
-                                                key={`${messageKey}-file-${fileIndex}`}
-                                                imageUrl={imageUrl}
-                                                alt={imageAlt}
-                                                scrollOnLoad={true}
-                                                messageId={`${messageKey}-${fileIndex}`}
-                                            />
-                                        );
-                                    })}
-                                </div>
-                            )}
-
-                            {/* User message bubble */}
-                            {message.content && message.content.trim() && (
-                                <div className="inline-flex items-center bg-[#1a1a1a] text-white rounded-2xl px-3 py-3 max-w-full shadow-md">
-                                    <AvatarInside user={user} />
-                                    <span className="ml-2 break-words whitespace-pre-wrap text-sm">
-                                        {message.content}
-                                    </span>
-                                </div>
-                            )}
+                                {/* User message bubble */}
+                                {message.content && message.content.trim() && (
+                                    <div className="inline-flex items-center bg-[#1a1a1a] text-white rounded-2xl px-3 py-3 max-w-full shadow-md">
+                                        <AvatarInside user={user} />
+                                        <span className="ml-2 break-words whitespace-pre-wrap text-sm">
+                                            {message.content}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     ) : (
-                        <div className="max-w-[90%] pl-2">
-                            <div className="relative">
-                                <div className="relative text-gray-800">
-                                    <MarkdownTranslator
-                                        content={message.content}
-                                        className="text-sm leading-relaxed"
-                                        isStreaming={isCurrentlyStreaming}
-                                    />
+                        <div className="flex justify-start">
+                            <div className="max-w-[90%] pl-2 relative">
+                                <div className="relative">
+                                    <div className="relative text-gray-800">
+                                        <MarkdownTranslator
+                                            content={message.content}
+                                            className="text-sm leading-relaxed"
+                                            isStreaming={isCurrentlyStreaming}
+                                        />
+                                    </div>
                                 </div>
+
+                                {/* Speaker icon for bot messages only */}
+                                {message.content &&
+                                    message.content.trim() &&
+                                    !isCurrentlyStreaming && (
+                                        <div className="absolute mb-5 -left-1 -right-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                            <SpeakerIcon
+                                                onClick={() =>
+                                                    handleSpeaker(
+                                                        message,
+                                                        index
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                    )}
                             </div>
                         </div>
                     )}
@@ -508,6 +561,8 @@ export default function ChatWindow({
         user,
         ImageDisplay,
         AvatarInside,
+        SpeakerIcon,
+        handleSpeaker,
         getImageUrl,
         getImageAlt,
     ]);
