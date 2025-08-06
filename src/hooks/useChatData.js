@@ -96,29 +96,6 @@ export default function useChatData({
                                 // Handle legacy "assistant" sender type
                                 if (sender === "assistant") sender = "bot";
 
-                                /**
-                                 * Message order validation and correction
-                                 * Enforces alternating user/bot pattern for proper conversation flow
-                                 * Even indices (0, 2, 4...) should be user messages
-                                 * Odd indices (1, 3, 5...) should be bot messages
-                                 */
-                                if (index % 2 === 0) {
-                                    // Even index should be user message
-                                    if (sender !== "user") {
-                                        console.warn(
-                                            `Message at index ${index} corrected: ${sender} -> user`
-                                        );
-                                        sender = "user";
-                                    }
-                                } else {
-                                    // Odd index should be bot message
-                                    if (sender !== "bot") {
-                                        console.warn(
-                                            `Message at index ${index} corrected: ${sender} -> bot`
-                                        );
-                                        sender = "bot";
-                                    }
-                                }
 
                                 // Return normalized message object
                                 return { ...msg, sender };

@@ -125,6 +125,7 @@ export async function sendMessageToBackend(
 
     // Process files for multipart/form-data
     const processedFiles = await processFilesForBackend(files);
+   
 
     // Create FormData for multipart/form-data request
     const formData = new FormData();
