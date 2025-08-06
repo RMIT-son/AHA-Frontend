@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -8,109 +8,138 @@ const MarkdownTranslator = ({
     content,
     className = "",
     isStreaming = false,
+    streamingSpeed = 15, // Much slower for visibility
 }) => {
-    // Preprocess content to fix streaming formatting issues
-    const processedContent = useMemo(() => {
-        if (!content) return content;
+    const [displayedContent, setDisplayedContent] = useState("");
+    const [isAnimating, setIsAnimating] = useState(false);
+    const animationRef = useRef(null);
+    const timeoutRef = useRef(null);
+    const previousContentRef = useRef("");
+    const lastStreamedContentRef = useRef("");
 
-        let processed = content;
-
-        try {
-            // Check if this looks like a single-line list (common during streaming)
-            const isSingleLineNumberedList =
-                content.includes("1.") &&
-                content.includes("2.") &&
-                !content.includes("\n");
-
-            // Check if this looks like a single-line bulleted list with bold headers
-            const isSingleLineBulletList =
-                content.includes("* **") &&
-                content.match(/\* \*\*[^*]+\*\*:/g) &&
-                content.match(/\* \*\*[^*]+\*\*:/g).length > 1 &&
-                !content.includes("\n");
-
-            if (isSingleLineNumberedList) {
-                // Fix spacing issues like "are10" -> "are 10"
-                processed = processed.replace(/([a-zA-Z])(\d+)/g, "$1 $2");
-
-                // Fix "type2" -> "type 2"
-                processed = processed.replace(/type(\d+)/g, "type $1");
-
-                // Insert line breaks before numbered items
-                processed = processed.replace(/(\d+\.\s)/g, "\n$1");
-
-                // Fix cases where text runs into next sentence after emoji
-                processed = processed.replace(
-                    /([\u{1F000}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]+)([A-Z])/gu,
-                    "$1\n\n$2"
-                );
-
-                // Clean up: remove the leading newline if it exists
-                processed = processed.replace(/^\n/, "");
-
-                // Handle the specific "uses:" pattern
-                processed = processed.replace(
-                    /(uses?:)\n(\d+\.\s)/gi,
-                    "$1\n\n$2"
-                );
-            } else if (isSingleLineBulletList) {
-                // Handle bulleted lists with bold headers
-
-                // First, fix any text that runs into bullet points after periods or colons
-                processed = processed.replace(
-                    /([.:])\s*\*\s*\*\*/g,
-                    "$1\n* **"
-                );
-
-                // Insert line breaks before bullet points with bold headers
-                // This pattern matches: "- **Header**: content" or "* **Header**: content"
-                processed = processed.replace(
-                    /([.!?:])\s*[-*]\s*\*\*([^*]+)\*\*:/g,
-                    "$1\n* **$2**:"
-                );
-
-                // Also handle cases where bullet points are right after text without punctuation
-                processed = processed.replace(
-                    /([a-zA-Z0-9)])\s*[-*]\s*\*\*([^*]+)\*\*:/g,
-                    "$1\n* **$2**:"
-                );
-
-                // Fix cases where emojis run into the next bullet point
-                processed = processed.replace(
-                    /([\u{1F000}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]+)\s*[-*]\s*\*\*([^*]+)\*\*:/gu,
-                    "$1\n* **$2**:"
-                );
-
-                // Handle "Overall," or similar transition words that should be on new lines
-                processed = processed.replace(
-                    /([.!?:])\s*(Overall|In conclusion|Finally|Additionally|Furthermore),/gi,
-                    "$1\n\n$2,"
-                );
-
-                // Clean up any double newlines that might have been created
-                processed = processed.replace(/\n\n\n+/g, "\n\n");
-
-                // Clean up: remove the leading newline if it exists
-                processed = processed.replace(/^\n/, "");
-            }
-
-            // General fixes for streaming content
-
-            // Fix spacing issues like "are10" -> "are 10" (for all content)
-            processed = processed.replace(/([a-zA-Z])(\d+)/g, "$1 $2");
-
-            // Fix cases where text runs into next sentence after emoji (for all content)
-            processed = processed.replace(
-                /([\u{1F000}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]+)([A-Z][a-z])/gu,
-                "$1\n\n$2"
-            );
-        } catch (error) {
-            console.warn("❌ Error processing markdown content:", error);
-            processed = content;
+    useEffect(() => {
+        // Clean up previous animation
+        if (animationRef.current) {
+            cancelAnimationFrame(animationRef.current);
+            animationRef.current = null;
+        }
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
         }
 
-        return processed;
-    }, [content]);
+        if (!content) {
+            setDisplayedContent("");
+            setIsAnimating(false);
+            previousContentRef.current = "";
+            lastStreamedContentRef.current = "";
+            return;
+        }
+
+        // If not streaming, show content immediately
+        if (!isStreaming) {
+            setDisplayedContent(content);
+            setIsAnimating(false);
+            previousContentRef.current = content;
+            return;
+        }
+
+        // Check if content has changed and we should animate
+        const hasNewContent = content !== previousContentRef.current;
+        const contentGrew = content.length > previousContentRef.current.length;
+        const shouldAnimate = isStreaming && (hasNewContent || contentGrew);
+
+        // Update previous content reference
+        previousContentRef.current = content;
+
+        // If streaming and content should be animated
+        if (shouldAnimate) {
+            setIsAnimating(true);
+
+            // Determine starting point
+            let startIndex = 0;
+            if (contentGrew && content.startsWith(lastStreamedContentRef.current)) {
+                // Continue from where we left off
+                startIndex = lastStreamedContentRef.current.length;
+                setDisplayedContent(lastStreamedContentRef.current);
+            } else {
+                // New content, start from beginning
+                setDisplayedContent("");
+                lastStreamedContentRef.current = "";
+                startIndex = 0;
+            }
+
+            let currentIndex = startIndex;
+            const totalLength = content.length;
+            let lastTime = Date.now();
+            
+            // Calculate characters to add per frame based on speed
+            const charsPerSecond = streamingSpeed;
+            const targetFrameRate = 30; // 30 FPS
+            const charsPerFrame = charsPerSecond / targetFrameRate;
+
+            const animateText = () => {
+                const now = Date.now();
+                const deltaTime = (now - lastTime) / 1000; // Convert to seconds
+                
+                // Calculate how many characters to add this frame
+                const charsToAdd = Math.max(1, Math.ceil(charsPerFrame * deltaTime * targetFrameRate));
+                
+                if (currentIndex < totalLength) {
+                    currentIndex = Math.min(currentIndex + charsToAdd, totalLength);
+                    const newContent = content.substring(0, currentIndex);
+                    setDisplayedContent(newContent);
+                    lastStreamedContentRef.current = newContent;
+                    lastTime = now;
+                    animationRef.current = requestAnimationFrame(animateText);
+                } else {
+                    // Animation complete
+                    setIsAnimating(false);
+                    setDisplayedContent(content);
+                    lastStreamedContentRef.current = content;
+                    animationRef.current = null;
+                }
+            };
+
+            // Start animation immediately
+            lastTime = Date.now();
+            animationRef.current = requestAnimationFrame(animateText);
+        } else {
+            // Content hasn't changed or streaming is off
+            if (!isAnimating) {
+                setDisplayedContent(content);
+            }
+        }
+
+        // Cleanup function
+        return () => {
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current);
+            }
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, [content, isStreaming, streamingSpeed]);
+
+    // Reset when streaming ends
+    useEffect(() => {
+        if (!isStreaming && !isAnimating) {
+            lastStreamedContentRef.current = "";
+        }
+    }, [isStreaming, isAnimating]);
+
+    // Cleanup on unmount
+    useEffect(() => {
+        return () => {
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current);
+            }
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
+            }
+        };
+    }, []);
 
     const components = useMemo(
         () => ({
@@ -124,7 +153,7 @@ const MarkdownTranslator = ({
                         language={match[1]}
                         PreTag="div"
                         className="rounded-md my-2"
-                        showLineNumbers={!isStreaming}
+                        showLineNumbers={!isAnimating}
                         {...props}
                     >
                         {codeContent}
@@ -267,28 +296,34 @@ const MarkdownTranslator = ({
                 return <hr className="my-4 border-gray-300" />;
             },
         }),
-        [isStreaming]
+        [isAnimating]
     );
 
-    // Always render markdown, regardless of streaming state
     return (
-        <div
-            className={`prose prose-sm max-w-none ${className} ${
-                isStreaming ? "streaming-markdown" : ""
-            }`}
-        >
+        <div className={`prose prose-sm max-w-none ${className}`}>
             <ReactMarkdown
                 components={components}
                 remarkPlugins={[remarkGfm]}
                 skipHtml={false}
             >
-                {processedContent}
+                {displayedContent}
             </ReactMarkdown>
-            {isStreaming && (
+            {isAnimating && (
                 <span className="inline-flex items-center ml-1">
-                    <span className="w-2 h-4 bg-blue-500 animate-pulse opacity-75 rounded-sm"></span>
+                    <span 
+                        className="w-2 h-5 bg-orange-500 rounded-sm"
+                        style={{
+                            animation: 'claude-cursor 1.2s ease-in-out infinite',
+                        }}
+                    />
                 </span>
             )}
+            <style jsx>{`
+                @keyframes claude-cursor {
+                    0%, 50% { opacity: 1; background-color: #f97316; }
+                    51%, 100% { opacity: 0.3; background-color: #fb923c; }
+                }
+            `}</style>
         </div>
     );
 };

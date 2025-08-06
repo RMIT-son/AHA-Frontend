@@ -8,13 +8,6 @@ export default function ChatWindow({
     user,
     isStreaming,
 }) {
-    console.log("🔄 ChatWindow render:", {
-        messagesLength: messages.length,
-        isBotTyping,
-        isStreaming,
-        timestamp: new Date().toISOString(),
-    });
-
     const messagesEndRef = useRef(null);
     const scrollAreaRef = useRef(null);
     const previousMessagesLength = useRef(0);
@@ -35,14 +28,7 @@ export default function ChatWindow({
 
     // Speaker handler function
     const handleSpeaker = useCallback((message, messageIndex) => {
-        console.log("🔊 Speaker clicked for message:", {
-            index: messageIndex,
-            content: message.content,
-            sender: message.sender,
-            messageId: message.id || message.tempId,
-            fullMessage: message,
-        });
-        
+        // Add your speaker logic here
     }, []);
 
     const positionAtBottomInstant = useCallback(() => {
@@ -51,13 +37,11 @@ export default function ChatWindow({
             isModalOpen ||
             isClosingModal.current
         ) {
-            console.log("⛔ positionAtBottomInstant blocked");
             return;
         }
 
         if (scrollAreaRef.current) {
             const scrollHeight = scrollAreaRef.current.scrollHeight;
-            console.log("📍 Setting scroll position to:", scrollHeight);
             scrollAreaRef.current.scrollTop = scrollHeight;
         }
     }, [isModalOpen]);
@@ -102,7 +86,7 @@ export default function ChatWindow({
         });
     }, [isModalOpen]);
 
-    // Main scroll effect with detailed logging
+    // Main scroll effect
     useEffect(() => {
         if (
             !scrollingEnabled.current ||
@@ -146,7 +130,6 @@ export default function ChatWindow({
     // Cleanup timeouts on unmount
     useEffect(() => {
         return () => {
-            console.log("🧹 ChatWindow cleanup");
             if (scrollTimeoutRef.current) {
                 clearTimeout(scrollTimeoutRef.current);
             }
@@ -193,7 +176,7 @@ export default function ChatWindow({
         []
     );
 
-    // Optimized ImageDisplay component with debug logging
+    // Optimized ImageDisplay component
     const ImageDisplay = useCallback(
         ({
             imageUrl,
@@ -201,19 +184,12 @@ export default function ChatWindow({
             scrollOnLoad = true,
             messageId,
         }) => {
-            console.log("🖼️ ImageDisplay render:", {
-                imageUrl: imageUrl?.substring(0, 50) + "...",
-                messageId,
-                scrollOnLoad,
-            });
-
             const [imageError, setImageError] = useState(false);
             const [imageLoaded, setImageLoaded] = useState(false);
             const imageRef = useRef(null);
 
             const handleImageClick = useCallback(
                 (e) => {
-                    console.log("🖱️ Image clicked:", imageUrl);
                     e.preventDefault();
                     e.stopPropagation();
                     scrollingEnabled.current = false;
@@ -224,24 +200,10 @@ export default function ChatWindow({
             );
 
             const handleImageLoad = useCallback(() => {
-                console.log("✅ Image loaded:", {
-                    imageUrl: imageUrl?.substring(0, 50) + "...",
-                    messageId,
-                    scrollOnLoad,
-                });
-
                 setImageLoaded(true);
 
                 // Create a unique key for this image
                 const imageKey = `${messageId}-${imageUrl}`;
-
-                console.log("🔑 Image load analysis:", {
-                    imageKey,
-                    alreadyLoaded: loadedImages.current.has(imageKey),
-                    isModalOpen,
-                    isClosingModal: isClosingModal.current,
-                    scrollingEnabled: scrollingEnabled.current,
-                });
 
                 // Only scroll if this specific image hasn't been loaded before
                 if (
@@ -251,47 +213,32 @@ export default function ChatWindow({
                     !loadedImages.current.has(imageKey) &&
                     scrollingEnabled.current
                 ) {
-                    console.log(
-                        "📝 Adding image to loaded set and triggering scroll"
-                    );
                     loadedImages.current.add(imageKey);
                     // Delay scroll to ensure image is rendered
                     setTimeout(() => {
-                        console.log("⏰ Delayed scroll for image load");
                         if (
                             scrollingEnabled.current &&
                             !isModalOpen &&
                             !isClosingModal.current
                         ) {
                             scrollToBottomSmooth();
-                        } else {
-                            console.log("⛔ Delayed scroll cancelled");
                         }
                     }, 50);
-                } else {
-                    console.log("🚫 Image scroll skipped");
                 }
             }, [scrollOnLoad, imageUrl, messageId]);
 
-            const handleImageError = useCallback(
-                (e) => {
-                    console.error("❌ Image load error:", imageUrl);
-                    setImageError(true);
-                },
-                [imageUrl]
-            );
+            const handleImageError = useCallback(() => {
+                setImageError(true);
+            }, []);
 
             // Preload image to reduce loading time
             useEffect(() => {
-                console.log("🔄 Image preload effect:", imageUrl);
                 if (imageUrl && !imageError) {
                     const img = new Image();
                     img.onload = () => {
-                        console.log("✅ Preload success:", imageUrl);
                         setImageLoaded(true);
                     };
                     img.onerror = () => {
-                        console.error("❌ Preload error:", imageUrl);
                         setImageError(true);
                     };
                     img.src = imageUrl;
@@ -299,7 +246,6 @@ export default function ChatWindow({
             }, [imageUrl, imageError]);
 
             if (imageError) {
-                console.log("💥 Rendering error state for:", imageUrl);
                 return (
                     <div className="mt-2 max-w-md p-4 border border-red-200 rounded-lg bg-red-50">
                         <div className="flex items-center gap-2 text-red-600">
@@ -323,11 +269,6 @@ export default function ChatWindow({
                     </div>
                 );
             }
-
-            console.log("🖼️ Rendering image:", {
-                loaded: imageLoaded,
-                imageUrl: imageUrl?.substring(0, 50) + "...",
-            });
 
             return (
                 <div className="mt-2 max-w-md">
@@ -373,7 +314,6 @@ export default function ChatWindow({
     );
 
     const closeModal = useCallback(() => {
-        console.log("❌ Closing modal");
         isClosingModal.current = true;
         scrollingEnabled.current = false;
         setIsModalOpen(false);
@@ -381,7 +321,6 @@ export default function ChatWindow({
 
         // Clear any pending scroll operations
         if (scrollTimeoutRef.current) {
-            console.log("🧹 Clearing scroll timeout on modal close");
             clearTimeout(scrollTimeoutRef.current);
         }
 
@@ -392,56 +331,33 @@ export default function ChatWindow({
         }, 50);
 
         setTimeout(() => {
-            console.log("🔓 Re-enabling scrolling after modal close");
             isClosingModal.current = false;
             scrollingEnabled.current = true;
         }, 300);
     }, []);
 
-    // Helper functions with debug logging
+    // Helper functions
     const getImageUrl = useCallback((file) => {
-        console.log("🔗 Getting image URL from:", typeof file, file);
         if (typeof file === "string") {
             return file;
         }
-        const url = file?.url || file?.file || file?.src || file?.path || null;
-        console.log("🔗 Extracted URL:", url);
-        return url;
+        return file?.url || file?.file || file?.src || file?.path || null;
     }, []);
 
     const getImageAlt = useCallback((file, index) => {
-        const alt =
-            typeof file === "string"
-                ? `Image ${index + 1}`
-                : file?.name || file?.alt || `Image ${index + 1}`;
-        console.log("📝 Generated alt text:", alt);
-        return alt;
+        return typeof file === "string"
+            ? `Image ${index + 1}`
+            : file?.name || file?.alt || `Image ${index + 1}`;
     }, []);
 
-    // Memoize the messages rendering with debug logging
+    // Memoize the messages rendering
     const renderedMessages = useMemo(() => {
-        console.log("📋 Rendering messages:", {
-            count: messages.length,
-            isStreaming,
-            timestamp: new Date().toISOString(),
-        });
-
         return messages.map((message, index) => {
             const isUser = message.sender === "user";
             const isLastMessage = index === messages.length - 1;
             const isCurrentlyStreaming =
                 isStreaming && !isUser && isLastMessage && message.tempId;
             const messageKey = message.tempId || message.id || `msg-${index}`;
-
-            console.log(`💬 Rendering message ${index}:`, {
-                messageKey,
-                isUser,
-                isLastMessage,
-                isCurrentlyStreaming,
-                hasImage: !!message.image,
-                filesCount: message.files?.length || 0,
-                contentLength: message.content?.length || 0,
-            });
 
             return (
                 <div
@@ -468,31 +384,13 @@ export default function ChatWindow({
                                     <div className="mb-2 space-y-2">
                                         {message.files.map(
                                             (file, fileIndex) => {
-                                                const imageUrl =
-                                                    getImageUrl(file);
+                                                const imageUrl = getImageUrl(file);
                                                 const imageAlt = getImageAlt(
                                                     file,
                                                     fileIndex
                                                 );
 
-                                                console.log(
-                                                    `📎 Processing file ${fileIndex}:`,
-                                                    {
-                                                        file,
-                                                        imageUrl:
-                                                            imageUrl?.substring(
-                                                                0,
-                                                                50
-                                                            ) + "...",
-                                                        imageAlt,
-                                                    }
-                                                );
-
                                                 if (!imageUrl) {
-                                                    console.warn(
-                                                        "⚠️ No valid image URL found for file:",
-                                                        file
-                                                    );
                                                     return null;
                                                 }
 
@@ -529,7 +427,8 @@ export default function ChatWindow({
                                         <MarkdownTranslator
                                             content={message.content}
                                             className="text-sm leading-relaxed"
-                                            isStreaming={isCurrentlyStreaming}
+                                            isStreaming={isCurrentlyStreaming || (message.sender === "bot" && isLastMessage && !message.streamingComplete)}
+                                            streamingSpeed={35}
                                         />
                                     </div>
                                 </div>
@@ -566,8 +465,6 @@ export default function ChatWindow({
         getImageUrl,
         getImageAlt,
     ]);
-
-    console.log("🏁 ChatWindow render complete");
 
     return (
         <>

@@ -42,15 +42,12 @@ const processFilesForBackend = async (files) => {
                 // For other file types, use the file directly
                 fileToUpload = fileData.file;
             } else {
-                console.warn(
-                    `Skipping file ${fileData.name}: no valid file data found`
-                );
                 continue;
             }
 
             processedFiles.push(fileToUpload);
         } catch (error) {
-            console.error(`Error processing file ${fileData.name}:`, error);
+            // Skip files with errors
         }
     }
     return processedFiles;
@@ -73,8 +70,6 @@ export const createConversation = async (user_id, content, files = []) => {
     processedFiles.forEach((file) => {
         formData.append('files', file);
     });
-    
-    console.log('Sending files:', processedFiles.map(f => ({ name: f.name, type: f.type, size: f.size })));
 
     const res = await axios.post(
       `${app.dataURL}/api/conversations/create/${user_id}`,
@@ -87,7 +82,6 @@ export const createConversation = async (user_id, content, files = []) => {
     );
     return res.data;
   } catch (error) {
-    console.error("Failed to create conversation", error);
     throw error;
   }
 };
@@ -99,17 +93,12 @@ export const getAllConversations = async (userId) => {
         );
         return res.data;
     } catch (error) {
-        console.error("Failed to load conversations", error);
         return [];
     }
 };
 
 export const getConversationById = async (conversationId) => {
     if (!conversationId || conversationId === "undefined") {
-        console.error(
-            "Invalid conversationId for getConversationById:",
-            conversationId
-        );
         return null;
     }
 
@@ -119,17 +108,15 @@ export const getConversationById = async (conversationId) => {
         );
         return res.data;
     } catch (error) {
-        console.error("Failed to get conversation", error);
         return null;
     }
 };
 
-// Enhanced streaming function with file support
-export async function streamFromBackend(
+// Modified function to handle complete response instead of streaming
+export async function sendMessageToBackend(
     conversationId,
     userId,
     content,
-    onChunk,
     files = []
 ) {
     if (!conversationId || conversationId === "undefined") {
@@ -153,88 +140,55 @@ export async function streamFromBackend(
         formData.append("files", file);
     });
 
-    console.log(
-        "Sending files:",
-        processedFiles.map((f) => ({
-            name: f.name,
-            type: f.type,
-            size: f.size,
-        }))
-    );
-
     try {
-        const response = await fetch(
+        const response = await axios.post(
             `${app.dataURL}/api/conversations/${conversationId}/${userId}/stream`,
+            formData,
             {
-                method: "POST",
                 headers: {
-                    // Don't set Content-Type - let the browser set it with boundary for multipart/form-data
-                    Accept: "text/event-stream",
-                    "Cache-Control": "no-cache",
-                    Connection: "keep-alive",
+                    "Content-Type": "multipart/form-data",
                 },
-                body: formData, // Use FormData instead of JSON
+                timeout: 300000, // 5 minutes timeout
             }
         );
 
-        if (!response.ok || !response.body) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (response.data && response.data.final_response) {
+            return {
+                success: true,
+                response: response.data.final_response
+            };
+        } else {
+            throw new Error("No response received from backend");
         }
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true });
-
-                let eventEndIndex;
-                while ((eventEndIndex = buffer.indexOf("\n\n")) !== -1) {
-                    const event = buffer.slice(0, eventEndIndex);
-                    buffer = buffer.slice(eventEndIndex + 2);
-                    processSSEEvent(event, onChunk);
-                }
-
-                // Fallback for servers that don't send \n\n
-                if (!buffer.includes("\n\n") && buffer.includes("\n")) {
-                    const lines = buffer.split("\n");
-                    buffer = lines.pop() || "";
-
-                    for (const line of lines) {
-                        if (line.trim().startsWith("data: ")) {
-                            const data = line.trim().slice(6);
-                            if (data === "[DONE]") return;
-                            onChunk?.(data);
-                        }
-                    }
-                }
-            }
-        } finally {
-            reader.releaseLock();
-        }
     } catch (error) {
-        console.error("Streaming error:", error);
-        throw error;
-    }
-}
-
-// Helper method for processing complete SSE events
-function processSSEEvent(event, onChunk) {
-    for (const line of event.split("\n")) {
-        const trimmedLine = line.trim();
-        if (trimmedLine.startsWith("data: ")) {
-            const data = trimmedLine.slice(6);
-            if (data === "[DONE]") {
-                return true; // Signal completion
+        if (error.response) {
+            // Server responded with error status
+            const statusCode = error.response.status;
+            const message = error.response.data?.message || error.response.data?.detail;
+            
+            switch (statusCode) {
+                case 400:
+                    throw new Error(message || "Invalid request. Please check your input.");
+                case 401:
+                    throw new Error("Unauthorized. Please login again.");
+                case 403:
+                    throw new Error("Access forbidden.");
+                case 404:
+                    throw new Error("Conversation not found.");
+                case 429:
+                    throw new Error("Too many requests. Please try again later.");
+                case 500:
+                    throw new Error("Server error. Please try again later.");
+                default:
+                    throw new Error(message || `Request failed with status ${statusCode}`);
             }
-            onChunk?.(data);
+        } else if (error.request) {
+            throw new Error("Network error. Please check your internet connection.");
+        } else {
+            throw new Error(error.message || "An unexpected error occurred.");
         }
     }
-    return false;
 }
 
 export const renameConversation = async (conversationId, newTitle) => {
@@ -249,10 +203,8 @@ export const renameConversation = async (conversationId, newTitle) => {
             }
         );
 
-        console.log("Conversation renamed successfully:", response.data);
         return response.data;
     } catch (error) {
-        console.error("Error renaming conversation:", error);
         throw error;
     }
 };
@@ -264,10 +216,8 @@ export const deleteConversation = async (conversationId, userId) => {
             `${app.dataURL}/api/conversations/${conversationId}/user/${userId}`
         );
 
-        console.log("Conversation deleted successfully:", response.data);
         return response.data;
     } catch (error) {
-        console.error("Error deleting conversation:", error);
         throw error;
     }
 };
@@ -293,12 +243,7 @@ export const sendVoiceMessage = async (
     onChunk
 ) => {
     try {
-        console.log("Converting audio blob to base64...");
-
         const base64Audio = await audioBlobToBase64(audioBlob);
-
-        console.log("Base64 audio length:", base64Audio.length);
-        console.log("Base64 preview:", base64Audio.substring(0, 50));
 
         const response = await axios.post(
             `${app.dataURL}/api/conversations/speech_to_text`,
@@ -312,7 +257,6 @@ export const sendVoiceMessage = async (
             }
         );
 
-        console.log("Transcription response:", response.data);
         const transcribedText = response.data;
 
         if (onChunk && transcribedText) {
@@ -325,11 +269,7 @@ export const sendVoiceMessage = async (
             transcribedText: transcribedText,
         };
     } catch (error) {
-        console.error("Error sending voice message:", error);
-
         if (error.response) {
-            console.error("Response data:", error.response.data);
-            console.error("Response status:", error.response.status);
             throw new Error(
                 `HTTP ${error.response.status}: ${
                     error.response.data?.detail || error.response.statusText
@@ -343,73 +283,59 @@ export const sendVoiceMessage = async (
     }
 };
 
-export async function streamWebSearch(conversationId, query, onChunk) {
-  const formData = new FormData();
+// Updated web search function to handle complete response
+export async function sendWebSearchRequest(conversationId, query) {
+    const formData = new FormData();
     
-  // Add text content and timestamp
-  if (query) {
-      formData.append('content', query);
+    // Add text content and timestamp
+    if (query) {
+        formData.append('content', query);
     }
-  formData.append('timestamp', new Date().toISOString());
+    formData.append('timestamp', new Date().toISOString());
+    
     try {
-        const response = await fetch(
+        const response = await axios.post(
             `${app.dataURL}/api/conversations/${conversationId}/web/search`,
+            formData,
             {
-                method: "POST",
                 headers: {
-                    Accept: "text/event-stream",
-                    "Cache-Control": "no-cache",
-                    Connection: "keep-alive",
+                    "Content-Type": "multipart/form-data",
                 },
-                body: formData
+                timeout: 300000, // 5 minutes timeout
             }
         );
 
-        if (!response.ok || !response.body) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        if (response.data && response.data.final_response) {
+            return {
+                success: true,
+                response: response.data.final_response
+            };
+        } else {
+            throw new Error("No search response received from backend");
         }
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true });
-
-                let eventEndIndex;
-                while ((eventEndIndex = buffer.indexOf("\n\n")) !== -1) {
-                    const event = buffer.slice(0, eventEndIndex);
-                    buffer = buffer.slice(eventEndIndex + 2);
-                    processSSEEvent(event, onChunk);
-                }
-
-                // Fallback for servers that don't send \n\n
-                if (!buffer.includes("\n\n") && buffer.includes("\n")) {
-                    const lines = buffer.split("\n");
-                    buffer = lines.pop() || "";
-
-                    for (const line of lines) {
-                        if (line.trim().startsWith("data: ")) {
-                            const data = line.trim().slice(6);
-                            if (data === "[DONE]") return;
-                            onChunk?.(data);
-                        }
-                    }
-                }
-            }
-        } finally {
-            reader.releaseLock();
-        }
     } catch (error) {
-        console.error("Streaming error:", error);
-        throw error;
+        if (error.response) {
+            const statusCode = error.response.status;
+            const message = error.response.data?.message || error.response.data?.detail;
+            
+            switch (statusCode) {
+                case 400:
+                    throw new Error(message || "Invalid search request.");
+                case 429:
+                    throw new Error("Search rate limit exceeded. Please try again later.");
+                case 500:
+                    throw new Error("Search service error. Please try again later.");
+                default:
+                    throw new Error(message || `Search failed with status ${statusCode}`);
+            }
+        } else if (error.request) {
+            throw new Error("Network error. Please check your internet connection.");
+        } else {
+            throw new Error(error.message || "Web search failed.");
+        }
     }
 }
-
 
 export async function voiceSpeaker () {
     // TODO: This function will handle the voice speaker functionality when the user click on the speaker icon
