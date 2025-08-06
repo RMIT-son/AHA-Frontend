@@ -1,116 +1,173 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { tomorrow } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { MarkdownStreamParser } from "@lixpi/markdown-stream-parser";
 
 const MarkdownTranslator = ({
     content,
     className = "",
     isStreaming = false,
+    sessionId = "default-session",
+    onStreamComplete = () => {},
 }) => {
-    // Preprocess content to fix streaming formatting issues
-    const processedContent = useMemo(() => {
-        if (!content) return content;
+    const [parsedContent, setParsedContent] = useState("");
+    const [isComplete, setIsComplete] = useState(false);
+    const parserInstanceRef = useRef(null);
+    const unsubscribeRef = useRef(null);
+    const lastProcessedLength = useRef(0);
 
-        let processed = content;
-
-        try {
-            // Check if this looks like a single-line list (common during streaming)
-            const isSingleLineNumberedList =
-                content.includes("1.") &&
-                content.includes("2.") &&
-                !content.includes("\n");
-
-            // Check if this looks like a single-line bulleted list with bold headers
-            const isSingleLineBulletList =
-                content.includes("* **") &&
-                content.match(/\* \*\*[^*]+\*\*:/g) &&
-                content.match(/\* \*\*[^*]+\*\*:/g).length > 1 &&
-                !content.includes("\n");
-
-            if (isSingleLineNumberedList) {
-                // Fix spacing issues like "are10" -> "are 10"
-                processed = processed.replace(/([a-zA-Z])(\d+)/g, "$1 $2");
-
-                // Fix "type2" -> "type 2"
-                processed = processed.replace(/type(\d+)/g, "type $1");
-
-                // Insert line breaks before numbered items
-                processed = processed.replace(/(\d+\.\s)/g, "\n$1");
-
-                // Fix cases where text runs into next sentence after emoji
-                processed = processed.replace(
-                    /([\u{1F000}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]+)([A-Z])/gu,
-                    "$1\n\n$2"
-                );
-
-                // Clean up: remove the leading newline if it exists
-                processed = processed.replace(/^\n/, "");
-
-                // Handle the specific "uses:" pattern
-                processed = processed.replace(
-                    /(uses?:)\n(\d+\.\s)/gi,
-                    "$1\n\n$2"
-                );
-            } else if (isSingleLineBulletList) {
-                // Handle bulleted lists with bold headers
-
-                // First, fix any text that runs into bullet points after periods or colons
-                processed = processed.replace(
-                    /([.:])\s*\*\s*\*\*/g,
-                    "$1\n* **"
-                );
-
-                // Insert line breaks before bullet points with bold headers
-                // This pattern matches: "- **Header**: content" or "* **Header**: content"
-                processed = processed.replace(
-                    /([.!?:])\s*[-*]\s*\*\*([^*]+)\*\*:/g,
-                    "$1\n* **$2**:"
-                );
-
-                // Also handle cases where bullet points are right after text without punctuation
-                processed = processed.replace(
-                    /([a-zA-Z0-9)])\s*[-*]\s*\*\*([^*]+)\*\*:/g,
-                    "$1\n* **$2**:"
-                );
-
-                // Fix cases where emojis run into the next bullet point
-                processed = processed.replace(
-                    /([\u{1F000}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]+)\s*[-*]\s*\*\*([^*]+)\*\*:/gu,
-                    "$1\n* **$2**:"
-                );
-
-                // Handle "Overall," or similar transition words that should be on new lines
-                processed = processed.replace(
-                    /([.!?:])\s*(Overall|In conclusion|Finally|Additionally|Furthermore),/gi,
-                    "$1\n\n$2,"
-                );
-
-                // Clean up any double newlines that might have been created
-                processed = processed.replace(/\n\n\n+/g, "\n\n");
-
-                // Clean up: remove the leading newline if it exists
-                processed = processed.replace(/^\n/, "");
-            }
-
-            // General fixes for streaming content
-
-            // Fix spacing issues like "are10" -> "are 10" (for all content)
-            processed = processed.replace(/([a-zA-Z])(\d+)/g, "$1 $2");
-
-            // Fix cases where text runs into next sentence after emoji (for all content)
-            processed = processed.replace(
-                /([\u{1F000}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]+)([A-Z][a-z])/gu,
-                "$1\n\n$2"
-            );
-        } catch (error) {
-            console.warn("❌ Error processing markdown content:", error);
-            processed = content;
+    // Initialize parser and set up subscription
+    useEffect(() => {
+        if (!isStreaming) {
+            // Reset for non-streaming mode
+            setParsedContent("");
+            setIsComplete(false);
+            lastProcessedLength.current = 0;
+            return;
         }
 
-        return processed;
-    }, [content]);
+        try {
+            // Get or create parser instance
+            parserInstanceRef.current =
+                MarkdownStreamParser.getInstance(sessionId);
+
+            // Subscribe to parser output
+            unsubscribeRef.current =
+                parserInstanceRef.current.subscribeToTokenParse(
+                    (parsedSegment, unsubscribe) => {
+                        if (parsedSegment.status === "END_STREAM") {
+                            setIsComplete(true);
+                            onStreamComplete();
+                            // Clean up when stream ends
+                            if (unsubscribe) unsubscribe();
+                            MarkdownStreamParser.removeInstance(sessionId);
+                            parserInstanceRef.current = null;
+                            unsubscribeRef.current = null;
+                        } else if (
+                            parsedSegment.status === "STREAMING" &&
+                            parsedSegment.segment
+                        ) {
+                            // Process the segment and update content
+                            setParsedContent(
+                                (prev) =>
+                                    prev + formatSegment(parsedSegment.segment)
+                            );
+                        }
+                    }
+                );
+
+            // Start the parsing process
+            parserInstanceRef.current.startParsing();
+        } catch (error) {
+            console.error("Error initializing MarkdownStreamParser:", error);
+        }
+
+        // Cleanup function
+        return () => {
+            if (unsubscribeRef.current) {
+                try {
+                    unsubscribeRef.current();
+                } catch (e) {
+                    console.warn("Error during unsubscribe:", e);
+                }
+                unsubscribeRef.current = null;
+            }
+
+            if (parserInstanceRef.current) {
+                try {
+                    parserInstanceRef.current.stopParsing();
+                    MarkdownStreamParser.removeInstance(sessionId);
+                } catch (e) {
+                    console.warn("Error during parser cleanup:", e);
+                }
+                parserInstanceRef.current = null;
+            }
+        };
+    }, [isStreaming, sessionId, onStreamComplete]);
+
+    // Process new content chunks
+    useEffect(() => {
+        if (isStreaming && parserInstanceRef.current && content) {
+            try {
+                // Only process new content that hasn't been processed yet
+                const newContent = content.slice(lastProcessedLength.current);
+                if (newContent.length > 0) {
+                    parserInstanceRef.current.parseToken(newContent);
+                    lastProcessedLength.current = content.length;
+                }
+            } catch (error) {
+                console.error("Error parsing token:", error);
+            }
+        }
+    }, [content, isStreaming]);
+
+    // Format parsed segment into markdown
+    const formatSegment = (segment) => {
+        let text = segment.segment || "";
+
+        // Apply inline styles
+        if (segment.styles && Array.isArray(segment.styles)) {
+            segment.styles.forEach((style) => {
+                switch (style) {
+                    case "bold":
+                        text = `**${text}**`;
+                        break;
+                    case "italic":
+                        text = `*${text}*`;
+                        break;
+                    case "strikethrough":
+                        text = `~~${text}~~`;
+                        break;
+                    case "code":
+                        text = `\`${text}\``;
+                        break;
+                    default:
+                        // Handle other styles if needed
+                        break;
+                }
+            });
+        }
+
+        // Handle block-level formatting
+        if (segment.isBlockDefining) {
+            switch (segment.type) {
+                case "heading":
+                    // Headers should already be properly formatted from the parser
+                    return text;
+                case "paragraph":
+                    return text;
+                case "code-block":
+                    return text;
+                case "blockquote":
+                    return text;
+                default:
+                    return text;
+            }
+        }
+
+        return text;
+    };
+
+    // Stop streaming manually (useful for external control)
+    const stopStreaming = () => {
+        if (parserInstanceRef.current) {
+            try {
+                parserInstanceRef.current.stopParsing();
+            } catch (error) {
+                console.error("Error stopping parser:", error);
+            }
+        }
+    };
+
+    // Expose stop function via imperative handle if needed
+    React.useImperativeHandle(
+        React.forwardRef(() => null),
+        () => ({
+            stopStreaming,
+        })
+    );
 
     const components = useMemo(
         () => ({
@@ -270,7 +327,9 @@ const MarkdownTranslator = ({
         [isStreaming]
     );
 
-    // Always render markdown, regardless of streaming state
+    // Determine what content to render
+    const contentToRender = isStreaming ? parsedContent : content || "";
+
     return (
         <div
             className={`prose prose-sm max-w-none ${className} ${
@@ -282,9 +341,9 @@ const MarkdownTranslator = ({
                 remarkPlugins={[remarkGfm]}
                 skipHtml={false}
             >
-                {processedContent}
+                {contentToRender}
             </ReactMarkdown>
-            {isStreaming && (
+            {isStreaming && !isComplete && (
                 <span className="inline-flex items-center ml-1">
                     <span className="w-2 h-4 bg-blue-500 animate-pulse opacity-75 rounded-sm"></span>
                 </span>

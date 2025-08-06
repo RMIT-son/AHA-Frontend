@@ -1,7 +1,7 @@
 export { default as ChatWindow } from "./ChatWindow";
 export { default as ChatInput } from "./ChatInput";
 export { default as Sidebar } from "./Sidebar";
-export { default as MarkdownWrapper } from "./MarkdownTranslator";
+export { default as MarkdownWrapper } from "./ChatWindow/MarkdownTranslator";
 export { default as ConversationModal } from "./ConversationModal";
 export { default as Account } from "./SettingPage/Account";
 export { default as Profile } from "./SettingPage/Profile";
