@@ -165,7 +165,7 @@ export default function useMessageHandler(chatState) {
                 // Stop typing indicator
                 setIsBotTyping(false);
 
-                // Add bot message with complete response
+                // Add bot message with complete response - streaming will be handled by MarkdownTranslator
                 setMessages((prev) => {
                     const updated = [...prev];
                     updated.push({
@@ -174,9 +174,24 @@ export default function useMessageHandler(chatState) {
                         timestamp: new Date().toISOString(),
                         tempId: botMessageId,
                         source: webSearchEnabled ? "websearch" : "chat",
+                        shouldStream: true, // Flag to indicate this message should stream
+                        streamingComplete: false,
                     });
                     return updated;
                 });
+
+                // Mark streaming as complete after the animation duration
+                const estimatedStreamingTime = Math.max(3000, (response.response.length / 15) * 1000);
+                
+                streamingTimeoutRef.current = setTimeout(() => {
+                    setMessages((prev) => {
+                        return prev.map((msg) =>
+                            msg.tempId === botMessageId
+                                ? { ...msg, streamingComplete: true, shouldStream: false }
+                                : msg
+                        );
+                    });
+                }, estimatedStreamingTime);
 
                 // Update user message status to delivered
                 setMessages((prev) => {

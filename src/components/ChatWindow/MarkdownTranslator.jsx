@@ -8,14 +8,13 @@ const MarkdownTranslator = ({
     content,
     className = "",
     isStreaming = false,
-    streamingSpeed = 15, // Much slower for visibility
 }) => {
     const [displayedContent, setDisplayedContent] = useState("");
     const [isAnimating, setIsAnimating] = useState(false);
     const animationRef = useRef(null);
     const timeoutRef = useRef(null);
-    const previousContentRef = useRef("");
-    const lastStreamedContentRef = useRef("");
+    const previousStreamingStateRef = useRef(false);
+    const STREAMING_SPEED = 200
 
     useEffect(() => {
         // Clean up previous animation
@@ -31,51 +30,37 @@ const MarkdownTranslator = ({
         if (!content) {
             setDisplayedContent("");
             setIsAnimating(false);
-            previousContentRef.current = "";
-            lastStreamedContentRef.current = "";
+            previousStreamingStateRef.current = false;
             return;
         }
+
+        // Check if streaming state changed from false to true (trigger re-animation)
+        const streamingStarted = isStreaming && !previousStreamingStateRef.current;
+        
+        // Update the streaming state reference
+        previousStreamingStateRef.current = isStreaming;
 
         // If not streaming, show content immediately
         if (!isStreaming) {
             setDisplayedContent(content);
             setIsAnimating(false);
-            previousContentRef.current = content;
             return;
         }
 
-        // Check if content has changed and we should animate
-        const hasNewContent = content !== previousContentRef.current;
-        const contentGrew = content.length > previousContentRef.current.length;
-        const shouldAnimate = isStreaming && (hasNewContent || contentGrew);
-
-        // Update previous content reference
-        previousContentRef.current = content;
-
-        // If streaming and content should be animated
-        if (shouldAnimate) {
+        // If streaming just started or content changed while streaming
+        if (streamingStarted || isStreaming) {
+            console.log('Starting animation for:', { content: content.substring(0, 50), isStreaming, streamingStarted });
+            
             setIsAnimating(true);
+            setDisplayedContent(""); // Always start from empty when streaming starts
 
-            // Determine starting point
-            let startIndex = 0;
-            if (contentGrew && content.startsWith(lastStreamedContentRef.current)) {
-                // Continue from where we left off
-                startIndex = lastStreamedContentRef.current.length;
-                setDisplayedContent(lastStreamedContentRef.current);
-            } else {
-                // New content, start from beginning
-                setDisplayedContent("");
-                lastStreamedContentRef.current = "";
-                startIndex = 0;
-            }
-
-            let currentIndex = startIndex;
+            let currentIndex = 0;
             const totalLength = content.length;
             let lastTime = Date.now();
             
             // Calculate characters to add per frame based on speed
-            const charsPerSecond = streamingSpeed;
-            const targetFrameRate = 30; // 30 FPS
+            const charsPerSecond = STREAMING_SPEED;
+            const targetFrameRate = 60; // 30 FPS
             const charsPerFrame = charsPerSecond / targetFrameRate;
 
             const animateText = () => {
@@ -85,18 +70,16 @@ const MarkdownTranslator = ({
                 // Calculate how many characters to add this frame
                 const charsToAdd = Math.max(1, Math.ceil(charsPerFrame * deltaTime * targetFrameRate));
                 
-                if (currentIndex < totalLength) {
+                if (currentIndex < totalLength && isStreaming) {
                     currentIndex = Math.min(currentIndex + charsToAdd, totalLength);
                     const newContent = content.substring(0, currentIndex);
                     setDisplayedContent(newContent);
-                    lastStreamedContentRef.current = newContent;
                     lastTime = now;
                     animationRef.current = requestAnimationFrame(animateText);
                 } else {
-                    // Animation complete
+                    // Animation complete or streaming stopped
                     setIsAnimating(false);
                     setDisplayedContent(content);
-                    lastStreamedContentRef.current = content;
                     animationRef.current = null;
                 }
             };
@@ -104,11 +87,6 @@ const MarkdownTranslator = ({
             // Start animation immediately
             lastTime = Date.now();
             animationRef.current = requestAnimationFrame(animateText);
-        } else {
-            // Content hasn't changed or streaming is off
-            if (!isAnimating) {
-                setDisplayedContent(content);
-            }
         }
 
         // Cleanup function
@@ -120,14 +98,7 @@ const MarkdownTranslator = ({
                 clearTimeout(timeoutRef.current);
             }
         };
-    }, [content, isStreaming, streamingSpeed]);
-
-    // Reset when streaming ends
-    useEffect(() => {
-        if (!isStreaming && !isAnimating) {
-            lastStreamedContentRef.current = "";
-        }
-    }, [isStreaming, isAnimating]);
+    }, [content, isStreaming, STREAMING_SPEED]);
 
     // Cleanup on unmount
     useEffect(() => {
