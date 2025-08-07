@@ -1,20 +1,14 @@
 import { memo } from 'react';
 import AvatarInside from './AvatarInside';
-import ImageDisplay from './ImageDisplay';
 import FileDisplay from './FileDisplay';
+import FilePreview from './FilePreview';
 
 const UserMessage = memo(({
     message,
     user,
     messageKey,
-    getImageUrl,
-    getImageAlt,
     onImageClick,
-    scrollToBottomSmooth,
-    isModalOpen,
-    isClosingModal,
-    scrollingEnabled,
-    loadedImages
+    onFileClick
 }) => {
     return (
         <div className="flex justify-start">
@@ -22,33 +16,22 @@ const UserMessage = memo(({
                 {/* Single image */}
                 {message.image && (
                     <div className="mb-2 mt-10">
-                        <ImageDisplay
-                            imageUrl={message.image}
-                            alt="User uploaded image"
-                            scrollOnLoad={true}
-                            messageId={messageKey}
+                        <FilePreview
+                            file={message.image}
+                            index={0}
                             onImageClick={onImageClick}
-                            scrollToBottomSmooth={scrollToBottomSmooth}
-                            isModalOpen={isModalOpen}
-                            isClosingModal={isClosingModal}
-                            scrollingEnabled={scrollingEnabled}
-                            loadedImages={loadedImages}
+                            onFileClick={onFileClick}
+                            messageKey={`${messageKey}-image`}
                         />
                     </div>
                 )}
 
-                {/* Multiple files */}
+                {/* Multiple files (images and other files) */}
                 <FileDisplay
                     files={message.files}
                     messageKey={messageKey}
-                    getImageUrl={getImageUrl}
-                    getImageAlt={getImageAlt}
                     onImageClick={onImageClick}
-                    scrollToBottomSmooth={scrollToBottomSmooth}
-                    isModalOpen={isModalOpen}
-                    isClosingModal={isClosingModal}
-                    scrollingEnabled={scrollingEnabled}
-                    loadedImages={loadedImages}
+                    onFileClick={onFileClick}
                 />
 
                 {/* User message bubble */}

@@ -1,17 +1,11 @@
-import { memo, useCallback } from 'react';
-import ImageDisplay from './ImageDisplay';
+import { memo } from 'react';
+import FilePreview from './FilePreview';
 
 const FileDisplay = memo(({ 
     files, 
     messageKey, 
-    getImageUrl, 
-    getImageAlt, 
     onImageClick,
-    scrollToBottomSmooth,
-    isModalOpen,
-    isClosingModal,
-    scrollingEnabled,
-    loadedImages
+    onFileClick
 }) => {
     if (!files || files.length === 0) {
         return null;
@@ -19,30 +13,16 @@ const FileDisplay = memo(({
 
     return (
         <div className="mb-2 space-y-2">
-            {files.map((file, fileIndex) => {
-                const imageUrl = getImageUrl(file);
-                const imageAlt = getImageAlt(file, fileIndex);
-
-                if (!imageUrl) {
-                    return null;
-                }
-
-                return (
-                    <ImageDisplay
-                        key={`${messageKey}-file-${fileIndex}`}
-                        imageUrl={imageUrl}
-                        alt={imageAlt}
-                        scrollOnLoad={true}
-                        messageId={`${messageKey}-${fileIndex}`}
-                        onImageClick={onImageClick}
-                        scrollToBottomSmooth={scrollToBottomSmooth}
-                        isModalOpen={isModalOpen}
-                        isClosingModal={isClosingModal}
-                        scrollingEnabled={scrollingEnabled}
-                        loadedImages={loadedImages}
-                    />
-                );
-            })}
+            {files.map((file, fileIndex) => (
+                <FilePreview
+                    key={`${messageKey}-file-${fileIndex}`}
+                    file={file}
+                    index={fileIndex}
+                    onImageClick={onImageClick}
+                    onFileClick={onFileClick}
+                    messageKey={`${messageKey}-${fileIndex}`}
+                />
+            ))}
         </div>
     );
 });

@@ -12,7 +12,7 @@ export default function ChatWindow({
     user,
     isStreaming,
 }) {
-    console.log(messages.length, "messages length in chat window");
+    console.log(messages);
 
     // State for image preview modal
     const [previewImage, setPreviewImage] = useState(null);
@@ -46,6 +46,18 @@ export default function ChatWindow({
         setPreviewImage({ url: imageUrl, alt });
         setIsModalOpen(true);
     }, [scrollingEnabled]);
+
+    // File click handler - for non-image files
+    const handleFileClick = useCallback((fileInfo) => {
+        // For now, just download the file
+        // You can add a file preview modal later if needed
+        const link = document.createElement('a');
+        link.href = fileInfo.url;
+        link.download = fileInfo.fileName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }, []);
 
     // Main scroll effect
     useEffect(() => {
@@ -126,20 +138,6 @@ export default function ChatWindow({
         }, 300);
     }, []);
 
-    // Helper functions
-    const getImageUrl = useCallback((file) => {
-        if (typeof file === "string") {
-            return file;
-        }
-        return file?.url || file?.file || file?.src || file?.path || null;
-    }, []);
-
-    const getImageAlt = useCallback((file, index) => {
-        return typeof file === "string"
-            ? `Image ${index + 1}`
-            : file?.name || file?.alt || `Image ${index + 1}`;
-    }, []);
-
     // Memoize the messages rendering
     const renderedMessages = useMemo(() => {
         return messages.map((message, index) => {
@@ -163,14 +161,8 @@ export default function ChatWindow({
                         message={message}
                         user={user}
                         messageKey={messageKey}
-                        getImageUrl={getImageUrl}
-                        getImageAlt={getImageAlt}
                         onImageClick={handleImageClick}
-                        scrollToBottomSmooth={scrollToBottomSmooth}
-                        isModalOpen={isModalOpen}
-                        isClosingModal={isClosingModal}
-                        scrollingEnabled={scrollingEnabled}
-                        loadedImages={loadedImages}
+                        onFileClick={handleFileClick}
                     />
                 );
             } else {
@@ -189,13 +181,7 @@ export default function ChatWindow({
         messages,
         user,
         handleImageClick,
-        scrollToBottomSmooth,
-        isModalOpen,
-        isClosingModal,
-        scrollingEnabled,
-        loadedImages,
-        getImageUrl,
-        getImageAlt,
+        handleFileClick,
         handleSpeaker,
     ]);
 

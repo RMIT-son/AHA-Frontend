@@ -14,7 +14,7 @@ const MarkdownTranslator = ({
     const animationRef = useRef(null);
     const timeoutRef = useRef(null);
     const previousStreamingStateRef = useRef(false);
-    const STREAMING_SPEED = 200
+    const STREAMING_SPEED = 500
 
     useEffect(() => {
         // Clean up previous animation
@@ -60,7 +60,7 @@ const MarkdownTranslator = ({
             
             // Calculate characters to add per frame based on speed
             const charsPerSecond = STREAMING_SPEED;
-            const targetFrameRate = 60; // 30 FPS
+            const targetFrameRate = 60; 
             const charsPerFrame = charsPerSecond / targetFrameRate;
 
             const animateText = () => {
