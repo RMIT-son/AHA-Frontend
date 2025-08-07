@@ -5,6 +5,7 @@ import EmptyState from "./ChatWindow/EmptyState";
 import UserMessage from "./ChatWindow/UserMessage";
 import BotMessage from "./ChatWindow/BotMessage";
 import TypingIndicator from "./ChatWindow/TypingIndicator";
+import { sendTextToVoiceSpeaker } from "../controllers/chat";
 
 export default function ChatWindow({
     messages,
@@ -35,9 +36,15 @@ export default function ChatWindow({
     const loadedImages = useRef(new Set());
     const scrollTimeoutRef = useRef(null);
 
-    // Speaker handler function
-    const handleSpeaker = useCallback((message, messageIndex) => {
-        // Add your speaker logic here
+    // Handling Speaker functionality
+    const handleSpeaker = useCallback(async (message, messageIndex) => {
+        if (!message || !message.content || !message.conversationId) return;
+    
+        try {
+            await sendTextToVoiceSpeaker(message.content, message.conversationId);
+        } catch (error) {
+            console.error("Speaker error:", error);
+        }
     }, []);
 
     // Image click handler

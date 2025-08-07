@@ -338,9 +338,48 @@ export async function sendWebSearchRequest(conversationId, query) {
     }
 }
 
-export async function voiceSpeaker () {
-    // TODO: This function will handle the voice speaker functionality when the user click on the speaker icon
+export async function sendTextToVoiceSpeaker(text, conversationId) {
+    if (!text || typeof text !== "string") {
+        console.warn("No valid text provided to convert to speech.");
+        return;
+    }
+
+    try {
+        const response = await axios.post(
+            `${app.dataURL}/api/${conversationId}/text_to_speech`,
+            { text },
+            {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+
+        const base64Audio = response.data?.audio;
+        const mimeType = response.data?.mimeType || "audio/mp3"; // fallback
+
+        if (!base64Audio) {
+            throw new Error("No audio data received from backend.");
+        }
+
+        const audioSrc = `data:${mimeType};base64,${base64Audio}`;
+        const audio = new Audio(audioSrc);
+        audio.play().catch((err) => {
+            console.error("Failed to play audio:", err);
+        });
+
+    } catch (error) {
+        if (error.response) {
+            const message = error.response.data?.detail || error.response.statusText;
+            throw new Error(`TTS Error: HTTP ${error.response.status}: ${message}`);
+        } else if (error.request) {
+            throw new Error("TTS Error: No response from server.");
+        } else {
+            throw new Error(`TTS Error: ${error.message}`);
+        }
+    }
 }
+
 
 export async function searchAllChats () {
     // TODO: This function will handle searching context through all chats
