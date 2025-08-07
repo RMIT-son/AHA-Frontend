@@ -381,6 +381,23 @@ export async function sendTextToVoiceSpeaker(text, conversationId) {
 }
 
 
-export async function searchAllChats () {
-    // TODO: This function will handle searching context through all chats
+export async function searchAllChats(query, userId) {
+    if (!query || !userId) return [];
+
+    try {
+        const response = await axios.get(
+            `${app.dataURL}/api/conversations/search`,
+            {
+                params: {
+                    query,
+                    userId,
+                },
+            }
+        );
+
+        return response.data || [];
+    } catch (error) {
+        console.error("Error searching conversations:", error);
+        return [];
+    }
 }

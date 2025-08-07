@@ -122,6 +122,15 @@ export default function ChatWindow({
         }
     }, [messages]);
 
+    useEffect(() => {
+        if (messages.length > 0 && isNewConversation.current) {
+            // Force scroll to bottom when conversation is loaded initially
+            positionAtBottomInstant();
+            isNewConversation.current = false;
+        }
+    }, [messages.length, positionAtBottomInstant]);
+    
+
     // Modal close handler
     const closeModal = useCallback(() => {
         isClosingModal.current = true;
