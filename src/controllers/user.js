@@ -29,8 +29,6 @@ const getAuthHeaders = () => {
             throw new Error("No user ID found in cookie");
         }
 
-        console.log("Using user ID as token:", token); // Debug log
-
         return {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
@@ -47,7 +45,6 @@ const getAuthHeaders = () => {
  */
 export const getUserProfile = async () => {
     try {
-        console.log("Get User Profile called");
         const response = await axios.get(`${app.dataURL}/api/users/profile`, {
             headers: getAuthHeaders(),
         });

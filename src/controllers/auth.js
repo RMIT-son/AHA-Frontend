@@ -65,7 +65,7 @@ export const loginUser = async (email, password) => {
 // Register with email, password, name, phone
 export const registerUser = async ({ fullName, email, password, phone }) => {
     try {
-        console.log(app.dataURL)
+
         const response = await axios.post(
             `${app.dataURL}/api/auth/register`,
             { fullName, email, password, phone },

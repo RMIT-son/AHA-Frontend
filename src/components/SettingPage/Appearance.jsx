@@ -29,10 +29,8 @@ const Appearance = ({ user: userProp, onUserUpdate }) => {
 
                 // Prioritize user prop over API call
                 if (userProp && userProp.theme !== undefined) {
-                    console.log("Using user prop:", userProp);
                     userData = userProp;
                 } else {
-                    console.log("Fetching user data from API...");
                     userData = await getUserProfile();
                 }
 

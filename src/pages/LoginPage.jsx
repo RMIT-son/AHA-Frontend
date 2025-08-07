@@ -24,7 +24,6 @@ export default function LoginPage() {
 
         try {
             const res = await loginUser(email, password);
-            console.log(res.success, res.data);
             
             if (res.success) {
                 dispatch({ type: "LOGIN", payload: res.data });

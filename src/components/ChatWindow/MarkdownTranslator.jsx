@@ -49,7 +49,6 @@ const MarkdownTranslator = ({
 
         // If streaming just started or content changed while streaming
         if (streamingStarted || isStreaming) {
-            console.log('Starting animation for:', { content: content.substring(0, 50), isStreaming, streamingStarted });
             
             setIsAnimating(true);
             setDisplayedContent(""); // Always start from empty when streaming starts

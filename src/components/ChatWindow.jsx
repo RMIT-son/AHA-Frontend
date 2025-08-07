@@ -13,8 +13,6 @@ export default function ChatWindow({
     user,
     isStreaming,
 }) {
-    console.log(messages);
-
     // State for image preview modal
     const [previewImage, setPreviewImage] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -159,8 +157,6 @@ export default function ChatWindow({
         return messages.map((message, index) => {
             const isUser = index % 2 === 0;
             const isBotMessage = index % 2 !== 0;
-            
-            console.log(`Message ${index}: ${isUser ? 'user' : 'bot'}`);
             
             const shouldStream = isBotMessage && 
                                  message.shouldStream && 
