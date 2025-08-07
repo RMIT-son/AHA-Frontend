@@ -1,4 +1,4 @@
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import ImageDisplay from './ImageDisplay';
 
 const FileDisplay = memo(({ 
@@ -6,11 +6,16 @@ const FileDisplay = memo(({
     messageKey, 
     getImageUrl, 
     getImageAlt, 
-    onImageClick, 
-    onImageLoad, 
-    loadedImages 
+    onImageClick,
+    scrollToBottomSmooth,
+    isModalOpen,
+    isClosingModal,
+    scrollingEnabled,
+    loadedImages
 }) => {
-    if (!files || files.length === 0) return null;
+    if (!files || files.length === 0) {
+        return null;
+    }
 
     return (
         <div className="mb-2 space-y-2">
@@ -18,7 +23,9 @@ const FileDisplay = memo(({
                 const imageUrl = getImageUrl(file);
                 const imageAlt = getImageAlt(file, fileIndex);
 
-                if (!imageUrl) return null;
+                if (!imageUrl) {
+                    return null;
+                }
 
                 return (
                     <ImageDisplay
@@ -28,7 +35,10 @@ const FileDisplay = memo(({
                         scrollOnLoad={true}
                         messageId={`${messageKey}-${fileIndex}`}
                         onImageClick={onImageClick}
-                        onImageLoad={onImageLoad}
+                        scrollToBottomSmooth={scrollToBottomSmooth}
+                        isModalOpen={isModalOpen}
+                        isClosingModal={isClosingModal}
+                        scrollingEnabled={scrollingEnabled}
                         loadedImages={loadedImages}
                     />
                 );
@@ -38,4 +48,5 @@ const FileDisplay = memo(({
 });
 
 FileDisplay.displayName = 'FileDisplay';
+
 export default FileDisplay;

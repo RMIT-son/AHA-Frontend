@@ -3,14 +3,17 @@ import AvatarInside from './AvatarInside';
 import ImageDisplay from './ImageDisplay';
 import FileDisplay from './FileDisplay';
 
-const UserMessage = memo(({ 
-    message, 
-    user, 
+const UserMessage = memo(({
+    message,
+    user,
     messageKey,
     getImageUrl,
     getImageAlt,
     onImageClick,
-    onImageLoad,
+    scrollToBottomSmooth,
+    isModalOpen,
+    isClosingModal,
+    scrollingEnabled,
     loadedImages
 }) => {
     return (
@@ -25,7 +28,10 @@ const UserMessage = memo(({
                             scrollOnLoad={true}
                             messageId={messageKey}
                             onImageClick={onImageClick}
-                            onImageLoad={onImageLoad}
+                            scrollToBottomSmooth={scrollToBottomSmooth}
+                            isModalOpen={isModalOpen}
+                            isClosingModal={isClosingModal}
+                            scrollingEnabled={scrollingEnabled}
                             loadedImages={loadedImages}
                         />
                     </div>
@@ -38,7 +44,10 @@ const UserMessage = memo(({
                     getImageUrl={getImageUrl}
                     getImageAlt={getImageAlt}
                     onImageClick={onImageClick}
-                    onImageLoad={onImageLoad}
+                    scrollToBottomSmooth={scrollToBottomSmooth}
+                    isModalOpen={isModalOpen}
+                    isClosingModal={isClosingModal}
+                    scrollingEnabled={scrollingEnabled}
                     loadedImages={loadedImages}
                 />
 
@@ -57,4 +66,5 @@ const UserMessage = memo(({
 });
 
 UserMessage.displayName = 'UserMessage';
+
 export default UserMessage;

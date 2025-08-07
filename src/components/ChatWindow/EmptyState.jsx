@@ -1,4 +1,3 @@
-// components/EmptyState.jsx
 import { memo } from 'react';
 
 const EmptyState = memo(() => (
@@ -11,5 +10,6 @@ const EmptyState = memo(() => (
     </div>
 ));
 
+EmptyState.displayName = 'EmptyState';
 
 export default EmptyState;

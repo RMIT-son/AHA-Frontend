@@ -1,12 +1,12 @@
 import { memo } from 'react';
-import MarkdownTranslator from './MarkdownTranslator';
+import MarkdownTranslator from "../ChatWindow/MarkdownTranslator";
 import SpeakerIcon from './SpeakerIcon';
 
-const BotMessage = memo(({ 
-    message, 
-    index, 
-    shouldStream, 
-    handleSpeaker 
+const BotMessage = memo(({
+    message,
+    shouldStream,
+    onSpeakerClick,
+    messageIndex
 }) => {
     return (
         <div className="group relative mb-6">
@@ -28,7 +28,7 @@ const BotMessage = memo(({
                         !shouldStream && (
                             <div className="absolute mb-5 -left-1 -right-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                 <SpeakerIcon
-                                    onClick={() => handleSpeaker(message, index)}
+                                    onClick={() => onSpeakerClick(message, messageIndex)}
                                 />
                             </div>
                         )}
@@ -38,5 +38,6 @@ const BotMessage = memo(({
     );
 });
 
+BotMessage.displayName = 'BotMessage';
 
 export default BotMessage;

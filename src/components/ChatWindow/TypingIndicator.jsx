@@ -17,4 +17,5 @@ const TypingIndicator = memo(() => (
 ));
 
 TypingIndicator.displayName = 'TypingIndicator';
+
 export default TypingIndicator;

@@ -10,4 +10,6 @@ const AvatarInside = memo(({ user }) => {
     );
 });
 
+AvatarInside.displayName = 'AvatarInside';
+
 export default AvatarInside;

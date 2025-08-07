@@ -24,4 +24,5 @@ const SpeakerIcon = memo(({ onClick, className = "" }) => (
 ));
 
 SpeakerIcon.displayName = 'SpeakerIcon';
+
 export default SpeakerIcon;

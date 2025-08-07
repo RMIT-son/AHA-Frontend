@@ -22,7 +22,7 @@ export default function ChatPage() {
         messages,
         chatRooms,
         isBotTyping,
-        isLoadingInput,
+        isLoadingInput, 
         hasLoaded,
         isStreaming,
         canSendNewMessage,
