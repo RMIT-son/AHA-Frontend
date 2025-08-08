@@ -355,31 +355,28 @@ export async function sendTextToVoiceSpeaker(text) {
             }
         );
 
-        const base64Audio = response.data?.audio;
-        const mimeType = response.data?.mimeType || "audio/mp3"; // fallback
-
-        if (!base64Audio) {
-            throw new Error("No audio data received from backend.");
+        // Check if the request was successful
+        if (response.data?.status === "success") {
+            console.log("✅ Audio played successfully on server:", response.data.message);
+            return response.data;
+        } else {
+            throw new Error("Unexpected response from server");
         }
-
-        const audioSrc = `data:${mimeType};base64,${base64Audio}`;
-        const audio = new Audio(audioSrc);
-        audio.play().catch((err) => {
-            console.error("Failed to play audio:", err);
-        });
 
     } catch (error) {
         if (error.response) {
             const message = error.response.data?.detail || error.response.statusText;
+            console.error(`TTS Error: HTTP ${error.response.status}: ${message}`);
             throw new Error(`TTS Error: HTTP ${error.response.status}: ${message}`);
         } else if (error.request) {
+            console.error("TTS Error: No response from server.");
             throw new Error("TTS Error: No response from server.");
         } else {
+            console.error(`TTS Error: ${error.message}`);
             throw new Error(`TTS Error: ${error.message}`);
         }
     }
 }
-
 
 export async function searchAllChats(query, userId) {
     if (!query || !userId) return [];
