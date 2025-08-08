@@ -9,7 +9,7 @@ const BotMessage = memo(({
     messageIndex
 }) => {
     return (
-        <div className="group relative mb-6">
+        <div className="group relative mb-10">
             <div className="flex justify-start">
                 <div className="max-w-[90%] pl-2 relative">
                     <div className="relative">
