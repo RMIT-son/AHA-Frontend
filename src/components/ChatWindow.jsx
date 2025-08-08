@@ -12,11 +12,13 @@ export default function ChatWindow({
     isBotTyping,
     user,
     isStreaming,
+    chatId
 }) {
     // State for image preview modal
     const [previewImage, setPreviewImage] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    console.log(chatId, "Chat ID in ChatWindow");
     // Custom hook for scrolling functionality
     const {
         messagesEndRef,
@@ -36,10 +38,9 @@ export default function ChatWindow({
 
     // Handling Speaker functionality
     const handleSpeaker = useCallback(async (message, messageIndex) => {
-        if (!message || !message.content || !message.conversationId) return;
         console.log("Handle Speaker called")
         try {
-            await sendTextToVoiceSpeaker(message.content, message.conversationId);
+            await sendTextToVoiceSpeaker(message.content);
         } catch (error) {
             console.error("Speaker error:", error);
         }

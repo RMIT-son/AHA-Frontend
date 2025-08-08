@@ -338,7 +338,7 @@ export async function sendWebSearchRequest(conversationId, query) {
     }
 }
 
-export async function sendTextToVoiceSpeaker(text, conversationId) {
+export async function sendTextToVoiceSpeaker(text) {
     if (!text || typeof text !== "string") {
         console.warn("No valid text provided to convert to speech.");
         return;
@@ -346,7 +346,7 @@ export async function sendTextToVoiceSpeaker(text, conversationId) {
 
     try {
         const response = await axios.post(
-            `${app.dataURL}/api/${conversationId}/text_to_speech`,
+            `${app.dataURL}/api/text_to_speech`,
             { text },
             {
                 headers: {

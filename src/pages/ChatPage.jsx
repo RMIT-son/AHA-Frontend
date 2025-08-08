@@ -106,6 +106,7 @@ export default function ChatPage() {
                 user={user}
                 isStreaming={isStreaming}
                 onCancelStream={cancelCurrentStream}
+                chatId={chatId}
             />
             <ChatInput
                 onSend={handleSendWithOptions}
