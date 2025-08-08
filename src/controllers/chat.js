@@ -346,7 +346,7 @@ export async function sendTextToVoiceSpeaker(text) {
 
     try {
         const response = await axios.post(
-            `${app.dataURL}/api/conversation/text_to_speech`,
+            `${app.dataURL}/api/conversations/text_to_speech`,
             { text },
             {
                 headers: {
