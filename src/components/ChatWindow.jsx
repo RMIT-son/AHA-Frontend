@@ -190,7 +190,6 @@ export default function ChatWindow({
                             } catch (error) {
                                 console.error("Speaker error:", error);
                             }
-                            console.log("Speaker clicked for message:", message.content);
                         }}
                         messageIndex={index}
                     />
