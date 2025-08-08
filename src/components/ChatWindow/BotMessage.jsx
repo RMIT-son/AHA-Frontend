@@ -26,9 +26,11 @@ const BotMessage = memo(({
                     {message.content &&
                         message.content.trim() &&
                         !shouldStream && (
-                            <div className="absolute mb-5 -left-1 -right-10 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <div className="absolute mb-5 -left-1 -right-10 group-hover:opacity-100 transition-opacity duration-200">
                                 <SpeakerIcon
-                                    onClick={() => onSpeakerClick(message, messageIndex)}
+                                    onClick={() =>{ 
+                                        onSpeakerClick(message, messageIndex)
+                                    }}
                                 />
                             </div>
                         )}

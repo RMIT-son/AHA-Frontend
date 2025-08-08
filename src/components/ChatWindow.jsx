@@ -37,7 +37,7 @@ export default function ChatWindow({
     // Handling Speaker functionality
     const handleSpeaker = useCallback(async (message, messageIndex) => {
         if (!message || !message.content || !message.conversationId) return;
-    
+        console.log("Handle Speaker called")
         try {
             await sendTextToVoiceSpeaker(message.content, message.conversationId);
         } catch (error) {
@@ -183,7 +183,15 @@ export default function ChatWindow({
                         key={messageKey}
                         message={message}
                         shouldStream={shouldStream}
-                        onSpeakerClick={handleSpeaker}
+                        onSpeakerClick={ async (message, messageIndex) => {
+                            console.log("Handle Speaker called")
+                            try {
+                                await sendTextToVoiceSpeaker(message.content, message.conversationId);
+                            } catch (error) {
+                                console.error("Speaker error:", error);
+                            }
+                            console.log("Speaker clicked for message:", message.content);
+                        }}
                         messageIndex={index}
                     />
                 );
