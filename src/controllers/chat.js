@@ -352,16 +352,20 @@ export async function sendTextToVoiceSpeaker(text) {
                 headers: {
                     "Content-Type": "application/json",
                 },
+                responseType: "blob", // Expect binary audio
             }
         );
 
-        // Check if the request was successful
-        if (response.data?.status === "success") {
-            console.log("✅ Audio played successfully on server:", response.data.message);
-            return response.data;
-        } else {
-            throw new Error("Unexpected response from server");
-        }
+        // Create a blob URL for the audio
+        const audioBlob = new Blob([response.data], { type: "audio/mpeg" });
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        // Play audio in browser
+        const audio = new Audio(audioUrl);
+        await audio.play();
+
+        console.log("✅ Audio played successfully in browser.");
+        return { status: "success", url: audioUrl };
 
     } catch (error) {
         if (error.response) {
