@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux"; // Add this import
 import ConversationModal from "./ConversationModal";
 import Cookies from "js-cookie";
+import { searchAllChats } from "../controllers/chat";
 
 const Sidebar = ({
     isOpen,
@@ -22,6 +23,10 @@ const Sidebar = ({
         roomId: null,
         roomName: "",
     });
+
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResult, setSearchResults] = useState([]); // State for search results
+
     const navigate = useNavigate();
     const dispatch = useDispatch(); // Add this hook
 
@@ -229,7 +234,24 @@ const Sidebar = ({
                         {isOpen && <span>New chat</span>}
                     </button>
 
-                    {/* TODO: Implement chatting box - Search for all Chat */}
+                    <div className="mt-3">
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            onKeyDown={async (e) => {
+                                if (e.key === "Enter") {
+                                    const results = await searchAllChats(e.target.value, user.id);
+                                        setSearchResults(results); 
+                                    console.log(results)
+                                }
+                         
+                            }}
+                            placeholder="Search chats..."
+                            className="w-full bg-gray-700 text-white placeholder-gray-400 px-3 py-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                        />
+                    </div>
+
                 </div>
 
                 {/* Recents Section */}

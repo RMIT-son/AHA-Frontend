@@ -1,4 +1,4 @@
-import React, { useMemo, useEffect, useRef, useState } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -12,162 +12,107 @@ const MarkdownTranslator = ({
     sessionId = "default-session",
     onStreamComplete = () => {},
 }) => {
-    const [parsedContent, setParsedContent] = useState("");
-    const [isComplete, setIsComplete] = useState(false);
-    const parserInstanceRef = useRef(null);
-    const unsubscribeRef = useRef(null);
-    const lastProcessedLength = useRef(0);
+    const [displayedContent, setDisplayedContent] = useState("");
+    const [isAnimating, setIsAnimating] = useState(false);
+    const animationRef = useRef(null);
+    const timeoutRef = useRef(null);
+    const previousStreamingStateRef = useRef(false);
+    const STREAMING_SPEED = 500
 
-    // Initialize parser and set up subscription
     useEffect(() => {
-        if (!isStreaming) {
-            // Reset for non-streaming mode
-            setParsedContent("");
-            setIsComplete(false);
-            lastProcessedLength.current = 0;
+        // Clean up previous animation
+        if (animationRef.current) {
+            cancelAnimationFrame(animationRef.current);
+            animationRef.current = null;
+        }
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+        }
+
+        if (!content) {
+            setDisplayedContent("");
+            setIsAnimating(false);
+            previousStreamingStateRef.current = false;
             return;
         }
 
-        try {
-            // Get or create parser instance
-            parserInstanceRef.current =
-                MarkdownStreamParser.getInstance(sessionId);
+        // Check if streaming state changed from false to true (trigger re-animation)
+        const streamingStarted = isStreaming && !previousStreamingStateRef.current;
+        
+        // Update the streaming state reference
+        previousStreamingStateRef.current = isStreaming;
 
-            // Subscribe to parser output
-            unsubscribeRef.current =
-                parserInstanceRef.current.subscribeToTokenParse(
-                    (parsedSegment, unsubscribe) => {
-                        if (parsedSegment.status === "END_STREAM") {
-                            setIsComplete(true);
-                            onStreamComplete();
-                            // Clean up when stream ends
-                            if (unsubscribe) unsubscribe();
-                            MarkdownStreamParser.removeInstance(sessionId);
-                            parserInstanceRef.current = null;
-                            unsubscribeRef.current = null;
-                        } else if (
-                            parsedSegment.status === "STREAMING" &&
-                            parsedSegment.segment
-                        ) {
-                            // Process the segment and update content
-                            setParsedContent(
-                                (prev) =>
-                                    prev + formatSegment(parsedSegment.segment)
-                            );
-                        }
-                    }
-                );
+        // If not streaming, show content immediately
+        if (!isStreaming) {
+            setDisplayedContent(content);
+            setIsAnimating(false);
+            return;
+        }
 
-            // Start the parsing process
-            parserInstanceRef.current.startParsing();
-        } catch (error) {
-            console.error("Error initializing MarkdownStreamParser:", error);
+        // If streaming just started or content changed while streaming
+        if (streamingStarted || isStreaming) {
+            
+            setIsAnimating(true);
+            setDisplayedContent(""); // Always start from empty when streaming starts
+
+            let currentIndex = 0;
+            const totalLength = content.length;
+            let lastTime = Date.now();
+            
+            // Calculate characters to add per frame based on speed
+            const charsPerSecond = STREAMING_SPEED;
+            const targetFrameRate = 60; 
+            const charsPerFrame = charsPerSecond / targetFrameRate;
+
+            const animateText = () => {
+                const now = Date.now();
+                const deltaTime = (now - lastTime) / 1000; // Convert to seconds
+                
+                // Calculate how many characters to add this frame
+                const charsToAdd = Math.max(1, Math.ceil(charsPerFrame * deltaTime * targetFrameRate));
+                
+                if (currentIndex < totalLength && isStreaming) {
+                    currentIndex = Math.min(currentIndex + charsToAdd, totalLength);
+                    const newContent = content.substring(0, currentIndex);
+                    setDisplayedContent(newContent);
+                    lastTime = now;
+                    animationRef.current = requestAnimationFrame(animateText);
+                } else {
+                    // Animation complete or streaming stopped
+                    setIsAnimating(false);
+                    setDisplayedContent(content);
+                    animationRef.current = null;
+                }
+            };
+
+            // Start animation immediately
+            lastTime = Date.now();
+            animationRef.current = requestAnimationFrame(animateText);
         }
 
         // Cleanup function
         return () => {
-            if (unsubscribeRef.current) {
-                try {
-                    unsubscribeRef.current();
-                } catch (e) {
-                    console.warn("Error during unsubscribe:", e);
-                }
-                unsubscribeRef.current = null;
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current);
             }
-
-            if (parserInstanceRef.current) {
-                try {
-                    parserInstanceRef.current.stopParsing();
-                    MarkdownStreamParser.removeInstance(sessionId);
-                } catch (e) {
-                    console.warn("Error during parser cleanup:", e);
-                }
-                parserInstanceRef.current = null;
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
             }
         };
-    }, [isStreaming, sessionId, onStreamComplete]);
+    }, [content, isStreaming, STREAMING_SPEED]);
 
-    // Process new content chunks
+    // Cleanup on unmount
     useEffect(() => {
-        if (isStreaming && parserInstanceRef.current && content) {
-            try {
-                // Only process new content that hasn't been processed yet
-                const newContent = content.slice(lastProcessedLength.current);
-                if (newContent.length > 0) {
-                    parserInstanceRef.current.parseToken(newContent);
-                    lastProcessedLength.current = content.length;
-                }
-            } catch (error) {
-                console.error("Error parsing token:", error);
+        return () => {
+            if (animationRef.current) {
+                cancelAnimationFrame(animationRef.current);
             }
-        }
-    }, [content, isStreaming]);
-
-    // Format parsed segment into markdown
-    const formatSegment = (segment) => {
-        let text = segment.segment || "";
-
-        // Apply inline styles
-        if (segment.styles && Array.isArray(segment.styles)) {
-            segment.styles.forEach((style) => {
-                switch (style) {
-                    case "bold":
-                        text = `**${text}**`;
-                        break;
-                    case "italic":
-                        text = `*${text}*`;
-                        break;
-                    case "strikethrough":
-                        text = `~~${text}~~`;
-                        break;
-                    case "code":
-                        text = `\`${text}\``;
-                        break;
-                    default:
-                        // Handle other styles if needed
-                        break;
-                }
-            });
-        }
-
-        // Handle block-level formatting
-        if (segment.isBlockDefining) {
-            switch (segment.type) {
-                case "heading":
-                    // Headers should already be properly formatted from the parser
-                    return text;
-                case "paragraph":
-                    return text;
-                case "code-block":
-                    return text;
-                case "blockquote":
-                    return text;
-                default:
-                    return text;
+            if (timeoutRef.current) {
+                clearTimeout(timeoutRef.current);
             }
-        }
-
-        return text;
-    };
-
-    // Stop streaming manually (useful for external control)
-    const stopStreaming = () => {
-        if (parserInstanceRef.current) {
-            try {
-                parserInstanceRef.current.stopParsing();
-            } catch (error) {
-                console.error("Error stopping parser:", error);
-            }
-        }
-    };
-
-    // Expose stop function via imperative handle if needed
-    React.useImperativeHandle(
-        React.forwardRef(() => null),
-        () => ({
-            stopStreaming,
-        })
-    );
+        };
+    }, []);
 
     const components = useMemo(
         () => ({
@@ -181,7 +126,7 @@ const MarkdownTranslator = ({
                         language={match[1]}
                         PreTag="div"
                         className="rounded-md my-2"
-                        showLineNumbers={!isStreaming}
+                        showLineNumbers={!isAnimating}
                         {...props}
                     >
                         {codeContent}
@@ -324,30 +269,34 @@ const MarkdownTranslator = ({
                 return <hr className="my-4 border-gray-300" />;
             },
         }),
-        [isStreaming]
+        [isAnimating]
     );
 
-    // Determine what content to render
-    const contentToRender = isStreaming ? parsedContent : content || "";
-
     return (
-        <div
-            className={`prose prose-sm max-w-none ${className} ${
-                isStreaming ? "streaming-markdown" : ""
-            }`}
-        >
+        <div className={`prose prose-sm max-w-none ${className}`}>
             <ReactMarkdown
                 components={components}
                 remarkPlugins={[remarkGfm]}
                 skipHtml={false}
             >
-                {contentToRender}
+                {displayedContent}
             </ReactMarkdown>
-            {isStreaming && !isComplete && (
+            {isAnimating && (
                 <span className="inline-flex items-center ml-1">
-                    <span className="w-2 h-4 bg-blue-500 animate-pulse opacity-75 rounded-sm"></span>
+                    <span 
+                        className="w-2 h-5 bg-orange-500 rounded-sm"
+                        style={{
+                            animation: 'claude-cursor 1.2s ease-in-out infinite',
+                        }}
+                    />
                 </span>
             )}
+            <style jsx>{`
+                @keyframes claude-cursor {
+                    0%, 50% { opacity: 1; background-color: #f97316; }
+                    51%, 100% { opacity: 0.3; background-color: #fb923c; }
+                }
+            `}</style>
         </div>
     );
 };

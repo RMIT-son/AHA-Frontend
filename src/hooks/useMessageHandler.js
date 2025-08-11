@@ -1,8 +1,8 @@
 import {
     createConversation,
-    streamFromBackend,
+    sendMessageToBackend,
     sendVoiceMessage,
-    streamWebSearch,
+    sendWebSearchRequest,
 } from "../controllers/chat";
 
 /**
@@ -18,7 +18,6 @@ import {
  * @returns {Object} Object containing message handler functions
  */
 export default function useMessageHandler(chatState) {
-    // Destructure all required state variables and setters from chatState
     const {
         chatId,
         setChatId,
@@ -56,7 +55,6 @@ export default function useMessageHandler(chatState) {
      */
     const cancelCurrentStream = () => {
         if (activeStreamRef.current) {
-            // Mark the current stream as cancelled
             activeStreamRef.current.cancelled = true;
 
             // Reset all streaming-related states
@@ -118,13 +116,13 @@ export default function useMessageHandler(chatState) {
             await new Promise((resolve) => setTimeout(resolve, 200));
         }
 
-        // Initialize message processing states
+        // Set processing states
         setIsProcessingMessage(true);
         setIsLoadingInput(true);
         setCanSendNewMessage(false);
         setShouldReloadAfterStream(false);
 
-        // Process file attachments and create temporary URLs
+        // Create stable temp image URLs
         const tempImageUrls = createTempImageUrls(files);
         const tempMessageId = `temp-${Date.now()}-${Math.random()
             .toString(36)
@@ -140,7 +138,7 @@ export default function useMessageHandler(chatState) {
             files: tempImageUrls,
         };
 
-        // Immediately add user message to UI for instant feedback
+        // Add user message immediately
         setMessages((prev) => {
             const newMessages = [...prev, tempUserMessage];
             return newMessages;
@@ -162,7 +160,7 @@ export default function useMessageHandler(chatState) {
                 navigate(`/chat/${newChat.id}`, { replace: true });
             }
 
-            // Initialize stream tracking object
+            // Create stream tracker for cancellation support
             const streamTracker = {
                 chatId: currentChatId,
                 cancelled: false,
@@ -170,142 +168,95 @@ export default function useMessageHandler(chatState) {
             };
             activeStreamRef.current = streamTracker;
 
-            // Configure initial streaming states
+            // Set loading states
             setIsBotTyping(true);
             setIsLoadingInput(false);
 
-            let botMessageId = null;
-            let isFirstChunk = true;
-            setIsStreaming(true);
+            let response;
 
-            /**
-             * Handles individual chunks of streamed response data
-             *
-             * @param {string} chunk - Individual piece of streamed response content
-             */
-            const handleStreamChunk = (chunk) => {
-                // Skip processing if stream was cancelled or chat changed
-                if (
-                    streamTracker.cancelled ||
-                    currentChatIdRef.current !== currentChatId
-                ) {
-                    return;
-                }
+            // Execute appropriate function based on options
+            if (webSearchEnabled) {
+                response = await sendWebSearchRequest(currentChatId, text);
+            } else {
+                response = await sendMessageToBackend(
+                    currentChatId,
+                    userId,
+                    text,
+                    files
+                );
+            }
 
-                // Handle first chunk received - stop typing indicator
-                if (isFirstChunk) {
-                    setIsBotTyping(false);
-                    isFirstChunk = false;
-                }
+            // Check if request was cancelled during processing
+            if (
+                streamTracker.cancelled ||
+                currentChatIdRef.current !== currentChatId
+            ) {
+                return;
+            }
 
-                // Reset streaming timeout on each chunk
-                if (streamingTimeoutRef.current) {
-                    clearTimeout(streamingTimeoutRef.current);
-                }
+            if (response.success && response.response) {
+                // Create bot message with complete response
+                const botMessageId = `bot-${Date.now()}-${Math.random()
+                    .toString(36)
+                    .substr(2, 9)}`;
 
-                // Set timeout to trigger reload after stream completion
-                streamingTimeoutRef.current = setTimeout(() => {
-                    setShouldReloadAfterStream(true);
-                }, 3000);
+                // Stop typing indicator
+                setIsBotTyping(false);
 
-                // Update message state with new chunk content
+                // Add bot message with complete response - streaming will be handled by MarkdownTranslator
                 setMessages((prev) => {
                     const updated = [...prev];
-                    const botIndex = updated.findIndex(
-                        (msg) => msg.tempId === botMessageId
-                    );
-
-                    if (botIndex !== -1) {
-                        // Append to existing bot message
-                        updated[botIndex] = {
-                            ...updated[botIndex],
-                            content: updated[botIndex].content + chunk,
-                        };
-                    } else {
-                        // Create new bot message entry
-                        botMessageId = `bot-${Date.now()}-${Math.random()
-                            .toString(36)
-                            .substr(2, 9)}`;
-                        updated.push({
-                            sender: "bot",
-                            content: chunk,
-                            timestamp: new Date().toISOString(),
-                            tempId: botMessageId,
-                            source: webSearchEnabled ? "websearch" : "chat",
-                        });
-                    }
-
+                    updated.push({
+                        sender: "bot",
+                        content: response.response,
+                        timestamp: new Date().toISOString(),
+                        tempId: botMessageId,
+                        source: webSearchEnabled ? "websearch" : "chat",
+                        shouldStream: true, // Flag to indicate this message should stream
+                        streamingComplete: false,
+                    });
                     return updated;
                 });
-            };
 
-            /**
-             * Handles completion of the message stream
-             *
-             * Performs cleanup, state updates, and conversation list refresh
-             */
-            const handleStreamComplete = async () => {
-                // Only proceed if stream wasn't cancelled and chat is still active
-                if (
-                    !streamTracker.cancelled &&
-                    currentChatIdRef.current === currentChatId
-                ) {
-                    // Reset streaming states
-                    setIsStreaming(false);
-                    setCanSendNewMessage(true);
-                    setIsProcessingMessage(false);
-
-                    // Update user message status to delivered
+                // Mark streaming as complete after the animation duration
+                const estimatedStreamingTime = Math.max(3000, (response.response.length / 15) * 1000);
+                
+                streamingTimeoutRef.current = setTimeout(() => {
                     setMessages((prev) => {
                         return prev.map((msg) =>
-                            msg.tempId === tempMessageId
-                                ? { ...msg, status: "delivered" }
+                            msg.tempId === botMessageId
+                                ? { ...msg, streamingComplete: true, shouldStream: false }
                                 : msg
                         );
                     });
+                }, estimatedStreamingTime);
 
-                    // Refresh conversation list in sidebar
-                    try {
-                        await refreshConversationList();
-                    } catch (refreshError) {
-                        console.error(
-                            "❌ Error refreshing conversation list:",
-                            refreshError
-                        );
-                    }
-                }
-            };
-
-            // Execute appropriate streaming method based on configuration
-            if (webSearchEnabled) {
-                try {
-                    await streamWebSearch(
-                        currentChatId,
-                        text,
-                        handleStreamChunk
+                // Update user message status to delivered
+                setMessages((prev) => {
+                    return prev.map((msg) =>
+                        msg.tempId === tempMessageId
+                            ? { ...msg, status: "delivered" }
+                            : msg
                     );
-                    await handleStreamComplete();
-                } catch (err) {
-                    throw new Error(`Web search failed: ${err.message}`);
+                });
+
+                // Reset states
+                setIsStreaming(false);
+                setCanSendNewMessage(true);
+                setIsProcessingMessage(false);
+
+                // Refresh conversation list
+                try {
+                    await refreshConversationList();
+                } catch (refreshError) {
+                    // Handle refresh error silently
                 }
             } else {
-                try {
-                    await streamFromBackend(
-                        currentChatId,
-                        userId,
-                        text,
-                        handleStreamChunk,
-                        files
-                    );
-                    await handleStreamComplete();
-                } catch (err) {
-                    throw new Error(`Chat stream failed: ${err.message}`);
-                }
+                throw new Error("No response received from backend");
             }
-        } catch (err) {
-            // Handle any errors during message sending process
 
-            // Reset all streaming and processing states
+        } catch (err) {
+            // Reset states on error
             setShouldReloadAfterStream(false);
             setIsStreaming(false);
             setCanSendNewMessage(true);
@@ -338,7 +289,7 @@ export default function useMessageHandler(chatState) {
                 ];
             });
 
-            // Clean up temporary blob URLs to prevent memory leaks
+            // Clean up temporary image URLs
             tempImageUrls.forEach((file, index) => {
                 if (
                     file.isTemporary &&
@@ -348,15 +299,12 @@ export default function useMessageHandler(chatState) {
                     try {
                         URL.revokeObjectURL(file.url);
                     } catch (revokeError) {
-                        console.error(
-                            "❌ Error revoking blob URL:",
-                            revokeError
-                        );
+                        // Handle silently
                     }
                 }
             });
         } finally {
-            // Ensure all states are properly reset regardless of success/failure
+            // Ensure all states are reset
             setIsBotTyping(false);
             setIsLoadingInput(false);
             setIsStreaming(false);
@@ -381,16 +329,13 @@ export default function useMessageHandler(chatState) {
      * @param {Blob} audioBlob - The recorded audio data as a Blob object
      */
     const handleVoiceMessage = async (audioBlob) => {
-        // Prevent overlapping transcription requests
         if (isTranscribing || isProcessingMessage || isLoadingInput) {
             return;
         }
 
-        // Set transcription state to show loading indicator
         setIsTranscribing(true);
 
         try {
-            // Send audio blob to transcription service
             const result = await sendVoiceMessage(
                 null,
                 userId,
@@ -405,7 +350,6 @@ export default function useMessageHandler(chatState) {
                 throw new Error("No transcribed text received");
             }
         } catch (err) {
-            // Add error message to chat on transcription failure
             setMessages((prev) => {
                 return [
                     ...prev,
@@ -420,12 +364,10 @@ export default function useMessageHandler(chatState) {
                 ];
             });
         } finally {
-            // Always reset transcription state
             setIsTranscribing(false);
         }
     };
 
-    // Return public interface of the hook
     return {
         handleSend,
         handleVoiceMessage,

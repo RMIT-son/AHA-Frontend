@@ -22,7 +22,7 @@ export default function ChatPage() {
         messages,
         chatRooms,
         isBotTyping,
-        isLoadingInput,
+        isLoadingInput, 
         hasLoaded,
         isStreaming,
         canSendNewMessage,
@@ -75,7 +75,12 @@ export default function ChatPage() {
     const handleSendWithOptions = (message, files, options = {}) => {
         const { webSearchEnabled: searchEnabled } = options;
 
-        // Call the original handler
+        // Log file details for debugging
+        if (files && files.length > 0) {
+            // File processing details can be logged here if needed
+        }
+
+        // Call the original handler with web search option
         handleSend(message, files, {
             webSearchEnabled: searchEnabled || webSearchEnabled,
         });
@@ -101,6 +106,7 @@ export default function ChatPage() {
                 user={user}
                 isStreaming={isStreaming}
                 onCancelStream={cancelCurrentStream}
+                chatId={chatId}
             />
             <ChatInput
                 onSend={handleSendWithOptions}
