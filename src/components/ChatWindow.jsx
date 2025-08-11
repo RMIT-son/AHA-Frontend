@@ -5,20 +5,18 @@ import EmptyState from "./ChatWindow/EmptyState";
 import UserMessage from "./ChatWindow/UserMessage";
 import BotMessage from "./ChatWindow/BotMessage";
 import TypingIndicator from "./ChatWindow/TypingIndicator";
-import { sendTextToVoiceSpeaker } from "../controllers/chat";
 
 export default function ChatWindow({
     messages,
     isBotTyping,
     user,
     isStreaming,
-    chatId
+    chatId,
 }) {
     // State for image preview modal
     const [previewImage, setPreviewImage] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    console.log(chatId, "Chat ID in ChatWindow");
     // Custom hook for scrolling functionality
     const {
         messagesEndRef,
@@ -26,7 +24,7 @@ export default function ChatWindow({
         scrollingEnabled,
         isClosingModal,
         positionAtBottomInstant,
-        scrollToBottomSmooth
+        scrollToBottomSmooth,
     } = useScrolling(isModalOpen, isStreaming);
 
     // Refs for tracking conversation state
@@ -36,28 +34,21 @@ export default function ChatWindow({
     const loadedImages = useRef(new Set());
     const scrollTimeoutRef = useRef(null);
 
-    // Handling Speaker functionality
-    const handleSpeaker = useCallback(async (message, messageIndex) => {
-        console.log("Handle Speaker called")
-        try {
-            await sendTextToVoiceSpeaker(message.content);
-        } catch (error) {
-            console.error("Speaker error:", error);
-        }
-    }, []);
-
     // Image click handler
-    const handleImageClick = useCallback((imageUrl, alt) => {
-        scrollingEnabled.current = false;
-        setPreviewImage({ url: imageUrl, alt });
-        setIsModalOpen(true);
-    }, [scrollingEnabled]);
+    const handleImageClick = useCallback(
+        (imageUrl, alt) => {
+            scrollingEnabled.current = false;
+            setPreviewImage({ url: imageUrl, alt });
+            setIsModalOpen(true);
+        },
+        [scrollingEnabled]
+    );
 
     // File click handler - for non-image files
     const handleFileClick = useCallback((fileInfo) => {
         // For now, just download the file
         // You can add a file preview modal later if needed
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.href = fileInfo.url;
         link.download = fileInfo.fileName;
         document.body.appendChild(link);
@@ -93,7 +84,7 @@ export default function ChatWindow({
         positionAtBottomInstant,
         scrollToBottomSmooth,
         isModalOpen,
-        isClosingModal
+        isClosingModal,
     ]);
 
     // Reset conversation state when needed
@@ -114,8 +105,11 @@ export default function ChatWindow({
         const botMessages = messages.filter((msg, index) => index % 2 !== 0);
         if (botMessages.length > 0) {
             const latestBotMessage = botMessages[botMessages.length - 1];
-            
-            if (!lastBotMessageRef.current || lastBotMessageRef.current.tempId !== latestBotMessage.tempId) {
+
+            if (
+                !lastBotMessageRef.current ||
+                lastBotMessageRef.current.tempId !== latestBotMessage.tempId
+            ) {
                 lastBotMessageRef.current = latestBotMessage;
             }
         }
@@ -128,7 +122,6 @@ export default function ChatWindow({
             isNewConversation.current = false;
         }
     }, [messages.length, positionAtBottomInstant]);
-    
 
     // Modal close handler
     const closeModal = useCallback(() => {
@@ -158,12 +151,13 @@ export default function ChatWindow({
         return messages.map((message, index) => {
             const isUser = index % 2 === 0;
             const isBotMessage = index % 2 !== 0;
-            
-            const shouldStream = isBotMessage && 
-                                 message.shouldStream && 
-                                 !message.streamingComplete && 
-                                 message.content && 
-                                 message.content.trim().length > 0;
+
+            const shouldStream =
+                isBotMessage &&
+                message.shouldStream &&
+                !message.streamingComplete &&
+                message.content &&
+                message.content.trim().length > 0;
 
             const messageKey = message.tempId || message.id || `msg-${index}`;
 
@@ -184,26 +178,11 @@ export default function ChatWindow({
                         key={messageKey}
                         message={message}
                         shouldStream={shouldStream}
-                        onSpeakerClick={ async (message, messageIndex) => {
-                            console.log("Handle Speaker called")
-                            try {
-                                await sendTextToVoiceSpeaker(message.content, message.conversationId);
-                            } catch (error) {
-                                console.error("Speaker error:", error);
-                            }
-                        }}
-                        messageIndex={index}
                     />
                 );
             }
         });
-    }, [
-        messages,
-        user,
-        handleImageClick,
-        handleFileClick,
-        handleSpeaker,
-    ]);
+    }, [messages, user, handleImageClick, handleFileClick]);
 
     return (
         <>
@@ -219,9 +198,7 @@ export default function ChatWindow({
                             {renderedMessages}
 
                             {/* Bot typing indicator */}
-                            {isBotTyping && !isStreaming && (
-                                <TypingIndicator />
-                            )}
+                            {isBotTyping && !isStreaming && <TypingIndicator />}
                         </div>
                     </div>
                 )}

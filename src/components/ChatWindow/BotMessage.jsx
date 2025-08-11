@@ -1,15 +1,10 @@
-import { memo } from 'react';
+import { memo } from "react";
 import MarkdownTranslator from "../ChatWindow/MarkdownTranslator";
-import SpeakerIcon from './SpeakerIcon';
+import SpeakerIcon from "./SpeakerIcon";
 
-const BotMessage = memo(({
-    message,
-    shouldStream,
-    onSpeakerClick,
-    messageIndex
-}) => {
+const BotMessage = memo(({ message, shouldStream }) => {
     return (
-        <div className="group relative mb-10">
+        <div className="group relative mb-5 mt-10">
             <div className="flex justify-start">
                 <div className="max-w-[90%] pl-2 relative">
                     <div className="relative">
@@ -26,12 +21,8 @@ const BotMessage = memo(({
                     {message.content &&
                         message.content.trim() &&
                         !shouldStream && (
-                            <div className="absolute mb-5 -left-1 -right-10 group-hover:opacity-100 transition-opacity duration-200">
-                                <SpeakerIcon
-                                    onClick={() =>{ 
-                                        onSpeakerClick(message, messageIndex)
-                                    }}
-                                />
+                            <div className="absolute mb-5 -left-1 -right-10 group-hover:opacity-100 transition-opacity duration-200 cursor-pointer">
+                                <SpeakerIcon message={message} />
                             </div>
                         )}
                 </div>
@@ -40,6 +31,6 @@ const BotMessage = memo(({
     );
 });
 
-BotMessage.displayName = 'BotMessage';
+BotMessage.displayName = "BotMessage";
 
 export default BotMessage;

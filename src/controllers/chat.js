@@ -450,12 +450,16 @@ export async function sendTextToVoiceSpeaker(text) {
         const audioBlob = new Blob([response.data], { type: "audio/mpeg" });
         const audioUrl = URL.createObjectURL(audioBlob);
 
-        // Play audio in browser
+        // Create audio element but DON'T play it automatically
         const audio = new Audio(audioUrl);
-        await audio.play();
 
-        console.log("✅ Audio played successfully in browser.");
-        return { status: "success", url: audioUrl };
+        console.log("✅ Audio created successfully.");
+        // Return both the audio element and URL so the component can control playback
+        return {
+            status: "success",
+            url: audioUrl,
+            audio: audio, // Return the audio element for external control
+        };
     } catch (error) {
         if (error.response) {
             const message =
