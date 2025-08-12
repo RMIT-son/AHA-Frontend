@@ -32,6 +32,22 @@ export default function FilePreview({ uploadedFiles, removeFile }) {
                     />
                 </svg>
             );
+        } else if (type.startsWith("audio/")) {
+            return (
+                <svg
+                    className="w-5 h-5 text-purple-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15.536 12.464a9 9 0 010-8.928M12 19V5M8.464 12.464a9 9 0 010-8.928"
+                    />
+                </svg>
+            );
         } else {
             return (
                 <svg
@@ -51,6 +67,32 @@ export default function FilePreview({ uploadedFiles, removeFile }) {
         }
     };
 
+    const getFileTypeLabel = (type, name) => {
+        if (type.startsWith("audio/")) {
+            const extension = name.split(".").pop()?.toUpperCase();
+            return extension || "AUDIO";
+        } else if (type === "application/pdf") {
+            return "PDF";
+        } else if (type.startsWith("image/")) {
+            return "IMAGE";
+        } else if (type.includes("csv")) {
+            return "CSV";
+        } else if (type.includes("json")) {
+            return "JSON";
+        } else if (type.includes("text")) {
+            return "TEXT";
+        }
+        return "FILE";
+    };
+
+    const formatFileSize = (bytes) => {
+        if (bytes === 0) return "0 Bytes";
+        const k = 1024;
+        const sizes = ["Bytes", "KB", "MB", "GB"];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+    };
+
     if (uploadedFiles.length === 0) return null;
 
     return (
@@ -59,6 +101,7 @@ export default function FilePreview({ uploadedFiles, removeFile }) {
                 {uploadedFiles.map((fileData) => (
                     <div key={fileData.id} className="relative group">
                         {fileData.preview ? (
+                            // Image preview
                             <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
                                 <img
                                     src={fileData.preview}
@@ -86,18 +129,30 @@ export default function FilePreview({ uploadedFiles, removeFile }) {
                                 </button>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
-                                <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center">
+                            // File icon preview
+                            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors min-w-[120px]">
+                                <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
                                     {getFileIcon(fileData.type)}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-medium text-gray-900 truncate max-w-16">
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-xs font-medium text-gray-600 bg-gray-200 px-1.5 py-0.5 rounded">
+                                            {getFileTypeLabel(
+                                                fileData.type,
+                                                fileData.name
+                                            )}
+                                        </span>
+                                    </div>
+                                    <p className="text-xs font-medium text-gray-900 truncate max-w-20">
                                         {fileData.name}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                        {formatFileSize(fileData.size)}
                                     </p>
                                 </div>
                                 <button
                                     onClick={() => removeFile(fileData.id)}
-                                    className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors opacity-0 group-hover:opacity-100"
+                                    className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
                                     title="Remove file"
                                 >
                                     <svg

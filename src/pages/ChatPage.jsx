@@ -22,7 +22,7 @@ export default function ChatPage() {
         messages,
         chatRooms,
         isBotTyping,
-        isLoadingInput, 
+        isLoadingInput,
         hasLoaded,
         isStreaming,
         canSendNewMessage,
@@ -71,24 +71,93 @@ export default function ChatPage() {
         messages,
     });
 
-    // Enhanced send handler that includes web search options
+    // Enhanced send handler that includes web search options and file processing
     const handleSendWithOptions = (message, files, options = {}) => {
         const { webSearchEnabled: searchEnabled } = options;
 
-        // Log file details for debugging
-        if (files && files.length > 0) {
-            // File processing details can be logged here if needed
+        // Process files and separate audio files from other files
+        const processedFiles = files
+            ? files.map((fileData) => {
+                  // Ensure we have the necessary file information
+                  const processedFile = {
+                      id: fileData.id || Date.now() + Math.random(),
+                      file: fileData.file,
+                      name: fileData.name || fileData.file?.name,
+                      size: fileData.size || fileData.file?.size,
+                      type: fileData.type || fileData.file?.type,
+                      preview: fileData.preview,
+                      isAudio:
+                          fileData.isAudio ||
+                          fileData.type?.startsWith("audio/"),
+                  };
+
+                  return processedFile;
+              })
+            : [];
+
+        // Log file processing details for debugging
+        if (processedFiles.length > 0) {
+            const audioFiles = processedFiles.filter((f) => f.isAudio);
+            const otherFiles = processedFiles.filter((f) => !f.isAudio);
+
+            console.log(`📎 Processing ${processedFiles.length} file(s):`);
+            if (audioFiles.length > 0) {
+                console.log(`  🎵 Audio files: ${audioFiles.length}`);
+                audioFiles.forEach((f) =>
+                    console.log(`    - ${f.name} (${f.type})`)
+                );
+            }
+            if (otherFiles.length > 0) {
+                console.log(`  📄 Other files: ${otherFiles.length}`);
+                otherFiles.forEach((f) =>
+                    console.log(`    - ${f.name} (${f.type})`)
+                );
+            }
         }
 
-        // Call the original handler with web search option
-        handleSend(message, files, {
+        // Call the original handler with web search option and processed files
+        handleSend(message, processedFiles, {
             webSearchEnabled: searchEnabled || webSearchEnabled,
         });
+    };
+
+    // Handle audio file upload for transcription
+    const handleAudioFileUpload = async (audioFile) => {
+        try {
+            console.log(`🎵 Processing uploaded audio file: ${audioFile.name}`);
+
+            // Convert File to Blob for compatibility with handleVoiceMessage
+            const audioBlob = new Blob([audioFile], { type: audioFile.type });
+
+            // Use the existing voice message handler for transcription
+            await handleVoiceMessage(audioBlob);
+
+            console.log(`✅ Audio file processed successfully`);
+        } catch (error) {
+            console.error(`❌ Failed to process audio file:`, error);
+
+            // Add error message to chat
+            setMessages((prev) => [
+                ...prev,
+                {
+                    sender: "system",
+                    content: `Failed to process audio file "${audioFile.name}". Please try again.`,
+                    timestamp: new Date().toISOString(),
+                    isError: true,
+                    tempId: `audio-error-${Date.now()}`,
+                },
+            ]);
+        }
     };
 
     // Toggle web search
     const handleWebSearchToggle = () => {
         setWebSearchEnabled((prev) => !prev);
+    };
+
+    // Handle transcribed text usage
+    const handleTranscribedTextUsed = () => {
+        setTranscribedText("");
     };
 
     return (
@@ -117,14 +186,14 @@ export default function ChatPage() {
                 onCancelStream={cancelCurrentStream}
                 isProcessing={isProcessingMessage}
                 transcribedText={transcribedText}
-                onTranscribedTextUsed={() => {
-                    setTranscribedText("");
-                }}
+                onTranscribedTextUsed={handleTranscribedTextUsed}
                 isTranscribing={isTranscribing}
                 // Web search props
                 enableWebSearch={true}
                 webSearchEnabled={webSearchEnabled}
                 onWebSearchToggle={handleWebSearchToggle}
+                // Audio file upload prop
+                onAudioFileUpload={handleAudioFileUpload}
             />
         </ChatLayout>
     );

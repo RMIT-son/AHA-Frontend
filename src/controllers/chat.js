@@ -37,6 +37,21 @@ const base64ToFile = async (base64String, fileName, mimeType) => {
     return new File([base64String], fileName, { type: mimeType });
 };
 
+// Helper function to check if files are audio-only
+const isAudioOnlyRequest = (files) => {
+    if (!files || files.length === 0) return false;
+
+    // Check if all files are audio files
+    return files.every((fileData) => {
+        const type = fileData.type || fileData.file?.type || "";
+        const name = fileData.name || fileData.file?.name || "";
+        const isAudioType = type.startsWith("audio/");
+        const hasAudioExtension = /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(name);
+
+        return isAudioType || hasAudioExtension || fileData.isAudio;
+    });
+};
+
 const processFilesForBackend = async (files) => {
     if (!files || files.length === 0) return [];
 
@@ -68,6 +83,7 @@ const processFilesForBackend = async (files) => {
             processedFiles.push(fileToUpload);
         } catch (error) {
             // Skip files with errors
+            console.warn("Error processing file:", error);
         }
     }
     return processedFiles;
@@ -147,7 +163,7 @@ export const getConversationById = async (conversationId) => {
     }
 };
 
-// Modified function to handle complete response instead of streaming
+// Modified function to handle complete response with audio endpoint routing
 export async function sendMessageToBackend(
     conversationId,
     userId,
@@ -171,6 +187,19 @@ export async function sendMessageToBackend(
     // Process files for multipart/form-data
     const processedFiles = await processFilesForBackend(files);
 
+    // Determine if this is an audio-only request
+    const isAudioOnly = isAudioOnlyRequest(files);
+    const hasText = content && content.trim().length > 0;
+
+    // Log the request type for debugging
+    if (isAudioOnly && !hasText) {
+        console.log("🎵 Routing to audio-only endpoint");
+    } else if (isAudioOnly && hasText) {
+        console.log("🎵 Audio files with text - using standard endpoint");
+    } else {
+        console.log("📄 Using standard endpoint");
+    }
+
     // Create FormData for multipart/form-data request
     const formData = new FormData();
 
@@ -185,22 +214,30 @@ export async function sendMessageToBackend(
         formData.append("files", file);
     });
 
+    // Determine endpoint based on file type and content
+    let endpoint;
+    if (isAudioOnly && !hasText && processedFiles.length > 0) {
+        // Audio-only files without text content go to audio endpoint
+        endpoint = `${app.dataURL}/api/conversations/${conversationId}/${userId}/audio`;
+        // TODO: Will get the correct endpoint here
+    } else {
+        // Everything else goes to standard endpoint
+        endpoint = `${app.dataURL}/api/conversations/${conversationId}/${userId}/stream`;
+    }
+
     try {
-        const response = await axios.post(
-            `${app.dataURL}/api/conversations/${conversationId}/${userId}/stream`,
-            formData,
-            {
-                headers: {
-                    "Content-Type": "multipart/form-data",
-                },
-                timeout: 300000, // 5 minutes timeout
-            }
-        );
+        const response = await axios.post(endpoint, formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+            timeout: 300000, // 5 minutes timeout
+        });
 
         if (response.data && response.data.final_response) {
             return {
                 success: true,
                 response: response.data.final_response,
+                endpoint: isAudioOnly && !hasText ? "audio" : "standard", // Add endpoint info for debugging
             };
         } else {
             throw new Error("No response received from backend");
@@ -223,6 +260,11 @@ export async function sendMessageToBackend(
                     throw new Error("Access forbidden.");
                 case 404:
                     throw new Error("Conversation not found.");
+                case 422:
+                    throw new Error(
+                        message ||
+                            "Invalid file format or unsupported audio type."
+                    );
                 case 429:
                     throw new Error(
                         "Too many requests. Please try again later."

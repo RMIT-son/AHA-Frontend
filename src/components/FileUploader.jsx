@@ -11,10 +11,37 @@ export default function FileUploader({
     const fileInputRef = useRef(null);
     const inputBubbleRef = useRef(null);
 
-    // File validation - Images, PDFs, text files, CSVs
+    // Check if uploaded files contain audio files
+    const hasAudioFiles = () => {
+        return uploadedFiles.some((file) => file.type.startsWith("audio/"));
+    };
+
+    // Check if uploaded files contain non-audio files
+    const hasNonAudioFiles = () => {
+        return uploadedFiles.some((file) => !file.type.startsWith("audio/"));
+    };
+
+    // Get the current file mode (audio, other, or none)
+    const getCurrentFileMode = () => {
+        if (hasAudioFiles()) return "audio";
+        if (hasNonAudioFiles()) return "other";
+        return "none";
+    };
+
+    // File validation - Images, PDFs, text files, CSVs, Audio
     const validateFile = (file) => {
         const maxSize = 25 * 1024 * 1024; // 25MB
-        const allowedTypes = [
+        const audioTypes = [
+            "audio/wav",
+            "audio/x-wav",
+            "audio/mpeg",
+            "audio/mp3",
+            "audio/m4a",
+            "audio/aac",
+            "audio/ogg",
+            "audio/flac",
+        ];
+        const otherAllowedTypes = [
             "image/jpeg",
             "image/png",
             "image/gif",
@@ -26,27 +53,45 @@ export default function FileUploader({
             "text/csv",
             "application/csv",
             "text/tab-separated-values",
-            "audio/wav",
-            "audio/x-wav",
-            "audio/mpeg"
         ];
-
 
         if (file.size > maxSize) {
             return { valid: false, error: `File size must be less than 25MB` };
         }
 
-        if (!allowedTypes.includes(file.type)) {
+        const isAudioFile =
+            audioTypes.includes(file.type) ||
+            /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(file.name);
+        const isOtherFile = otherAllowedTypes.includes(file.type);
+
+        if (!isAudioFile && !isOtherFile) {
             return {
                 valid: false,
-                error: `Only images, PDFs, text files, and CSVs are supported`,
+                error: `File type not supported. Only audio files (mp3, wav, m4a, etc.) or other files (images, PDFs, text, CSV) are allowed`,
             };
         }
 
-        return { valid: true };
+        // Check file mode restrictions
+        const currentMode = getCurrentFileMode();
+
+        if (currentMode === "audio" && !isAudioFile) {
+            return {
+                valid: false,
+                error: `You can only upload audio files when audio files are already uploaded. Remove audio files first to upload other file types.`,
+            };
+        }
+
+        if (currentMode === "other" && isAudioFile) {
+            return {
+                valid: false,
+                error: `You can only upload other file types when non-audio files are already uploaded. Remove other files first to upload audio files.`,
+            };
+        }
+
+        return { valid: true, isAudio: isAudioFile };
     };
 
-    // Process files with limit checking
+    // Process files with limit checking and mode restrictions
     const processFiles = (files) => {
         const fileArray = Array.from(files);
 
@@ -72,9 +117,10 @@ export default function FileUploader({
                     size: file.size,
                     type: file.type,
                     preview: null,
+                    isAudio: validation.isAudio,
                 };
 
-                // Create preview for images
+                // Create preview for images only
                 if (file.type.startsWith("image/")) {
                     const reader = new FileReader();
                     reader.onload = (e) => {
@@ -211,10 +257,47 @@ export default function FileUploader({
         }
     }, [uploadedFiles.length, maxFiles]);
 
+    // Get dynamic accept attribute based on current file mode
+    const getAcceptAttribute = () => {
+        const currentMode = getCurrentFileMode();
+
+        if (currentMode === "audio") {
+            return "audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac";
+        } else if (currentMode === "other") {
+            return "image/*,application/pdf,text/plain,application/json,text/csv";
+        } else {
+            // No files uploaded yet, allow all
+            return "image/*,application/pdf,text/plain,application/json,text/csv,audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac";
+        }
+    };
+
+    // Get file upload button title with mode restrictions
+    const getFileUploadTitle = () => {
+        if (uploadedFiles.length >= maxFiles) {
+            return `Maximum ${maxFiles} files allowed`;
+        }
+
+        const currentMode = getCurrentFileMode();
+        const baseTitle = `Attach file (${uploadedFiles.length}/${maxFiles})`;
+
+        if (currentMode === "audio") {
+            return `${baseTitle} - Audio files only`;
+        } else if (currentMode === "other") {
+            return `${baseTitle} - Images, PDFs, text files only`;
+        }
+
+        return baseTitle;
+    };
+
     return {
         fileInputRef,
         inputBubbleRef,
         handleFileUploadClick,
         handleFileSelect,
+        getCurrentFileMode,
+        getAcceptAttribute,
+        getFileUploadTitle,
+        hasAudioFiles,
+        hasNonAudioFiles,
     };
 }

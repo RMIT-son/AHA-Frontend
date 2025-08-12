@@ -24,24 +24,34 @@ export default function ChatInput({
     enableWebSearch = false,
     onWebSearchToggle,
     webSearchEnabled = false,
+    // New prop for audio file upload
+    onAudioFileUpload,
 }) {
     const [message, setMessage] = useState("");
     const [uploadedFiles, setUploadedFiles] = useState([]);
     const [isDragOver, setIsDragOver] = useState(false);
     const [searchResults, setSearchResults] = useState([]);
     const [isSearching, setIsSearching] = useState(false);
+    const [showAudioUploadMenu, setShowAudioUploadMenu] = useState(false);
 
     const textareaRef = useRef(null);
+    const audioFileInputRef = useRef(null);
+    const audioMenuRef = useRef(null);
 
     // Constants
     const MAX_FILES = 4;
 
-    // File uploader hook with file limit check
+    // File uploader hook with file limit check and mode restrictions
     const {
         fileInputRef,
         inputBubbleRef,
         handleFileUploadClick,
         handleFileSelect: originalHandleFileSelect,
+        getCurrentFileMode,
+        getAcceptAttribute,
+        getFileUploadTitle,
+        hasAudioFiles,
+        hasNonAudioFiles,
     } = FileUploader({
         uploadedFiles,
         setUploadedFiles,
@@ -51,7 +61,7 @@ export default function ChatInput({
         maxFiles: MAX_FILES,
     });
 
-    // Wrapper for file selection with limit check
+    // Wrapper for file selection with limit and mode checks
     const handleFileSelect = (e) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
@@ -69,6 +79,93 @@ export default function ChatInput({
 
         originalHandleFileSelect(e);
     };
+
+    // Handle audio file selection with mode restrictions
+    const handleAudioFileSelect = (e) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        const audioFile = files[0];
+
+        // Check if it's an audio file only
+        const isAudioFile = audioFile.type.startsWith("audio/");
+        const hasAudioExtension = /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(
+            audioFile.name
+        );
+
+        if (!isAudioFile && !hasAudioExtension) {
+            alert(
+                "Please select an audio file (.mp3, .wav, .m4a, .aac, .ogg, .flac)"
+            );
+            return;
+        }
+
+        // Check file mode restrictions
+        const currentMode = getCurrentFileMode();
+        if (currentMode === "other") {
+            alert(
+                "You can only upload audio files when no other file types are uploaded. Remove other files first to upload audio files."
+            );
+            if (audioFileInputRef.current) {
+                audioFileInputRef.current.value = "";
+            }
+            return;
+        }
+
+        // Check file limit
+        if (uploadedFiles.length >= MAX_FILES) {
+            alert(
+                `You can only upload a maximum of ${MAX_FILES} files. You currently have ${uploadedFiles.length} file(s) uploaded.`
+            );
+            if (audioFileInputRef.current) {
+                audioFileInputRef.current.value = "";
+            }
+            return;
+        }
+
+        // Create file object with ID for preview
+        const fileWithId = {
+            id: Date.now() + Math.random(), // Simple unique ID
+            file: audioFile,
+            name: audioFile.name,
+            size: audioFile.size,
+            type: audioFile.type,
+            preview: null, // Audio files don't have image previews
+            isAudio: true,
+        };
+
+        // Add to uploaded files for preview
+        setUploadedFiles((prev) => [...prev, fileWithId]);
+
+        // Call the audio file upload handler if provided
+        if (onAudioFileUpload) {
+            onAudioFileUpload(audioFile);
+        }
+
+        // Reset the input and close menu
+        if (audioFileInputRef.current) {
+            audioFileInputRef.current.value = "";
+        }
+        setShowAudioUploadMenu(false);
+    };
+
+    // Close audio menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (
+                audioMenuRef.current &&
+                !audioMenuRef.current.contains(event.target)
+            ) {
+                setShowAudioUploadMenu(false);
+            }
+        };
+
+        if (showAudioUploadMenu) {
+            document.addEventListener("mousedown", handleClickOutside);
+            return () =>
+                document.removeEventListener("mousedown", handleClickOutside);
+        }
+    }, [showAudioUploadMenu]);
 
     // Voice recorder hook
     const {
@@ -170,12 +267,15 @@ export default function ChatInput({
         );
     };
 
-    // Get file upload button title
-    const getFileUploadTitle = () => {
-        if (uploadedFiles.length >= MAX_FILES) {
-            return `Maximum ${MAX_FILES} files allowed`;
-        }
-        return `Attach file (${uploadedFiles.length}/${MAX_FILES})`;
+    // Check if audio upload is disabled due to mode restrictions
+    const isAudioUploadDisabled = () => {
+        return (
+            isLoading ||
+            isProcessing ||
+            isTranscribing ||
+            uploadedFiles.length >= MAX_FILES ||
+            getCurrentFileMode() === "other"
+        );
     };
 
     // Determine placeholder text and button state
@@ -316,6 +416,53 @@ export default function ChatInput({
                     </div>
                 )}
 
+                {/* File mode restriction indicator */}
+                {getCurrentFileMode() === "audio" && (
+                    <div className="mb-3 flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-lg px-4 py-2">
+                        <svg
+                            className="w-4 h-4 text-purple-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15.536 12.464a9 9 0 010-8.928M12 19V5M8.464 12.464a9 9 0 010-8.928"
+                            />
+                        </svg>
+                        <span className="text-sm text-purple-700 font-medium">
+                            Audio mode active - Only audio files can be
+                            uploaded. Remove audio files to upload other file
+                            types.
+                        </span>
+                    </div>
+                )}
+
+                {getCurrentFileMode() === "other" && (
+                    <div className="mb-3 flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
+                        <svg
+                            className="w-4 h-4 text-blue-600"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                        </svg>
+                        <span className="text-sm text-blue-700 font-medium">
+                            Document mode active - Only images, PDFs, and text
+                            files can be uploaded. Remove other files to upload
+                            audio files.
+                        </span>
+                    </div>
+                )}
+
                 <div className="relative">
                     <div
                         ref={inputBubbleRef}
@@ -365,8 +512,82 @@ export default function ChatInput({
 
                             {/* Bottom button row */}
                             <div className="pb-4 flex items-center justify-between px-4">
-                                {/* Left side - Research button */}
-                                <div className="flex items-center">
+                                {/* Left side - Plus button and Research button */}
+                                <div className="flex items-center gap-2">
+                                    {/* Plus button with audio upload menu */}
+                                    <div
+                                        className="relative"
+                                        ref={audioMenuRef}
+                                    >
+                                        <button
+                                            onClick={() =>
+                                                setShowAudioUploadMenu(
+                                                    !showAudioUploadMenu
+                                                )
+                                            }
+                                            className="flex items-center justify-center w-8 h-8 rounded-lg text-gray-600 border border-gray-200 bg-gray-100 hover:bg-gray-150 transition-all duration-200"
+                                            disabled={
+                                                isLoading ||
+                                                isProcessing ||
+                                                isStreaming
+                                            }
+                                            title="More options"
+                                        >
+                                            <svg
+                                                className="w-4 h-4"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                                />
+                                            </svg>
+                                        </button>
+
+                                        {/* Audio upload dropdown menu */}
+                                        {showAudioUploadMenu && (
+                                            <div className="absolute bottom-full left-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[200px] z-50">
+                                                <button
+                                                    onClick={() =>
+                                                        audioFileInputRef.current?.click()
+                                                    }
+                                                    disabled={isAudioUploadDisabled()}
+                                                    className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-100 flex items-center gap-3 ${
+                                                        isAudioUploadDisabled()
+                                                            ? "text-gray-400 cursor-not-allowed"
+                                                            : "text-gray-700"
+                                                    }`}
+                                                >
+                                                    <svg
+                                                        className="w-4 h-4 text-gray-500"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2}
+                                                            d="M15.536 12.464a9 9 0 010-8.928M12 19V5M8.464 12.464a9 9 0 010-8.928"
+                                                        />
+                                                    </svg>
+                                                    Upload Audio File
+                                                    {getCurrentFileMode() ===
+                                                        "other" && (
+                                                        <span className="text-xs text-gray-400">
+                                                            (Disabled)
+                                                        </span>
+                                                    )}
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Research button */}
                                     {enableWebSearch && (
                                         <button
                                             onClick={handleResearchClick}
@@ -633,14 +854,23 @@ export default function ChatInput({
                         </div>
                     )}
 
-                    {/* Hidden file input */}
+                    {/* Hidden file inputs */}
                     <input
                         ref={fileInputRef}
                         type="file"
                         multiple
                         className="hidden"
                         onChange={handleFileSelect}
-                        accept="image/*,application/pdf,text/plain,application/json,text/csv,audio/wav,audio/mpeg,.wav,.mp3"
+                        accept={getAcceptAttribute()}
+                    />
+
+                    {/* Hidden audio file input */}
+                    <input
+                        ref={audioFileInputRef}
+                        type="file"
+                        className="hidden"
+                        onChange={handleAudioFileSelect}
+                        accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.flac"
                     />
                 </div>
             </div>
