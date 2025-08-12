@@ -4,7 +4,7 @@ import SpeakerIcon from "./SpeakerIcon";
 
 const BotMessage = memo(({ message, shouldStream }) => {
     return (
-        <div className="group relative mb-4 mt-10">
+        <div className="group relative mb-4 mt-5">
             <div className="flex justify-start">
                 <div className="max-w-[90%] pl-2 relative">
                     <div className="relative">
@@ -18,13 +18,11 @@ const BotMessage = memo(({ message, shouldStream }) => {
                     </div>
 
                     {/* Speaker icon for bot messages - positioned below the message */}
-                    {message.content &&
-                        message.content.trim() &&
-                        !shouldStream && (
-                            <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                                <SpeakerIcon message={message} />
-                            </div>
-                        )}
+                    {message.content && message.content.trim() && (
+                        <div className="mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <SpeakerIcon message={message} />
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

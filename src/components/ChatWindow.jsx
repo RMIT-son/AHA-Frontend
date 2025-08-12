@@ -193,7 +193,7 @@ export default function ChatWindow({
                 {messages.length === 0 ? (
                     <EmptyState />
                 ) : (
-                    <div className="max-w-3xl mx-auto px-4 py-8">
+                    <div className="max-w-3xl mx-auto px-4 pt-8">
                         <div className="space-y-6">
                             {renderedMessages}
 
