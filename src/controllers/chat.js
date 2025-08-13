@@ -218,7 +218,7 @@ export async function sendMessageToBackend(
     let endpoint;
     if (isAudioOnly && !hasText && processedFiles.length > 0) {
         // Audio-only files without text content go to audio endpoint
-        endpoint = `${app.dataURL}/api/conversations/${conversationId}/${userId}/audio`;
+        endpoint = `${app.dataURL}/api/conversations/${conversationId}/${userId}/stream`;
         // TODO: Will get the correct endpoint here
     } else {
         // Everything else goes to standard endpoint
