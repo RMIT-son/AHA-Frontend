@@ -21,6 +21,7 @@ const SettingsPage = ({ section }) => {
     const [user, setUser] = useState(null);
     const [chatRooms, setChatRooms] = useState([]);
     const [userLoading, setUserLoading] = useState(true);
+    const [sidebarOpen, setSidebarOpen] = useState(false); // For mobile sidebar toggle
 
     // Cookie authentication check and fetch fresh user data
     useEffect(() => {
@@ -122,7 +123,8 @@ const SettingsPage = ({ section }) => {
                 onChatRoomsUpdate={() => {}}
             >
                 <div className="flex-1 overflow-hidden">
-                    <div className="h-full py-40 px-40">
+                    {/* Responsive padding */}
+                    <div className="h-full py-4 px-4 sm:py-8 sm:px-8 lg:py-40 lg:px-40">
                         <div className="w-full max-w-7xl mx-auto h-full">
                             <div className="flex items-center justify-center h-full">
                                 <div className="animate-pulse text-gray-500">
@@ -144,18 +146,29 @@ const SettingsPage = ({ section }) => {
             onChatRoomsUpdate={refreshConversationList}
         >
             <div className="flex-1 overflow-hidden">
-                <div className="h-full py-40 px-40">
+                {/* Responsive padding and container */}
+                <div className="h-full py-4 px-4 sm:py-8 sm:px-8 lg:py-16 lg:px-16 xl:py-40 xl:px-40">
                     <div className="w-full max-w-7xl mx-auto h-full">
-                        {/* Sidebar and Main content container */}
-                        <div className="flex gap-2 h-full">
-                            {/* Settings Sidebar */}
-                            <SettingsPageSidebar
-                                activeSection={currentSection}
-                            />
 
-                            {/* Main content */}
-                            <div className="flex-1 ml-4">
-                                {views[currentSection] || views.profile}
+
+                        {/* Sidebar and Main content container */}
+                        <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 h-full">
+                            {/* Settings Sidebar - Always visible */}
+                            <div className="w-full lg:w-64 lg:flex-shrink-0">
+                                <div className="lg:sticky lg:top-0">
+                                    <SettingsPageSidebar
+                                        activeSection={currentSection}
+                                    />
+                                </div>
+                            </div>
+
+
+
+                            {/* Main content - Responsive */}
+                            <div className="flex-1 min-w-0 lg:ml-4">
+                                <div className="h-full overflow-y-auto">
+                                    {views[currentSection] || views.profile}
+                                </div>
                             </div>
                         </div>
                     </div>

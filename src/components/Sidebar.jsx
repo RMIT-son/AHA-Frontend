@@ -26,9 +26,21 @@ const Sidebar = ({
 
     const [searchQuery, setSearchQuery] = useState("");
     const [searchResult, setSearchResults] = useState([]); // State for search results
+    const [isMobile, setIsMobile] = useState(false);
 
     const navigate = useNavigate();
     const dispatch = useDispatch(); // Add this hook
+
+    // Check if device is mobile
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
 
     // Get user display name and initial from user prop
     const displayName = user?.fullName || user?.name || "User";
@@ -69,6 +81,10 @@ const Sidebar = ({
     const handleStartNewChat = () => {
         if (onSelectRoom) {
             onSelectRoom(null);
+        }
+        // Close sidebar on mobile after selecting
+        if (isMobile && isOpen) {
+            onToggle();
         }
     };
 
@@ -138,6 +154,16 @@ const Sidebar = ({
         }
     };
 
+    const handleRoomSelect = (roomId) => {
+        if (onSelectRoom) {
+            onSelectRoom(roomId);
+        }
+        // Close sidebar on mobile after selecting a room
+        if (isMobile && isOpen) {
+            onToggle();
+        }
+    };
+
     // Close dropdown when clicking outside
     useEffect(() => {
         const handleClickOutside = () => {
@@ -147,6 +173,36 @@ const Sidebar = ({
         return () => document.removeEventListener("click", handleClickOutside);
     }, []);
 
+    // // Close sidebar when clicking outside on mobile
+    // useEffect(() => {
+    //     if (!isMobile) return;
+
+    //     const handleClickOutside = (e) => {
+    //         if (isOpen && !e.target.closest('.sidebar-container')) {
+    //             onToggle();
+    //         }
+    //     };
+
+    //     if (isOpen) {
+    //         document.addEventListener("click", handleClickOutside);
+    //         return () => document.removeEventListener("click", handleClickOutside);
+    //     }
+    // }, [isOpen, isMobile, onToggle]);
+
+    // // Prevent body scroll when sidebar is open on mobile
+    // useEffect(() => {
+    //     if (isMobile && isOpen) {
+    //         document.body.style.overflow = 'hidden';
+    //     } else {
+    //         document.body.style.overflow = 'unset';
+    //     }
+
+    //     return () => {
+    //         document.body.style.overflow = 'unset';
+    //     };
+    // }, [isMobile, isOpen]);
+
+
     return (
         <>
             <div
@@ -155,10 +211,10 @@ const Sidebar = ({
                 } bg-gray-800 text-white flex flex-col overflow-hidden relative`}
             >
                 {/* Header */}
-                <div className="px-3 py-4">
+                <div className="px-3 py-4 flex-shrink-0">
                     <div
                         className={`flex items-center gap-2 ${
-                            isOpen ? "mb-8" : "mb-6 justify-center"
+                            isOpen ? "mb-6 md:mb-8" : "mb-6 justify-center"
                         }`}
                     >
                         {isOpen ? (
@@ -181,7 +237,7 @@ const Sidebar = ({
                                         />
                                     </svg>
                                 </button>
-                                <span className="text-white font-medium">
+                                <span className="text-white font-medium text-sm md:text-base truncate">
                                     AI Healthcare Assistant
                                 </span>
                             </>
@@ -190,6 +246,7 @@ const Sidebar = ({
                                 onClick={onToggle}
                                 className="p-2 hover:bg-gray-700 rounded transition-colors"
                                 title="Expand sidebar"
+                                aria-label="Expand sidebar"
                             >
                                 <svg
                                     className="w-5 h-5"
@@ -211,9 +268,9 @@ const Sidebar = ({
                     {/* New Chat Button */}
                     <button
                         onClick={handleStartNewChat}
-                        className={`w-full bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all duration-200 text-sm font-medium ${
+                        className={`w-full bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all duration-200 text-sm font-medium touch-manipulation ${
                             isOpen
-                                ? "px-3 py-2.5 flex items-center gap-2"
+                                ? "px-3 py-2.5 md:py-2.5 flex items-center gap-2"
                                 : "p-3 flex items-center justify-center"
                         }`}
                         title={!isOpen ? "New chat" : ""}
@@ -248,7 +305,7 @@ const Sidebar = ({
                          
                             }}
                             placeholder="Search chats..."
-                            className="w-full bg-gray-700 text-white placeholder-gray-400 px-3 py-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
+                            className="w-full bg-gray-700 text-white placeholder-gray-400 px-3 py-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500 touch-manipulation"
                         />
                     </div>
 
@@ -256,7 +313,7 @@ const Sidebar = ({
 
                 {/* Recents Section */}
                 {isOpen && (
-                    <div className="flex-1 overflow-y-auto px-3 mt-6">
+                    <div className="flex-1 overflow-y-auto px-3 pb-3">
                         {sortedChatRooms.length > 0 && (
                             <>
                                 <div className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3 px-2">
@@ -278,7 +335,7 @@ const Sidebar = ({
                                                         onSelectRoom &&
                                                         onSelectRoom(room.id)
                                                     }
-                                                    className="flex-1 text-left px-2 py-2 text-sm transition-colors flex items-center gap-2 min-w-0"
+                                                    className="flex-1 text-left px-2 py-3 md:py-2 text-sm transition-colors flex items-center gap-2 min-w-0 touch-manipulation"
                                                 >
                                                     <div className="flex-1 min-w-0">
                                                         <span
@@ -304,7 +361,9 @@ const Sidebar = ({
                                                                 e
                                                             )
                                                         }
-                                                        className="opacity-0 group-hover:opacity-100 p-2 mr-1 hover:bg-gray-600 rounded transition-all duration-200"
+                                                        className={`p-2 mr-1 hover:bg-gray-600 rounded transition-all duration-200 touch-manipulation ${
+                                                            isMobile ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                                                        }`}
                                                     >
                                                         <svg
                                                             className="w-4 h-4 text-gray-400 hover:text-white"
@@ -326,7 +385,7 @@ const Sidebar = ({
                                                                         e
                                                                     )
                                                                 }
-                                                                className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-600 transition-colors flex items-center gap-2"
+                                                                className="w-full text-left px-3 py-3 md:py-2 text-sm text-gray-200 hover:bg-gray-600 transition-colors flex items-center gap-2 touch-manipulation"
                                                             >
                                                                 <svg
                                                                     className="w-3 h-3"
@@ -352,7 +411,7 @@ const Sidebar = ({
                                                                         e
                                                                     )
                                                                 }
-                                                                className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-600 transition-colors flex items-center gap-2"
+                                                                className="w-full text-left px-3 py-3 md:py-2 text-sm text-red-400 hover:bg-gray-600 transition-colors flex items-center gap-2 touch-manipulation"
                                                             >
                                                                 <svg
                                                                     className="w-3 h-3"
