@@ -536,7 +536,7 @@ export async function searchAllChats(query, userId) {
             {
                 params: {
                     query,
-                    userId,
+                    user_id: userId,
                 },
             }
         );
