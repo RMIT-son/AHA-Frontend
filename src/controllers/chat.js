@@ -15,7 +15,6 @@ import {
     mockSendVoiceMessage,
     mockSendWebSearchRequest,
     mockSendTextToVoiceSpeaker,
-    mockSearchAllChats,
 } from "./mockChatApi";
 
 // Configuration: Set to true to use mock responses, false to use real API
@@ -522,29 +521,75 @@ export async function sendTextToVoiceSpeaker(text) {
     }
 }
 
-export async function searchAllChats(query, userId) {
-    if (USE_MOCK_API) {
-        console.log("🔧 Using mock API for searchAllChats");
-        return await mockSearchAllChats(query, userId);
-    }
 
-    if (!query || !userId) return [];
+export async function searchAllChats(query, userId) {
+    if (!query || !userId) return { results: { conversations: [] } };
+
+    console.log("🔍 Searching all chats:", { query, userId });
 
     try {
         const response = await axios.get(
             `${app.dataURL}/api/conversations/search`,
             {
                 params: {
-                    query,
-                    userId,
+                    query: query.trim(),
+                    user_id: userId, // Note: using user_id to match backend parameter
                 },
+                timeout: 30000, // 30 seconds timeout
             }
         );
 
-        return response.data || [];
+        console.log
+
+        // Handle the response structure as per your backend API
+        if (response.data && response.data.results) {
+            return response.data; // Return the full response with results structure
+        } else if (Array.isArray(response.data)) {
+            // Fallback for different response format
+            return {
+                results: {
+                    query: query,
+                    user_id: userId,
+                    conversations: response.data,
+                },
+            };
+        } else {
+            return { results: { conversations: [] } };
+        }
     } catch (error) {
         console.error("Error searching conversations:", error);
-        return [];
+
+        // Handle different error types
+        if (error.response) {
+            const statusCode = error.response.status;
+            const message =
+                error.response.data?.message || error.response.data?.detail;
+
+            switch (statusCode) {
+                case 400:
+                    throw new Error(message || "Invalid search query");
+                case 401:
+                    throw new Error("Unauthorized. Please login again.");
+                case 403:
+                    throw new Error("Access forbidden");
+                case 429:
+                    throw new Error(
+                        "Too many search requests. Please try again later."
+                    );
+                case 500:
+                    throw new Error(
+                        "Search service error. Please try again later."
+                    );
+                default:
+                    throw new Error(
+                        message || `Search failed with status ${statusCode}`
+                    );
+            }
+        } else if (error.request) {
+            throw new Error("Network error. Please check your connection.");
+        } else {
+            throw new Error(error.message || "Search failed");
+        }
     }
 }
 

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useDispatch } from "react-redux"; // Add this import
+import { useDispatch } from "react-redux";
 import ConversationModal from "./ConversationModal";
+import SearchChatModal from "./SearchChatModal";
 import Cookies from "js-cookie";
-import { searchAllChats } from "../controllers/chat";
 
 const Sidebar = ({
     isOpen,
@@ -24,11 +24,11 @@ const Sidebar = ({
         roomName: "",
     });
 
-    const [searchQuery, setSearchQuery] = useState("");
-    const [searchResult, setSearchResults] = useState([]); // State for search results
+    // Add search modal state
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
     const navigate = useNavigate();
-    const dispatch = useDispatch(); // Add this hook
+    const dispatch = useDispatch();
 
     // Get user display name and initial from user prop
     const displayName = user?.fullName || user?.name || "User";
@@ -120,6 +120,23 @@ const Sidebar = ({
         }
     };
 
+    // Handle search button click
+    const handleSearchClick = () => {
+        setIsSearchModalOpen(true);
+    };
+
+    // Handle search modal close
+    const handleSearchModalClose = () => {
+        setIsSearchModalOpen(false);
+    };
+
+    // Handle chat selection from search
+    const handleSearchChatSelect = (chatId) => {
+        if (onSelectRoom) {
+            onSelectRoom(chatId);
+        }
+    };
+
     // Fixed logout function
     const handleLogout = () => {
         try {
@@ -208,50 +225,60 @@ const Sidebar = ({
                         )}
                     </div>
 
-                    {/* New Chat Button */}
-                    <button
-                        onClick={handleStartNewChat}
-                        className={`w-full bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all duration-200 text-sm font-medium ${
-                            isOpen
-                                ? "px-3 py-2.5 flex items-center gap-2"
-                                : "p-3 flex items-center justify-center"
-                        }`}
-                        title={!isOpen ? "New chat" : ""}
-                    >
-                        <svg
-                            className="w-4 h-4 flex-shrink-0"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
+                    {/* Button Container */}
+                    <div className="space-y-2">
+                        {/* New Chat Button */}
+                        <button
+                            onClick={handleStartNewChat}
+                            className={`w-full bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all duration-200 text-sm font-medium ${
+                                isOpen
+                                    ? "px-3 py-2.5 flex items-center gap-2"
+                                    : "p-3 flex items-center justify-center"
+                            }`}
+                            title={!isOpen ? "New chat" : ""}
                         >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M12 4v16m8-8H4"
-                            />
-                        </svg>
-                        {isOpen && <span>New chat</span>}
-                    </button>
+                            <svg
+                                className="w-4 h-4 flex-shrink-0"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 4v16m8-8H4"
+                                />
+                            </svg>
+                            {isOpen && <span>New chat</span>}
+                        </button>
 
-                    <div className="mt-3">
-                        <input
-                            type="text"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyDown={async (e) => {
-                                if (e.key === "Enter") {
-                                    const results = await searchAllChats(e.target.value, user.id);
-                                        setSearchResults(results); 
-                                    console.log(results)
-                                }
-                         
-                            }}
-                            placeholder="Search chats..."
-                            className="w-full bg-gray-700 text-white placeholder-gray-400 px-3 py-2 text-sm rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        />
+                        {/* Search Button */}
+                        <button
+                            onClick={handleSearchClick}
+                            className={`w-full bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-200 text-sm font-medium ${
+                                isOpen
+                                    ? "px-3 py-2.5 flex items-center gap-2"
+                                    : "p-3 flex items-center justify-center"
+                            }`}
+                            title={!isOpen ? "Search chats" : ""}
+                        >
+                            <svg
+                                className="w-4 h-4 flex-shrink-0"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                />
+                            </svg>
+                            {isOpen && <span>Search chats</span>}
+                        </button>
                     </div>
-
                 </div>
 
                 {/* Recents Section */}
@@ -451,7 +478,7 @@ const Sidebar = ({
                 </div>
             </div>
 
-            {/* Modal */}
+            {/* Modals */}
             <ConversationModal
                 isOpen={modalState.isOpen}
                 onClose={handleModalClose}
@@ -459,6 +486,14 @@ const Sidebar = ({
                 chatName={modalState.roomName}
                 onRename={handleModalRename}
                 onDelete={handleModalDelete}
+            />
+
+            {/* Search Modal */}
+            <SearchChatModal
+                isOpen={isSearchModalOpen}
+                onClose={handleSearchModalClose}
+                onSelectChat={handleSearchChatSelect}
+                user={user}
             />
         </>
     );
