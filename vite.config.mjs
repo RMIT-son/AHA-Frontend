@@ -7,7 +7,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'https://4393ed32c536.ngrok-free.app',
+        target: 'https://5aa7e42e3cbd.ngrok-free.app',
         changeOrigin: true,
         headers: {
           // 'Host': 'data.com',
