@@ -5,8 +5,15 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   server: {
-    allowedHosts: [
-      'be36-2405-4802-813e-4800-e9e2-520e-8f2b-c426.ngrok-free.app'
-    ]
+    proxy: {
+      '/api': {
+        target: 'https://4393ed32c536.ngrok-free.app',
+        changeOrigin: true,
+        headers: {
+          // 'Host': 'data.com',
+          'ngrok-skip-browser-warning': 'true'
+        }
+      }
+    }
   }
 })

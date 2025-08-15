@@ -113,7 +113,7 @@ export const createConversation = async (user_id, content, files = []) => {
         });
 
         const res = await axios.post(
-            `${app.dataURL}/api/conversations/create/${user_id}`,
+            `/api/conversations/create/${user_id}`,
             formData,
             {
                 headers: {
@@ -135,7 +135,7 @@ export const getAllConversations = async (userId) => {
 
     try {
         const res = await axios.get(
-            `${app.dataURL}/api/conversations/user/${userId}`
+            `/api/conversations/user/${userId}`
         );
         return res.data;
     } catch (error) {
@@ -155,7 +155,7 @@ export const getConversationById = async (conversationId) => {
 
     try {
         const res = await axios.get(
-            `${app.dataURL}/api/conversations/chat/${conversationId}`
+            `/api/conversations/chat/${conversationId}`
         );
         return res.data;
     } catch (error) {
@@ -218,11 +218,11 @@ export async function sendMessageToBackend(
     let endpoint;
     if (isAudioOnly && !hasText && processedFiles.length > 0) {
         // Audio-only files without text content go to audio endpoint
-        endpoint = `${app.dataURL}/api/conversations/${conversationId}/${userId}/audio`;
+        endpoint = `/api/conversations/${conversationId}/${userId}/audio`;
         // TODO: Will get the correct endpoint here
     } else {
         // Everything else goes to standard endpoint
-        endpoint = `${app.dataURL}/api/conversations/${conversationId}/${userId}/stream`;
+        endpoint = `/api/conversations/${conversationId}/${userId}/stream`;
     }
 
     try {
@@ -294,7 +294,7 @@ export const renameConversation = async (conversationId, newTitle) => {
 
     try {
         const response = await axios.put(
-            `${app.dataURL}/api/conversations/${conversationId}/rename`,
+            `/api/conversations/${conversationId}/rename`,
             { title: newTitle },
             {
                 headers: {
@@ -318,7 +318,7 @@ export const deleteConversation = async (conversationId, userId) => {
 
     try {
         const response = await axios.delete(
-            `${app.dataURL}/api/conversations/${conversationId}/user/${userId}`
+            `/api/conversations/${conversationId}/user/${userId}`
         );
 
         return response.data;
@@ -361,7 +361,7 @@ export const sendVoiceMessage = async (
         const base64Audio = await audioBlobToBase64(audioBlob);
 
         const response = await axios.post(
-            `${app.dataURL}/api/conversations/speech_to_text`,
+            `/api/conversations/speech_to_text`,
             {
                 audio: base64Audio,
             },
@@ -415,7 +415,7 @@ export async function sendWebSearchRequest(conversationId, query) {
 
     try {
         const response = await axios.post(
-            `${app.dataURL}/api/conversations/${conversationId}/web/search`,
+            `/api/conversations/${conversationId}/web/search`,
             formData,
             {
                 headers: {
@@ -478,7 +478,7 @@ export async function sendTextToVoiceSpeaker(text) {
 
     try {
         const response = await axios.post(
-            `${app.dataURL}/api/conversations/text_to_speech`,
+            `/api/conversations/text_to_speech`,
             { text },
             {
                 headers: {
@@ -532,7 +532,7 @@ export async function searchAllChats(query, userId) {
 
     try {
         const response = await axios.get(
-            `${app.dataURL}/api/conversations/search`,
+            `/api/conversations/search`,
             {
                 params: {
                     query,
