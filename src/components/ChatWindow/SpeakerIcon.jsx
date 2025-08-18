@@ -4,6 +4,7 @@ import speakerManager from "./speakerManager"; // Import the speaker manager
 
 const SpeakerIcon = memo(({ message }) => {
     const [isPlaying, setIsPlaying] = useState(false);
+    const [isLoading, setIsLoading] = useState(false); // New loading state
     const utteranceRef = useRef(null);
     const audioRef = useRef(null);
     const abortControllerRef = useRef(null);
@@ -33,6 +34,7 @@ const SpeakerIcon = memo(({ message }) => {
         }
 
         setIsPlaying(false);
+        setIsLoading(false); // Reset loading state
         utteranceRef.current = null;
     }, []);
 
@@ -52,7 +54,8 @@ const SpeakerIcon = memo(({ message }) => {
         // Register this speaker as the active one
         speakerManager.setActiveSpeaker(instanceRef.current);
 
-        setIsPlaying(true);
+        setIsLoading(true); // Start loading
+        setIsPlaying(false);
 
         try {
             // Create abort controller for this request
@@ -60,6 +63,14 @@ const SpeakerIcon = memo(({ message }) => {
 
             // Try your custom TTS function first
             const result = await sendTextToVoiceSpeaker(message.content);
+
+            // If request was aborted, don't continue
+            if (abortControllerRef.current?.signal.aborted) {
+                return;
+            }
+
+            setIsLoading(false); // Stop loading
+            setIsPlaying(true); // Start playing
 
             // If your function returns an audio URL or blob
             if (
@@ -89,6 +100,8 @@ const SpeakerIcon = memo(({ message }) => {
                 speakerManager.clearActiveSpeaker(instanceRef.current);
             }
         } catch (error) {
+            setIsLoading(false); // Stop loading on error
+
             if (error.name === "AbortError") {
                 console.log("TTS request was aborted");
                 return;
@@ -101,6 +114,8 @@ const SpeakerIcon = memo(({ message }) => {
 
             // Fallback to Web Speech API
             if ("speechSynthesis" in window) {
+                setIsPlaying(true); // Start playing immediately for speech synthesis
+
                 const utterance = new SpeechSynthesisUtterance(message.content);
                 utteranceRef.current = utterance;
 
@@ -127,13 +142,13 @@ const SpeakerIcon = memo(({ message }) => {
     }, [message.content]);
 
     const handleSpeaker = useCallback(() => {
-        if (isPlaying) {
+        if (isPlaying || isLoading) {
             stopSpeaking();
             speakerManager.clearActiveSpeaker(instanceRef.current);
         } else {
             startSpeaking();
         }
-    }, [isPlaying, stopSpeaking, startSpeaking]);
+    }, [isPlaying, isLoading, stopSpeaking, startSpeaking]);
 
     // Register/unregister with speaker manager
     useEffect(() => {
@@ -146,15 +161,50 @@ const SpeakerIcon = memo(({ message }) => {
         };
     }, [stopSpeaking]);
 
+    // Determine button state and styling
+    const getButtonState = () => {
+        if (isLoading) return "loading";
+        if (isPlaying) return "playing";
+        return "idle";
+    };
+
+    const buttonState = getButtonState();
+
     return (
         <button
             onClick={handleSpeaker}
+            disabled={isLoading} // Disable button while loading
             className={`mt-1 p-1.5 rounded-full hover:bg-gray-100 transition-colors duration-200 opacity-60 hover:opacity-100 ${
-                isPlaying ? "bg-blue-50 text-blue-600" : ""
+                buttonState === "playing"
+                    ? "bg-blue-50 text-blue-600"
+                    : buttonState === "loading"
+                    ? "bg-yellow-50 text-yellow-600 cursor-wait"
+                    : ""
             }`}
-            title={isPlaying ? "Stop reading" : "Read message aloud"}
+            title={
+                buttonState === "loading"
+                    ? "Loading audio..."
+                    : buttonState === "playing"
+                    ? "Stop reading"
+                    : "Read message aloud"
+            }
         >
-            {isPlaying ? (
+            {buttonState === "loading" ? (
+                // Loading spinner icon
+                <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="text-yellow-600 animate-spin"
+                >
+                    <path d="M21 12a9 9 0 11-6.219-8.56" />
+                </svg>
+            ) : buttonState === "playing" ? (
                 // Stop/Pause icon
                 <svg
                     width="16"
@@ -165,7 +215,7 @@ const SpeakerIcon = memo(({ message }) => {
                     strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    className={isPlaying ? "text-blue-600" : "text-gray-500"}
+                    className="text-blue-600"
                 >
                     <rect x="6" y="4" width="4" height="16"></rect>
                     <rect x="14" y="4" width="4" height="16"></rect>
