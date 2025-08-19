@@ -193,8 +193,8 @@ export default function ChatWindow({
                 {messages.length === 0 ? (
                     <EmptyState />
                 ) : (
-                    <div className="max-w-3xl mx-auto px-4 pt-8">
-                        <div className="space-y-6">
+                    <div className="w-full max-w-2xl sm:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 pt-4 sm:pt-6 md:pt-8">
+                        <div className="space-y-3 sm:space-y-4 md:space-y-6">
                             {renderedMessages}
 
                             {/* Bot typing indicator */}

@@ -57,13 +57,13 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-200">
+        <div className="min-h-screen flex items-center justify-center bg-gray-200 px-4">
             <div className="w-full max-w-2xl bg-[#eefbfc] rounded-lg shadow-md overflow-hidden">
-                <div className="flex items-center justify-between px-8 py-6 bg-gradient-to-r from-gray-800 to-gray-700 text-white">
-                    <h1 className="text-4xl font-bold">SIGN UP</h1>
+                <div className="flex items-center justify-between px-6 sm:px-8 py-4 sm:py-6 bg-gradient-to-r from-gray-800 to-gray-700 text-white">
+                    <h1 className="text-2xl sm:text-4xl font-bold">SIGN UP</h1>
                 </div>
 
-                <form onSubmit={handleSubmit} className="px-8 py-6">
+                <form onSubmit={handleSubmit} className="px-6 sm:px-8 py-6 space-y-4">
                     {/* Success Message Display */}
                     <ErrorAlert 
                         error={success} 
@@ -78,8 +78,8 @@ export default function RegisterPage() {
                         type="error" 
                     />
 
-                    <div className="flex items-center mb-4">
-                        <label className="w-40 text-gray-700">Full Name:</label>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                        <label className="sm:w-40 text-gray-700">Full Name:</label>
                         <input
                             type="text"
                             placeholder="Enter your full name"
@@ -91,8 +91,8 @@ export default function RegisterPage() {
                         />
                     </div>
 
-                    <div className="flex items-center mb-4">
-                        <label className="w-40 text-gray-700">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                        <label className="sm:w-40 text-gray-700">
                             Email Address:
                         </label>
                         <input
@@ -106,8 +106,8 @@ export default function RegisterPage() {
                         />
                     </div>
 
-                    <div className="flex items-center mb-4">
-                        <label className="w-40 text-gray-700">Phone no:</label>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                        <label className="sm:w-40 text-gray-700">Phone no:</label>
                         <input
                             type="text"
                             placeholder="Enter your phone number"
@@ -119,8 +119,8 @@ export default function RegisterPage() {
                         />
                     </div>
 
-                    <div className="flex items-center mb-4">
-                        <label className="w-40 text-gray-700">Password:</label>
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                        <label className="sm:w-40 text-gray-700">Password:</label>
                         <div className="relative flex-1">
                             <input
                                 type={showPassword ? "text" : "password"}
@@ -141,7 +141,7 @@ export default function RegisterPage() {
                         </div>
                     </div>
 
-                    <div className="flex items-center mb-6">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                         <label className="w-40 text-gray-700">
                             Confirm Password:
                         </label>

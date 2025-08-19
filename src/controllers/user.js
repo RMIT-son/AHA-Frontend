@@ -45,7 +45,7 @@ const getAuthHeaders = () => {
  */
 export const getUserProfile = async () => {
     try {
-        const response = await axios.get(`${app.dataURL}/api/users/profile`, {
+        const response = await axios.get(`/api/users/profile`, {
             headers: getAuthHeaders(),
         });
 
@@ -76,7 +76,7 @@ export const updateUserProfile = async (profileData) => {
         }
 
         const response = await axios.put(
-            `${app.dataURL}/api/users/profile`,
+            `/api/users/profile`,
             filteredData,
             {
                 headers: getAuthHeaders(),
@@ -114,7 +114,7 @@ export const updateUserProfile = async (profileData) => {
 export const updateUserTheme = async (theme) => {
     try {
         const response = await axios.put(
-            `${app.dataURL}/api/users/theme`,
+            `/api/users/theme`,
             { theme },
             {
                 headers: getAuthHeaders(),
@@ -147,7 +147,7 @@ export const updateUserTheme = async (theme) => {
 export const deleteAccount = async () => {
     try {
         const response = await axios.delete(
-            `${app.dataURL}/api/users/account`,
+            `/api/users/account`,
             {
                 headers: getAuthHeaders(),
             }

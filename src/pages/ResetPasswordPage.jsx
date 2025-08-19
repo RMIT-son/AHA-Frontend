@@ -106,8 +106,8 @@ export default function ResetPasswordPage() {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-200">
                 <div className="w-full max-w-2xl bg-[#eefbfc] rounded-lg shadow-md overflow-hidden">
-                    <div className="flex items-center justify-between px-8 py-6 bg-gradient-to-r from-gray-800 to-gray-700 text-white">
-                        <h1 className="text-4xl font-bold">RESET PASSWORD</h1>
+                    <div className="px-8 py-6 bg-gradient-to-r from-gray-800 to-gray-700 text-white">
+                        <h1 className="text-2xl sm:text-4xl font-bold">RESET PASSWORD</h1>
                     </div>
                     <div className="px-8 py-6 text-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto mb-4"></div>
@@ -121,8 +121,8 @@ export default function ResetPasswordPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-200">
             <div className="w-full max-w-2xl bg-[#eefbfc] rounded-lg shadow-md overflow-hidden">
-                <div className="flex items-center justify-between px-8 py-6 bg-gradient-to-r from-gray-800 to-gray-700 text-white">
-                    <h1 className="text-4xl font-bold">RESET PASSWORD</h1>
+                <div className="px-8 py-6 bg-gradient-to-r from-gray-800 to-gray-700 text-white">
+                    <h1 className="text-2xl sm:text-4xl font-bold">RESET PASSWORD</h1>
                 </div>
 
                 <div className="px-8 py-6">
@@ -169,8 +169,8 @@ export default function ResetPasswordPage() {
                             </p>
 
                             <form onSubmit={handleSubmit}>
-                                <div className="flex items-center mb-4">
-                                    <label className="w-40 text-gray-700">
+                                <div className="flex flex-col sm:flex-row sm:items-center mb-4 sm:mb-6">
+                                    <label className="w-full sm:w-40 text-gray-700 mb-2 sm:mb-0">
                                         New Password :
                                     </label>
                                     <div className="relative flex-1">
@@ -200,8 +200,8 @@ export default function ResetPasswordPage() {
                                     </div>
                                 </div>
 
-                                <div className="flex items-center mb-6">
-                                    <label className="w-40 text-gray-700">
+                                <div className="flex flex-col sm:flex-row sm:items-center mb-4 sm:mb-6">
+                                    <label className="w-full sm:w-40 text-gray-700 mb-2 sm:mb-0">
                                         Confirm Password:
                                     </label>
                                     <div className="relative flex-1">

@@ -6,7 +6,7 @@ import { app } from "../config/keys";
 export const loginUser = async (email, password) => {
     try {
         const response = await axios.post(
-            `${app.dataURL}/api/auth/login`,
+            `/api/auth/login`,
             { email, password },
             { headers: { "Content-Type": "application/json" } }
         );
@@ -67,7 +67,7 @@ export const registerUser = async ({ fullName, email, password, phone }) => {
     try {
 
         const response = await axios.post(
-            `${app.dataURL}/api/auth/register`,
+            `/api/auth/register`,
             { fullName, email, password, phone },
             { headers: { "Content-Type": "application/json" } }
         );
@@ -123,7 +123,7 @@ export const registerUser = async ({ fullName, email, password, phone }) => {
 export const forgotPassword = async (email) => {
     try {
         const response = await axios.post(
-            `${app.dataURL}/api/auth/forgot-password`,
+            `/api/auth/forgot-password`,
             { email },
             { headers: { "Content-Type": "application/json" } }
         );
@@ -174,7 +174,7 @@ export const forgotPassword = async (email) => {
 export const resetPassword = async (token, password) => {
     try {
         const response = await axios.post(
-            `${app.dataURL}/api/auth/reset-password`,
+            `/api/auth/reset-password`,
             { token, password },
             { headers: { "Content-Type": "application/json" } }
         );
@@ -230,7 +230,7 @@ export const resetPassword = async (token, password) => {
 export const verifyResetToken = async (token) => {
     try {
         const response = await axios.get(
-            `${app.dataURL}/api/auth/verify-reset-token?token=${token}`
+            `/api/auth/verify-reset-token?token=${token}`
         );
         
         return { success: true, valid: response.data.valid };

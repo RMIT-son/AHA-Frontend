@@ -13,7 +13,10 @@ const ChatLayout = ({
 }) => {
     const navigate = useNavigate();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isMobile, setIsMobile] = useState(false);
 
+    
+    
     const handleRenameRoom = async (roomId, newName) => {
         try {
             await renameConversation(roomId, newName);
@@ -49,8 +52,32 @@ const ChatLayout = ({
         }
     };
 
+    const handleSidebarToggle = () => {
+        setIsSidebarOpen(!isSidebarOpen);
+    };
+
+    const handleRoomSelect = (roomId) => {
+        // On mobile, close sidebar after selecting a room
+        if (isMobile) {
+            setIsSidebarOpen(false);
+        }
+        
+        navigate(
+            roomId && roomId !== "undefined"
+                ? `/chat/${roomId}`
+                : "/"
+        );
+    };
+
     return (
-        <div className="flex h-screen bg-white">
+        <div className="flex h-screen bg-white relative">
+            {/* Mobile Overlay */}
+            {isMobile && isSidebarOpen && (
+                <div 
+                    className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+                    onClick={() => setIsSidebarOpen(false)}
+                />
+            )}
             {/* Chat Sidebar */}
             <Sidebar
                 isOpen={isSidebarOpen}
@@ -71,22 +98,32 @@ const ChatLayout = ({
             />
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 flex flex-col min-w-0 w-full">
                 {/* Header */}
                 {headerTitle && (
-                    <div className="h-12 border-b border-gray-200 flex items-center justify-between px-4 bg-white flex-shrink-0">
-                        <div className="flex items-center gap-3">
+                    <div className="h-12 sm:h-14 border-b border-gray-200 flex items-center justify-between px-3 sm:px-4 md:px-6 bg-white flex-shrink-0">
+                        <div className="flex items-center gap-2 sm:gap-3">
+                    
+                            
+
                             <div className="flex items-center gap-2">
-                                <span className="text-lg font-semibold text-gray-900">
+                                <span className="text-base sm:text-lg font-semibold text-gray-900 truncate">
                                     {headerTitle}
                                 </span>
                             </div>
+                        </div>
+
+                        {/* Optional: Add user info or other header elements */}
+                        <div className="flex items-center gap-2 sm:gap-3">
+                            {/* You can add user avatar, settings, etc. here */}
                         </div>
                     </div>
                 )}
 
                 {/* Children Content */}
-                {children}
+                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                    {children}
+                </div>
             </div>
         </div>
     );

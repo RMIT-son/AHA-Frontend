@@ -41,9 +41,9 @@ export default function LoginPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-200">
-            <div className="w-full max-w-2xl bg-[#eefbfc] rounded-lg shadow-md overflow-hidden">
+            <div className="w-full max-w-2xl mx-4 sm:mx-auto bg-[#eefbfc] rounded-lg shadow-md overflow-hidden">
                 <div className="flex items-center justify-between px-8 py-6 bg-gradient-to-r from-gray-800 to-gray-700 text-white">
-                    <h1 className="text-4xl font-bold">LOGIN</h1>
+                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">LOGIN</h1>
                 </div>
 
                 <form onSubmit={handleSubmit} className="px-8 py-6">
@@ -54,8 +54,8 @@ export default function LoginPage() {
                         type="error" 
                     />
 
-                    <div className="flex items-center mb-4">
-                        <label className="w-40 text-gray-700">
+                    <div className="flex flex-col sm:flex-row sm:items-center mb-4">
+                        <label className="sm:w-40 text-gray-700 mb-1 sm:mb-0">
                             Email Address:
                         </label>
                         <input
@@ -69,22 +69,22 @@ export default function LoginPage() {
                         />
                     </div>
 
-                    <div className="flex items-center mb-4">
-                        <label className="w-40 text-gray-700">Password:</label>
+                    <div className="flex flex-col sm:flex-row sm:items-center mb-4"> 
+                        <label className="sm:w-40 text-gray-700 mb-1 sm:mb-0">Password:</label>
                         <div className="relative flex-1">
                             <input
                                 type={showPassword ? "text" : "password"}
                                 placeholder="Enter your password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full border-b border-black bg-transparent outline-none text-gray-500 pr-10"
+                                className="w-full border-b border-black bg-transparent outline-none text-gray-500 pr-12"
                                 disabled={isLoading}
                                 required
                             />
                             <img
                                 src="https://cdn-icons-png.flaticon.com/512/159/159604.png"
                                 alt="Toggle password"
-                                className="absolute right-0 top-1/2 -translate-y-1/2 h-5 w-6 cursor-pointer"
+                                className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 sm:h-5 sm:w-6 cursor-pointer"
                                 onClick={() => setShowPassword(!showPassword)}
                             />
                         </div>
@@ -102,7 +102,7 @@ export default function LoginPage() {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                        className="w-full bg-black text-white py-3 sm:py-2 rounded hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
                     >
                         {isLoading ? (
                             <>
