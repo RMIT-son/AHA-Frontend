@@ -95,26 +95,6 @@ export default function ChatPage() {
               })
             : [];
 
-        // Log file processing details for debugging
-        if (processedFiles.length > 0) {
-            const audioFiles = processedFiles.filter((f) => f.isAudio);
-            const otherFiles = processedFiles.filter((f) => !f.isAudio);
-
-            console.log(`📎 Processing ${processedFiles.length} file(s):`);
-            if (audioFiles.length > 0) {
-                console.log(`  🎵 Audio files: ${audioFiles.length}`);
-                audioFiles.forEach((f) =>
-                    console.log(`    - ${f.name} (${f.type})`)
-                );
-            }
-            if (otherFiles.length > 0) {
-                console.log(`  📄 Other files: ${otherFiles.length}`);
-                otherFiles.forEach((f) =>
-                    console.log(`    - ${f.name} (${f.type})`)
-                );
-            }
-        }
-
         // Call the original handler with web search option and processed files
         handleSend(message, processedFiles, {
             webSearchEnabled: searchEnabled || webSearchEnabled,
@@ -124,15 +104,11 @@ export default function ChatPage() {
     // Handle audio file upload for transcription
     const handleAudioFileUpload = async (audioFile) => {
         try {
-            console.log(`🎵 Processing uploaded audio file: ${audioFile.name}`);
-
             // Convert File to Blob for compatibility with handleVoiceMessage
             const audioBlob = new Blob([audioFile], { type: audioFile.type });
 
             // Use the existing voice message handler for transcription
             await handleVoiceMessage(audioBlob);
-
-            console.log(`✅ Audio file processed successfully`);
         } catch (error) {
             console.error(`❌ Failed to process audio file:`, error);
 

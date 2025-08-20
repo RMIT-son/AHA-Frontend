@@ -12,8 +12,6 @@ const SpeakerIcon = memo(({ message }) => {
 
     // Function to stop speaking - can be called internally or from manager
     const stopSpeaking = useCallback(() => {
-        console.log("Stopping all audio...");
-
         // Stop Web Speech API
         if (window.speechSynthesis && window.speechSynthesis.speaking) {
             window.speechSynthesis.cancel();
@@ -49,8 +47,7 @@ const SpeakerIcon = memo(({ message }) => {
     }, [stopFromManager]);
 
     const startSpeaking = useCallback(async () => {
-        console.log("Starting speech for:", message.content);
-
+        s;
         // Register this speaker as the active one
         speakerManager.setActiveSpeaker(instanceRef.current);
 
@@ -103,7 +100,6 @@ const SpeakerIcon = memo(({ message }) => {
             setIsLoading(false); // Stop loading on error
 
             if (error.name === "AbortError") {
-                console.log("TTS request was aborted");
                 return;
             }
 
