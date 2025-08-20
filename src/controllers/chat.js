@@ -2,9 +2,7 @@
 // Modified to use mock responses for testing
 
 import axios from "axios";
-import { app } from "../config/keys";
 
-// Import mock responses
 import {
     mockCreateConversation,
     mockGetAllConversations,
@@ -133,9 +131,7 @@ export const getAllConversations = async (userId) => {
     }
 
     try {
-        const res = await axios.get(
-            `/api/conversations/user/${userId}`
-        );
+        const res = await axios.get(`/api/conversations/user/${userId}`);
         return res.data;
     } catch (error) {
         return [];
@@ -521,25 +517,21 @@ export async function sendTextToVoiceSpeaker(text) {
     }
 }
 
-
 export async function searchAllChats(query, userId) {
     if (!query || !userId) return { results: { conversations: [] } };
 
     console.log("🔍 Searching all chats:", { query, userId });
 
     try {
-        const response = await axios.get(
-            `/api/conversations/search`,
-            {
-                params: {
-                    query,
-                    user_id: userId,
-                },
-                timeout: 30000, // 30 seconds timeout
-            }
-        );
+        const response = await axios.get(`/api/conversations/search`, {
+            params: {
+                query,
+                user_id: userId,
+            },
+            timeout: 30000, // 30 seconds timeout
+        });
 
-        console.log
+        console.log;
 
         // Handle the response structure as per your backend API
         if (response.data && response.data.results) {
