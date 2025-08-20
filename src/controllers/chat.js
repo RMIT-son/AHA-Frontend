@@ -1,22 +1,13 @@
 // src/controllers/chat.js
-// Modified to use mock responses for testing
 
 import axios from "axios";
+import { app } from "../config/keys.js";
 
-import {
-    mockCreateConversation,
-    mockGetAllConversations,
-    mockGetConversationById,
-    mockSendMessageToBackend,
-    mockRenameConversation,
-    mockDeleteConversation,
-    mockSendVoiceMessage,
-    mockSendWebSearchRequest,
-    mockSendTextToVoiceSpeaker,
-} from "./mockChatApi";
-
-// Configuration: Set to true to use mock responses, false to use real API
-const USE_MOCK_API = false; // Change this to false when your backend is ready
+// Create axios instance with base URL from your existing config
+const apiClient = axios.create({
+    baseURL: app.dataURL,
+    timeout: 300000, // 5 minutes timeout
+});
 
 // Helper function to convert base64 to File
 const base64ToFile = async (base64String, fileName, mimeType) => {
@@ -80,18 +71,13 @@ const processFilesForBackend = async (files) => {
             processedFiles.push(fileToUpload);
         } catch (error) {
             // Skip files with errors
-            console.warn("Error processing file:", error);
+            continue;
         }
     }
     return processedFiles;
 };
 
 export const createConversation = async (user_id, content, files = []) => {
-    if (USE_MOCK_API) {
-        console.log("🔧 Using mock API for createConversation");
-        return await mockCreateConversation(user_id, content, files);
-    }
-
     try {
         // Process files to base64
         const processedFiles = await processFilesForBackend(files);
@@ -109,7 +95,7 @@ export const createConversation = async (user_id, content, files = []) => {
             formData.append("files", file);
         });
 
-        const res = await axios.post(
+        const res = await apiClient.post(
             `/api/conversations/create/${user_id}`,
             formData,
             {
@@ -125,13 +111,8 @@ export const createConversation = async (user_id, content, files = []) => {
 };
 
 export const getAllConversations = async (userId) => {
-    if (USE_MOCK_API) {
-        console.log("🔧 Using mock API for getAllConversations");
-        return await mockGetAllConversations(userId);
-    }
-
     try {
-        const res = await axios.get(`/api/conversations/user/${userId}`);
+        const res = await apiClient.get(`/api/conversations/user/${userId}`);
         return res.data;
     } catch (error) {
         return [];
@@ -139,17 +120,12 @@ export const getAllConversations = async (userId) => {
 };
 
 export const getConversationById = async (conversationId) => {
-    if (USE_MOCK_API) {
-        console.log("🔧 Using mock API for getConversationById");
-        return await mockGetConversationById(conversationId);
-    }
-
     if (!conversationId || conversationId === "undefined") {
         return null;
     }
 
     try {
-        const res = await axios.get(
+        const res = await apiClient.get(
             `/api/conversations/chat/${conversationId}`
         );
         return res.data;
@@ -165,16 +141,6 @@ export async function sendMessageToBackend(
     content,
     files = []
 ) {
-    if (USE_MOCK_API) {
-        console.log("🔧 Using mock API for sendMessageToBackend");
-        return await mockSendMessageToBackend(
-            conversationId,
-            userId,
-            content,
-            files
-        );
-    }
-
     if (!conversationId || conversationId === "undefined") {
         throw new Error("Conversation ID is required");
     }
@@ -185,15 +151,6 @@ export async function sendMessageToBackend(
     // Determine if this is an audio-only request
     const isAudioOnly = isAudioOnlyRequest(files);
     const hasText = content && content.trim().length > 0;
-
-    // Log the request type for debugging
-    if (isAudioOnly && !hasText) {
-        console.log("🎵 Routing to audio-only endpoint");
-    } else if (isAudioOnly && hasText) {
-        console.log("🎵 Audio files with text - using standard endpoint");
-    } else {
-        console.log("📄 Using standard endpoint");
-    }
 
     // Create FormData for multipart/form-data request
     const formData = new FormData();
@@ -214,25 +171,23 @@ export async function sendMessageToBackend(
     if (isAudioOnly && !hasText && processedFiles.length > 0) {
         // Audio-only files without text content go to audio endpoint
         endpoint = `/api/conversations/${conversationId}/${userId}/audio`;
-        // TODO: Will get the correct endpoint here
     } else {
         // Everything else goes to standard endpoint
         endpoint = `/api/conversations/${conversationId}/${userId}/stream`;
     }
 
     try {
-        const response = await axios.post(endpoint, formData, {
+        const response = await apiClient.post(endpoint, formData, {
             headers: {
                 "Content-Type": "multipart/form-data",
             },
-            timeout: 300000, // 5 minutes timeout
         });
 
         if (response.data && response.data.final_response) {
             return {
                 success: true,
                 response: response.data.final_response,
-                endpoint: isAudioOnly && !hasText ? "audio" : "standard", // Add endpoint info for debugging
+                endpoint: isAudioOnly && !hasText ? "audio" : "standard",
             };
         } else {
             throw new Error("No response received from backend");
@@ -282,13 +237,8 @@ export async function sendMessageToBackend(
 }
 
 export const renameConversation = async (conversationId, newTitle) => {
-    if (USE_MOCK_API) {
-        console.log("🔧 Using mock API for renameConversation");
-        return await mockRenameConversation(conversationId, newTitle);
-    }
-
     try {
-        const response = await axios.put(
+        const response = await apiClient.put(
             `/api/conversations/${conversationId}/rename`,
             { title: newTitle },
             {
@@ -306,13 +256,8 @@ export const renameConversation = async (conversationId, newTitle) => {
 
 // Delete conversation
 export const deleteConversation = async (conversationId, userId) => {
-    if (USE_MOCK_API) {
-        console.log("🔧 Using mock API for deleteConversation");
-        return await mockDeleteConversation(conversationId, userId);
-    }
-
     try {
-        const response = await axios.delete(
+        const response = await apiClient.delete(
             `/api/conversations/${conversationId}/user/${userId}`
         );
 
@@ -342,20 +287,10 @@ export const sendVoiceMessage = async (
     audioBlob,
     onChunk
 ) => {
-    if (USE_MOCK_API) {
-        console.log("🔧 Using mock API for sendVoiceMessage");
-        return await mockSendVoiceMessage(
-            conversationId,
-            userId,
-            audioBlob,
-            onChunk
-        );
-    }
-
     try {
         const base64Audio = await audioBlobToBase64(audioBlob);
 
-        const response = await axios.post(
+        const response = await apiClient.post(
             `/api/conversations/speech_to_text`,
             {
                 audio: base64Audio,
@@ -395,11 +330,6 @@ export const sendVoiceMessage = async (
 
 // Updated web search function to handle complete response
 export async function sendWebSearchRequest(conversationId, query) {
-    if (USE_MOCK_API) {
-        console.log("🔧 Using mock API for sendWebSearchRequest");
-        return await mockSendWebSearchRequest(conversationId, query);
-    }
-
     const formData = new FormData();
 
     // Add text content and timestamp
@@ -409,14 +339,13 @@ export async function sendWebSearchRequest(conversationId, query) {
     formData.append("timestamp", new Date().toISOString());
 
     try {
-        const response = await axios.post(
+        const response = await apiClient.post(
             `/api/conversations/${conversationId}/web/search`,
             formData,
             {
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },
-                timeout: 300000, // 5 minutes timeout
             }
         );
 
@@ -461,18 +390,12 @@ export async function sendWebSearchRequest(conversationId, query) {
 }
 
 export async function sendTextToVoiceSpeaker(text) {
-    if (USE_MOCK_API) {
-        console.log("🔧 Using mock API for sendTextToVoiceSpeaker");
-        return await mockSendTextToVoiceSpeaker(text);
-    }
-
     if (!text || typeof text !== "string") {
-        console.warn("No valid text provided to convert to speech.");
         return;
     }
 
     try {
-        const response = await axios.post(
+        const response = await apiClient.post(
             `/api/conversations/text_to_speech`,
             { text },
             {
@@ -490,7 +413,6 @@ export async function sendTextToVoiceSpeaker(text) {
         // Create audio element but DON'T play it automatically
         const audio = new Audio(audioUrl);
 
-        console.log("✅ Audio created successfully.");
         // Return both the audio element and URL so the component can control playback
         return {
             status: "success",
@@ -501,17 +423,12 @@ export async function sendTextToVoiceSpeaker(text) {
         if (error.response) {
             const message =
                 error.response.data?.detail || error.response.statusText;
-            console.error(
-                `TTS Error: HTTP ${error.response.status}: ${message}`
-            );
             throw new Error(
                 `TTS Error: HTTP ${error.response.status}: ${message}`
             );
         } else if (error.request) {
-            console.error("TTS Error: No response from server.");
             throw new Error("TTS Error: No response from server.");
         } else {
-            console.error(`TTS Error: ${error.message}`);
             throw new Error(`TTS Error: ${error.message}`);
         }
     }
@@ -520,18 +437,14 @@ export async function sendTextToVoiceSpeaker(text) {
 export async function searchAllChats(query, userId) {
     if (!query || !userId) return { results: { conversations: [] } };
 
-    console.log("🔍 Searching all chats:", { query, userId });
-
     try {
-        const response = await axios.get(`/api/conversations/search`, {
+        const response = await apiClient.get(`/api/conversations/search`, {
             params: {
                 query,
                 user_id: userId,
             },
             timeout: 30000, // 30 seconds timeout
         });
-
-        console.log;
 
         // Handle the response structure as per your backend API
         if (response.data && response.data.results) {
@@ -549,8 +462,6 @@ export async function searchAllChats(query, userId) {
             return { results: { conversations: [] } };
         }
     } catch (error) {
-        console.error("Error searching conversations:", error);
-
         // Handle different error types
         if (error.response) {
             const statusCode = error.response.status;
@@ -584,6 +495,3 @@ export async function searchAllChats(query, userId) {
         }
     }
 }
-
-// Export the configuration for easy toggling
-export { USE_MOCK_API };

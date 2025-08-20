@@ -47,7 +47,6 @@ const SpeakerIcon = memo(({ message }) => {
     }, [stopFromManager]);
 
     const startSpeaking = useCallback(async () => {
-        s;
         // Register this speaker as the active one
         speakerManager.setActiveSpeaker(instanceRef.current);
 

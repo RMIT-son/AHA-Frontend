@@ -2,14 +2,21 @@
 import axios from "axios";
 import { app } from "../config/keys.js";
 
+// Create axios instance with base URL from your existing config
+const apiClient = axios.create({
+    baseURL: app.dataURL,
+    headers: {
+        "Content-Type": "application/json",
+    },
+});
+
 // Login with email + password
 export const loginUser = async (email, password) => {
     try {
-        const response = await axios.post(
-            `/api/auth/login`,
-            { email, password },
-            { headers: { "Content-Type": "application/json" } }
-        );
+        const response = await apiClient.post("/api/auth/login", {
+            email,
+            password,
+        });
 
         return { success: true, data: response.data };
     } catch (error) {
@@ -67,11 +74,12 @@ export const loginUser = async (email, password) => {
 // Register with email, password, name, phone
 export const registerUser = async ({ fullName, email, password, phone }) => {
     try {
-        const response = await axios.post(
-            `/api/auth/register`,
-            { fullName, email, password, phone },
-            { headers: { "Content-Type": "application/json" } }
-        );
+        const response = await apiClient.post("/api/auth/register", {
+            fullName,
+            email,
+            password,
+            phone,
+        });
 
         return { success: true, data: response.data };
     } catch (error) {
@@ -127,11 +135,9 @@ export const registerUser = async ({ fullName, email, password, phone }) => {
 // Forgot password - send reset email
 export const forgotPassword = async (email) => {
     try {
-        const response = await axios.post(
-            `/api/auth/forgot-password`,
-            { email },
-            { headers: { "Content-Type": "application/json" } }
-        );
+        const response = await apiClient.post("/api/auth/forgot-password", {
+            email,
+        });
 
         return { success: true, data: response.data };
     } catch (error) {
@@ -182,11 +188,10 @@ export const forgotPassword = async (email) => {
 // Reset password with token
 export const resetPassword = async (token, password) => {
     try {
-        const response = await axios.post(
-            `/api/auth/reset-password`,
-            { token, password },
-            { headers: { "Content-Type": "application/json" } }
-        );
+        const response = await apiClient.post("/api/auth/reset-password", {
+            token,
+            password,
+        });
 
         return { success: true, data: response.data };
     } catch (error) {
@@ -241,7 +246,7 @@ export const resetPassword = async (token, password) => {
 // Verify reset token validity
 export const verifyResetToken = async (token) => {
     try {
-        const response = await axios.get(
+        const response = await apiClient.get(
             `/api/auth/verify-reset-token?token=${token}`
         );
 
