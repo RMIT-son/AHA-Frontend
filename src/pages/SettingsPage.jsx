@@ -21,7 +21,6 @@ const SettingsPage = ({ section }) => {
     const [user, setUser] = useState(null);
     const [chatRooms, setChatRooms] = useState([]);
     const [userLoading, setUserLoading] = useState(true);
-    const [sidebarOpen, setSidebarOpen] = useState(false); // For mobile sidebar toggle
 
     // Cookie authentication check and fetch fresh user data
     useEffect(() => {
@@ -41,11 +40,6 @@ const SettingsPage = ({ section }) => {
                 try {
                     const freshUserData = await getUserProfile();
                     setUser(freshUserData);
-                    console.log("Fresh user data loaded:", freshUserData);
-                    console.log(
-                        "User theme from database:",
-                        freshUserData.theme
-                    );
                 } catch (error) {
                     console.error("Failed to fetch fresh user data:", error);
                     // Fallback to cookie data if API fails
@@ -95,10 +89,8 @@ const SettingsPage = ({ section }) => {
     // Function to refresh user data after updates
     const refreshUserData = async () => {
         try {
-            console.log("Refreshing user data...");
             const freshUserData = await getUserProfile();
             setUser(freshUserData);
-            console.log("User data refreshed:", freshUserData);
             return freshUserData;
         } catch (error) {
             console.error("Failed to refresh user data:", error);
@@ -149,8 +141,6 @@ const SettingsPage = ({ section }) => {
                 {/* Responsive padding and container */}
                 <div className="h-full py-4 px-4 sm:py-8 sm:px-8 lg:py-16 lg:px-16 xl:py-40 xl:px-40">
                     <div className="w-full max-w-7xl mx-auto h-full">
-
-
                         {/* Sidebar and Main content container */}
                         <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 h-full">
                             {/* Settings Sidebar - Always visible */}
@@ -161,8 +151,6 @@ const SettingsPage = ({ section }) => {
                                     />
                                 </div>
                             </div>
-
-
 
                             {/* Main content - Responsive */}
                             <div className="flex-1 min-w-0 lg:ml-4">

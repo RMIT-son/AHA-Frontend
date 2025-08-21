@@ -49,7 +49,6 @@ export const getUserProfile = async () => {
             headers: getAuthHeaders(),
         });
 
-        console.log("User Profile Response:", response.data);
         return response.data;
     } catch (error) {
         console.error("Error fetching user profile:", error);
@@ -75,13 +74,9 @@ export const updateUserProfile = async (profileData) => {
             filteredData.nickname = profileData.nickname.trim();
         }
 
-        const response = await axios.put(
-            `/api/users/profile`,
-            filteredData,
-            {
-                headers: getAuthHeaders(),
-            }
-        );
+        const response = await axios.put(`/api/users/profile`, filteredData, {
+            headers: getAuthHeaders(),
+        });
 
         const updatedUser = response.data;
 
@@ -146,12 +141,9 @@ export const updateUserTheme = async (theme) => {
  */
 export const deleteAccount = async () => {
     try {
-        const response = await axios.delete(
-            `/api/users/account`,
-            {
-                headers: getAuthHeaders(),
-            }
-        );
+        const response = await axios.delete(`/api/users/account`, {
+            headers: getAuthHeaders(),
+        });
 
         // Clear local cookies after successful deletion
         Cookies.remove("user");
