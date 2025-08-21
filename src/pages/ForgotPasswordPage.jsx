@@ -17,15 +17,10 @@ export default function ForgotPasswordPage() {
             const res = await forgotPassword(email);
             if (res.success) {
                 setIsSuccess(true);
-                setMessage(
-                    "Password reset link has been sent to your email address."
-                );
+                setMessage("Password reset link has been sent to your email address.");
             } else {
                 setIsSuccess(false);
-                setMessage(
-                    res.message ||
-                        "Failed to send reset email. Please try again."
-                );
+                setMessage(res.message || "Failed to send reset email. Please try again.");
             }
         } catch (error) {
             setIsSuccess(false);
@@ -36,117 +31,71 @@ export default function ForgotPasswordPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-200 px-4 sm:px-6 lg:px-8">
-            <div className="w-full max-w-lg bg-[#eefbfc] rounded-lg shadow-md overflow-hidden">
-                <div className="px-6 sm:px-8 py-6 bg-gradient-to-r from-gray-800 to-gray-700 text-white text-center sm:text-left">
-                    <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold">FORGOT PASSWORD</h1>
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+            <div className="w-full max-w-md bg-white rounded-lg shadow p-8 text-center">
+                
+                {/* Logo */}
+                <div className="mb-4">
+                    <img
+                        src="/logo-heart.png"
+                        alt="Logo"
+                        className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 mx-auto"
+                    />
                 </div>
 
-                <div className="px-6 sm:px-8 py-6">
-                    {!isSuccess ? (
-                        <>
-                            <p className="text-gray-600 mb-6 text-center text-sm sm:text-base">
-                                Enter your email address and we'll send you a
-                                link to reset your password.
+                {/* Title */}
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">Forgot password</h2>
+                <p className="text-gray-500 text-sm mb-6">
+                    Enter your email address and we'll send you a link to reset your password
+                </p>
+
+                {!isSuccess ? (
+                    <form onSubmit={handleSubmit}>
+                        <input
+                            type="email"
+                            placeholder="Enter your email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            className="w-full px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-orange-400 focus:outline-none mb-4"
+                        />
+
+                        {message && (
+                            <p className={`mb-4 text-sm ${isSuccess ? "text-green-600" : "text-red-600"}`}>
+                                {message}
                             </p>
+                        )}
 
-                            <form onSubmit={handleSubmit}>
-                                <div className="flex flex-col sm:flex-row sm:items-center mb-6">
-                                    <label className="w-full sm:w-40 text-gray-700 mb-2 sm:mb-0">
-                                        Email Address :
-                                    </label>
-                                    <input
-                                        type="email"
-                                        placeholder="Enter your email address"
-                                        value={email}
-                                        onChange={(e) =>
-                                            setEmail(e.target.value)
-                                        }
-                                        required
-                                        className="flex-1 border-b border-black bg-transparent outline-none text-gray-500"
-                                    />
-                                </div>
-
-                                {message && (
-                                    <div
-                                        className={`text-center mb-4 text-sm ${
-                                            isSuccess
-                                                ? "text-green-600"
-                                                : "text-red-600"
-                                        }`}
-                                    >
-                                        {message}
-                                    </div>
-                                )}
-
-                                <button
-                                    type="submit"
-                                    disabled={isLoading}
-                                    className="w-full mt-4 bg-black text-white py-2 rounded hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    {isLoading
-                                        ? "Sending..."
-                                        : "Send Reset Link"}
-                                </button>
-                            </form>
-                        </>
-                    ) : (
-                        <div className="text-center">
-                            <div className="mb-6">
-                                <svg
-                                    className="w-12 sm:w-16 h-12 sm:h-16 text-green-500 mx-auto mb-4"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                                    />
-                                </svg>
-                                <h2 className="text-xl sm:text-2xl font-bold text-gray-800 mb-2">
-                                    Check Your Email
-                                </h2>
-                                <p className="text-gray-600 mb-4 text-sm sm:text-base">{message}</p>
-                                <p className="text-xs sm:text-sm text-gray-500">
-                                    Didn't receive the email? Check your spam
-                                    folder or try again.
-                                </p>
-                            </div>
-
-                            <button
-                                onClick={() => {
-                                    setIsSuccess(false);
-                                    setMessage("");
-                                    setEmail("");
-                                }}
-                                className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 transition mb-4 text-sm sm:text-base"
-                            >
-                                Try Again
-                            </button>
-                        </div>
-                    )}
-
-                    <div className="text-center mt-6">
-                        <Link
-                            to="/login"
-                            className="text-blue-500 hover:underline text-sm sm:text-base"
+                        <button
+                            type="submit"
+                            disabled={isLoading}
+                            className="w-full bg-orange-500 text-white py-2 rounded-full hover:bg-orange-600 transition disabled:opacity-50"
                         >
-                            ← Back to Login
-                        </Link>
+                            {isLoading ? "Sending..." : "Send Reset Link"}
+                        </button>
+                    </form>
+                ) : (
+                    <div>
+                        <h3 className="text-lg font-semibold text-green-600 mb-2">Check Your Email</h3>
+                        <p className="text-gray-600 mb-4 text-sm">{message}</p>
+                        <button
+                            onClick={() => {
+                                setIsSuccess(false);
+                                setMessage("");
+                                setEmail("");
+                            }}
+                            className="w-full bg-orange-500 text-white py-2 rounded-full hover:bg-orange-600 transition mb-4"
+                        >
+                            Try Again
+                        </button>
                     </div>
+                )}
 
-                    <p className="text-center text-xs sm:text-sm mt-4">
-                        Don't have an account?{" "}
-                        <Link
-                            to="/register"
-                            className="text-blue-500 hover:underline"
-                        >
-                            Sign up
-                        </Link>
-                    </p>
+                {/* Links */}
+                <div className="mt-4">
+                    <Link to="/login" className="text-sm text-gray-600 hover:underline">
+                        Back to Login
+                    </Link>
                 </div>
             </div>
         </div>
