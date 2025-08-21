@@ -40,14 +40,23 @@ export default function RegisterPage() {
         setIsLoading(true);
 
         try {
-            const res = await registerUser({ fullName, email, password, phone });
+            const res = await registerUser({
+                fullName,
+                email,
+                password,
+                phone,
+            });
 
             if (res.success) {
                 dispatch({ type: "REGISTER", payload: res.data });
-                setSuccess("Account created successfully! Redirecting to login...");
+                setSuccess(
+                    "Account created successfully! Redirecting to login..."
+                );
                 setTimeout(() => navigate("/login"), 2000);
             } else {
-                setError(res.message || "Registration failed. Please try again.");
+                setError(
+                    res.message || "Registration failed. Please try again."
+                );
             }
         } catch (err) {
             setError("An unexpected error occurred. Please try again.");
@@ -59,14 +68,9 @@ export default function RegisterPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
             <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
-                
                 {/* Logo */}
                 <div className="flex justify-center mb-4">
-                    <img
-                        src="/your-logo.png" // replace with your healthcare logo path
-                        alt="Logo"
-                        className="h-12 w-12"
-                    />
+                    <img src="/logo.png" alt="Logo" className="h-12 w-12" />
                 </div>
 
                 {/* Title */}
@@ -75,15 +79,15 @@ export default function RegisterPage() {
                 </h2>
 
                 {/* Success & Error */}
-                <ErrorAlert 
-                    error={success} 
-                    onDismiss={() => setSuccess("")} 
-                    type="success" 
+                <ErrorAlert
+                    error={success}
+                    onDismiss={() => setSuccess("")}
+                    type="success"
                 />
-                <ErrorAlert 
-                    error={error} 
-                    onDismiss={() => setError("")} 
-                    type="error" 
+                <ErrorAlert
+                    error={error}
+                    onDismiss={() => setError("")}
+                    type="error"
                 />
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -148,9 +152,12 @@ export default function RegisterPage() {
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             className={`w-full px-4 py-2 rounded-full border outline-none pr-10 
-                                ${confirmPassword && password !== confirmPassword
-                                    ? "border-red-500 focus:ring-red-500 text-red-500"
-                                    : "border-gray-300 focus:ring-[#EB5E33]"}`}
+                                ${
+                                    confirmPassword &&
+                                    password !== confirmPassword
+                                        ? "border-red-500 focus:ring-red-500 text-red-500"
+                                        : "border-gray-300 focus:ring-[#EB5E33]"
+                                }`}
                             disabled={isLoading}
                             required
                         />
@@ -158,7 +165,9 @@ export default function RegisterPage() {
                             src="https://cdn-icons-png.flaticon.com/512/159/159604.png"
                             alt="Toggle confirm password"
                             className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-6 cursor-pointer"
-                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            onClick={() =>
+                                setShowConfirmPassword(!showConfirmPassword)
+                            }
                         />
                     </div>
 
@@ -166,9 +175,15 @@ export default function RegisterPage() {
                     {confirmPassword && (
                         <div className="mb-2 text-sm">
                             {password === confirmPassword ? (
-                                <p className="text-green-600"> Passwords match</p>
+                                <p className="text-green-600">
+                                    {" "}
+                                    Passwords match
+                                </p>
                             ) : (
-                                <p className="text-red-600"> Passwords do not match</p>
+                                <p className="text-red-600">
+                                    {" "}
+                                    Passwords do not match
+                                </p>
                             )}
                         </div>
                     )}
@@ -179,18 +194,17 @@ export default function RegisterPage() {
                         disabled={isLoading}
                         className="w-full bg-[#EB5E33] text-white py-2 rounded-full font-semibold hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isLoading ? (
-                            "Creating Account..."
-                        ) : (
-                            "Sign up"
-                        )}
+                        {isLoading ? "Creating Account..." : "Sign up"}
                     </button>
                 </form>
 
                 {/* Login Redirect */}
                 <p className="text-center mt-4 text-sm text-gray-600">
                     Already have an account?{" "}
-                    <Link to="/login" className="text-[#EB5E33] font-medium hover:underline">
+                    <Link
+                        to="/login"
+                        className="text-[#EB5E33] font-medium hover:underline"
+                    >
                         Log in
                     </Link>
                 </p>

@@ -48,18 +48,22 @@ export default function LoginPage() {
                 {/* Logo */}
                 <div className="mb-4">
                     <img
-                        src="/logo-heart.png"
+                        src="/logo.png"
                         alt="Logo"
                         className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 mx-auto"
                     />
                 </div>
 
                 <h2 className="text-lg sm:text-xl lg:text-2xl font-medium mb-4">
-                    Welcome back
+                    Welcome to A.I Healthcare Assistant
                 </h2>
 
                 {/* Error */}
-                <ErrorAlert error={error} onDismiss={() => setError("")} type="error" />
+                <ErrorAlert
+                    error={error}
+                    onDismiss={() => setError("")}
+                    type="error"
+                />
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -86,7 +90,7 @@ export default function LoginPage() {
                         <button
                             type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 cursor-pointer hover:text-gray-700"
                         >
                             {showPassword ? (
                                 <EyeOff className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -119,7 +123,10 @@ export default function LoginPage() {
                 {/* Sign Up */}
                 <p className="mt-4 text-xs sm:text-sm">
                     Don't have account?{" "}
-                    <Link to="/register" className="text-blue-500 hover:underline">
+                    <Link
+                        to="/register"
+                        className="text-blue-500 hover:underline"
+                    >
                         Sign up
                     </Link>
                 </p>
@@ -127,16 +134,21 @@ export default function LoginPage() {
                 {/* Divider */}
                 <div className="flex items-center my-4">
                     <hr className="flex-1 border-gray-300" />
-                    <span className="mx-2 text-gray-400 text-xs sm:text-sm">OR</span>
+                    <span className="mx-2 text-gray-400 text-xs sm:text-sm">
+                        OR
+                    </span>
                     <hr className="flex-1 border-gray-300" />
                 </div>
 
                 {/* Social logins */}
                 <button className="w-full border border-gray-300 rounded-full py-2 sm:py-3 flex items-center justify-center gap-2 mb-2 hover:bg-gray-50 text-sm sm:text-base">
-                    <img src="/google-icon.png" alt="Google" className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <img
+                        src="/google-icon.png"
+                        alt="Google"
+                        className="w-5 h-5 sm:w-6 sm:h-6"
+                    />
                     Continue with Google
                 </button>
-                
             </div>
         </div>
     );

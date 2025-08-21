@@ -17,10 +17,15 @@ export default function ForgotPasswordPage() {
             const res = await forgotPassword(email);
             if (res.success) {
                 setIsSuccess(true);
-                setMessage("Password reset link has been sent to your email address.");
+                setMessage(
+                    "Password reset link has been sent to your email address."
+                );
             } else {
                 setIsSuccess(false);
-                setMessage(res.message || "Failed to send reset email. Please try again.");
+                setMessage(
+                    res.message ||
+                        "Failed to send reset email. Please try again."
+                );
             }
         } catch (error) {
             setIsSuccess(false);
@@ -33,20 +38,22 @@ export default function ForgotPasswordPage() {
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
             <div className="w-full max-w-md bg-white rounded-lg shadow p-8 text-center">
-                
                 {/* Logo */}
                 <div className="mb-4">
                     <img
-                        src="/logo-heart.png"
+                        src="/logo.png"
                         alt="Logo"
                         className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 mx-auto"
                     />
                 </div>
 
                 {/* Title */}
-                <h2 className="text-xl font-semibold text-gray-800 mb-2">Forgot password</h2>
+                <h2 className="text-xl font-semibold text-gray-800 mb-2">
+                    Forgot password
+                </h2>
                 <p className="text-gray-500 text-sm mb-6">
-                    Enter your email address and we'll send you a link to reset your password
+                    Enter your email address and we'll send you a link to reset
+                    your password
                 </p>
 
                 {!isSuccess ? (
@@ -61,7 +68,13 @@ export default function ForgotPasswordPage() {
                         />
 
                         {message && (
-                            <p className={`mb-4 text-sm ${isSuccess ? "text-green-600" : "text-red-600"}`}>
+                            <p
+                                className={`mb-4 text-sm ${
+                                    isSuccess
+                                        ? "text-green-600"
+                                        : "text-red-600"
+                                }`}
+                            >
                                 {message}
                             </p>
                         )}
@@ -76,7 +89,9 @@ export default function ForgotPasswordPage() {
                     </form>
                 ) : (
                     <div>
-                        <h3 className="text-lg font-semibold text-green-600 mb-2">Check Your Email</h3>
+                        <h3 className="text-lg font-semibold text-green-600 mb-2">
+                            Check Your Email
+                        </h3>
                         <p className="text-gray-600 mb-4 text-sm">{message}</p>
                         <button
                             onClick={() => {
@@ -93,7 +108,10 @@ export default function ForgotPasswordPage() {
 
                 {/* Links */}
                 <div className="mt-4">
-                    <Link to="/login" className="text-sm text-gray-600 hover:underline">
+                    <Link
+                        to="/login"
+                        className="text-sm text-gray-600 hover:underline"
+                    >
                         Back to Login
                     </Link>
                 </div>
