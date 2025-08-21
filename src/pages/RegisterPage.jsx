@@ -21,8 +21,8 @@ export default function RegisterPage() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        
-        // Clear previous messages
+
+        // Clear messages
         setError("");
         setSuccess("");
 
@@ -41,7 +41,7 @@ export default function RegisterPage() {
 
         try {
             const res = await registerUser({ fullName, email, password, phone });
-            
+
             if (res.success) {
                 dispatch({ type: "REGISTER", payload: res.data });
                 setSuccess("Account created successfully! Redirecting to login...");
@@ -57,190 +57,143 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-200 px-4">
-            <div className="w-full max-w-2xl bg-[#eefbfc] rounded-lg shadow-md overflow-hidden">
-                <div className="flex items-center justify-between px-6 sm:px-8 py-4 sm:py-6 bg-gradient-to-r from-gray-800 to-gray-700 text-white">
-                    <h1 className="text-2xl sm:text-4xl font-bold">SIGN UP</h1>
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
+            <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
+                
+                {/* Logo */}
+                <div className="flex justify-center mb-4">
+                    <img
+                        src="/your-logo.png" // replace with your healthcare logo path
+                        alt="Logo"
+                        className="h-12 w-12"
+                    />
                 </div>
 
-                <form onSubmit={handleSubmit} className="px-6 sm:px-8 py-6 space-y-4">
-                    {/* Success Message Display */}
-                    <ErrorAlert 
-                        error={success} 
-                        onDismiss={() => setSuccess("")} 
-                        type="success" 
+                {/* Title */}
+                <h2 className="text-center text-2xl font-semibold text-gray-800 mb-6">
+                    Create an account
+                </h2>
+
+                {/* Success & Error */}
+                <ErrorAlert 
+                    error={success} 
+                    onDismiss={() => setSuccess("")} 
+                    type="success" 
+                />
+                <ErrorAlert 
+                    error={error} 
+                    onDismiss={() => setError("")} 
+                    type="error" 
+                />
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    {/* Full Name */}
+                    <input
+                        type="text"
+                        placeholder="Name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="w-full px-4 py-2 rounded-full border border-gray-300 outline-none focus:ring-2 focus:ring-[#EB5E33]"
+                        disabled={isLoading}
+                        required
                     />
-                    
-                    {/* Error Message Display */}
-                    <ErrorAlert 
-                        error={error} 
-                        onDismiss={() => setError("")} 
-                        type="error" 
+
+                    {/* Email */}
+                    <input
+                        type="email"
+                        placeholder="Email address"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full px-4 py-2 rounded-full border border-gray-300 outline-none focus:ring-2 focus:ring-[#EB5E33]"
+                        disabled={isLoading}
+                        required
                     />
 
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                        <label className="sm:w-40 text-gray-700">Full Name:</label>
+                    {/* Phone */}
+                    <input
+                        type="text"
+                        placeholder="Phone"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                        className="w-full px-4 py-2 rounded-full border border-gray-300 outline-none focus:ring-2 focus:ring-[#EB5E33]"
+                        disabled={isLoading}
+                        required
+                    />
+
+                    {/* Password */}
+                    <div className="relative">
                         <input
-                            type="text"
-                            placeholder="Enter your full name"
-                            value={fullName}
-                            onChange={(e) => setFullName(e.target.value)}
-                            className="flex-1 border-b border-black bg-transparent outline-none text-gray-500"
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            className="w-full px-4 py-2 rounded-full border border-gray-300 outline-none focus:ring-2 focus:ring-[#EB5E33] pr-10"
                             disabled={isLoading}
                             required
+                            minLength="6"
+                        />
+                        <img
+                            src="https://cdn-icons-png.flaticon.com/512/159/159604.png"
+                            alt="Toggle password"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-6 cursor-pointer"
+                            onClick={() => setShowPassword(!showPassword)}
                         />
                     </div>
 
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                        <label className="sm:w-40 text-gray-700">
-                            Email Address:
-                        </label>
+                    {/* Confirm Password */}
+                    <div className="relative">
                         <input
-                            type="email"
-                            placeholder="Enter your email address"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="flex-1 border-b border-black bg-transparent outline-none text-gray-500"
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="Confirm Password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className={`w-full px-4 py-2 rounded-full border outline-none pr-10 
+                                ${confirmPassword && password !== confirmPassword
+                                    ? "border-red-500 focus:ring-red-500 text-red-500"
+                                    : "border-gray-300 focus:ring-[#EB5E33]"}`}
                             disabled={isLoading}
                             required
                         />
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                        <label className="sm:w-40 text-gray-700">Phone no:</label>
-                        <input
-                            type="text"
-                            placeholder="Enter your phone number"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                            className="flex-1 border-b border-black bg-transparent outline-none text-gray-500"
-                            disabled={isLoading}
-                            required
+                        <img
+                            src="https://cdn-icons-png.flaticon.com/512/159/159604.png"
+                            alt="Toggle confirm password"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-6 cursor-pointer"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                         />
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                        <label className="sm:w-40 text-gray-700">Password:</label>
-                        <div className="relative flex-1">
-                            <input
-                                type={showPassword ? "text" : "password"}
-                                placeholder="Enter your password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                className="w-full border-b border-black bg-transparent outline-none text-gray-500 pr-10"
-                                disabled={isLoading}
-                                required
-                                minLength="6"
-                            />
-                            <img
-                                src="https://cdn-icons-png.flaticon.com/512/159/159604.png"
-                                alt="Toggle password"
-                                className="absolute right-0 top-1/2 -translate-y-1/2 h-5 w-6 cursor-pointer"
-                                onClick={() => setShowPassword(!showPassword)}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
-                        <label className="w-40 text-gray-700">
-                            Confirm Password:
-                        </label>
-                        <div className="relative flex-1">
-                            <input
-                                type={showConfirmPassword ? "text" : "password"}
-                                placeholder="Confirm your password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                className={`w-full border-b bg-transparent outline-none pr-10 ${
-                                    confirmPassword && password !== confirmPassword
-                                        ? "border-red-500 text-red-500"
-                                        : "border-black text-gray-500"
-                                }`}
-                                disabled={isLoading}
-                                required
-                            />
-                            <img
-                                src="https://cdn-icons-png.flaticon.com/512/159/159604.png"
-                                alt="Toggle confirm password"
-                                className="absolute right-0 top-1/2 -translate-y-1/2 h-5 w-6 cursor-pointer"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            />
-                        </div>
                     </div>
 
                     {/* Password Match Indicator */}
                     {confirmPassword && (
-                        <div className="mb-4 text-sm">
+                        <div className="mb-2 text-sm">
                             {password === confirmPassword ? (
-                                <div className="flex items-center text-green-600">
-                                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            fillRule="evenodd"
-                                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                            clipRule="evenodd"
-                                        />
-                                    </svg>
-                                    Passwords match
-                                </div>
+                                <p className="text-green-600"> Passwords match</p>
                             ) : (
-                                <div className="flex items-center text-red-600">
-                                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                        <path
-                                            fillRule="evenodd"
-                                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                            clipRule="evenodd"
-                                        />
-                                    </svg>
-                                    Passwords do not match
-                                </div>
+                                <p className="text-red-600"> Passwords do not match</p>
                             )}
                         </div>
                     )}
 
+                    {/* Sign up Button */}
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                        className="w-full bg-[#EB5E33] text-white py-2 rounded-full font-semibold hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isLoading ? (
-                            <>
-                                <svg
-                                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <circle
-                                        className="opacity-25"
-                                        cx="12"
-                                        cy="12"
-                                        r="10"
-                                        stroke="currentColor"
-                                        strokeWidth="4"
-                                    ></circle>
-                                    <path
-                                        className="opacity-75"
-                                        fill="currentColor"
-                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                    ></path>
-                                </svg>
-                                Creating Account...
-                            </>
+                            "Creating Account..."
                         ) : (
                             "Sign up"
                         )}
                     </button>
-
-                    <p className="text-center mt-4 text-sm">
-                        Already have an account?{" "}
-                        <Link
-                            to="/login"
-                            className="text-blue-500 hover:underline"
-                        >
-                            Login
-                        </Link>
-                    </p>
                 </form>
+
+                {/* Login Redirect */}
+                <p className="text-center mt-4 text-sm text-gray-600">
+                    Already have an account?{" "}
+                    <Link to="/login" className="text-[#EB5E33] font-medium hover:underline">
+                        Log in
+                    </Link>
+                </p>
             </div>
         </div>
     );
