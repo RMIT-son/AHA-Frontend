@@ -495,12 +495,12 @@ export default function ChatInput({
                                     minHeight: "48px",
                                     maxHeight: "180px",
                                 }}
-                                disabled={
-                                    isLoading ||
-                                    isRecording ||
-                                    isProcessing ||
-                                    isTranscribing
-                                }
+                                // disabled={
+                                //     isLoading ||
+                                //     isRecording ||
+                                //     isProcessing ||
+                                //     isTranscribing
+                                // }
                                 tabIndex={0}
                             />
 
