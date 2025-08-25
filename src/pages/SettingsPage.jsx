@@ -139,7 +139,7 @@ const SettingsPage = ({ section }) => {
         >
             <div className="flex-1 overflow-hidden">
                 {/* Responsive padding and container */}
-                <div className="h-full py-4 px-4 sm:py-8 sm:px-8 lg:py-16 lg:px-16 xl:py-40 xl:px-40">
+                <div className="h-full py-6 px-4 sm:py-10 sm:px-8 lg:py-16 lg:px-16 xl:py-24 xl:px-32 bg-[#1f232b] text-gray-200">
                     <div className="w-full max-w-7xl mx-auto h-full">
                         {/* Sidebar and Main content container */}
                         <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 h-full">

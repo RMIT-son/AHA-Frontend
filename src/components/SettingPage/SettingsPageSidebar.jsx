@@ -18,8 +18,10 @@ const SettingsPageSidebar = ({ activeSection }) => {
                             to={`/settings/${section.key}`}
                             className={`block px-3 py-2 rounded-md text-sm font-medium transition-colors duration-150 ${
                                 isActive
-                                    ? "bg-gray-200 text-gray-900"
-                                    : "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+                                    ? // active
+                                      "bg-gray-200 text-gray-900 dark:bg-neutral-800 dark:text-gray-100"
+                                    : // inactive
+                                      "text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-neutral-800 dark:hover:text-gray-100"
                             }`}
                         >
                             {section.label}
