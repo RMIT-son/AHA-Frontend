@@ -548,9 +548,10 @@ export default function ChatInput({
                                             </svg>
                                         </button>
 
+
                                         {/* Audio upload dropdown menu */}
                                         {showAudioUploadMenu && (
-                                            <div className="absolute bottom-full left-0 sm:left-auto sm:right-0 mb-2 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[180px] sm:min-w-[200px] z-50">
+                                            <div className="absolute bottom-full left-0  mb-2 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[180px] sm:min-w-[200px] z-50">
                                                 <button
                                                     onClick={() =>
                                                         audioFileInputRef.current?.click()
