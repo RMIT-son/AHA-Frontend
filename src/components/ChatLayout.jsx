@@ -1,17 +1,19 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "../contexts/ThemeContext";
 import { Sidebar, SearchChatModal } from "../components";
 import { renameConversation, deleteConversation } from "../controllers/chat";
 
 const ChatLayout = ({
     children,
     activeRoomId = null,
-    headerTitle = "Chat",
+    headerTitle = "",
     chatRooms = [],
     user = null,
     onChatRoomsUpdate = null,
 }) => {
     const navigate = useNavigate();
+    const { theme } = useTheme();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
     const [mobileUserMenuOpen, setMobileUserMenuOpen] = useState(false);
@@ -132,20 +134,21 @@ const ChatLayout = ({
 
             {/* Sidebar */}
             {isMobile ? (
-                // Mobile Sidebar
+                // Mobile Sidebar - FIXED WITH THEME SUPPORT
                 <div
                     className={`fixed inset-y-0 left-0 w-64 z-50 transform transition-transform duration-300 ease-in-out ${
                         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
                     }`}
                     style={{ height: "100vh" }}
                 >
-                    <div className="h-full bg-gray-800 text-white flex flex-col overflow-hidden">
+                    {/* FIXED: Changed from hardcoded bg-gray-800 to theme-responsive classes */}
+                    <div className="h-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white flex flex-col overflow-hidden transition-colors duration-200">
                         {/* Header */}
                         <div className="px-3 py-4 flex-shrink-0">
                             <div className="flex items-center gap-2 mb-6">
                                 <button
                                     onClick={handleSidebarToggle}
-                                    className="p-1 hover:bg-gray-700 rounded transition-colors"
+                                    className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                                 >
                                     <svg
                                         className="w-4 h-4"
@@ -161,7 +164,7 @@ const ChatLayout = ({
                                         />
                                     </svg>
                                 </button>
-                                <span className="text-white font-medium text-sm truncate">
+                                <span className="text-gray-900 dark:text-white font-medium text-sm truncate">
                                     AI Healthcare Assistant
                                 </span>
                             </div>
@@ -190,7 +193,7 @@ const ChatLayout = ({
 
                                 <button
                                     onClick={handleSearchClick}
-                                    className="w-full bg-gray-700 hover:bg-gray-600 text-white rounded-lg px-3 py-3 flex items-center gap-2 text-sm font-medium touch-manipulation transition-colors"
+                                    className="w-full bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-900 dark:text-white rounded-lg px-3 py-3 flex items-center gap-2 text-sm font-medium touch-manipulation transition-colors"
                                 >
                                     <svg
                                         className="w-4 h-4 flex-shrink-0"
@@ -214,7 +217,7 @@ const ChatLayout = ({
                         <div className="flex-1 overflow-y-auto px-3 pb-3 min-h-0">
                             {sortedChatRooms.length > 0 && (
                                 <>
-                                    <div className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3 px-2">
+                                    <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3 px-2">
                                         Recents
                                     </div>
                                     <div className="space-y-1">
@@ -223,8 +226,8 @@ const ChatLayout = ({
                                                 key={room.id}
                                                 className={`relative group rounded-md transition-colors ${
                                                     activeRoomId === room.id
-                                                        ? "bg-gray-700"
-                                                        : "hover:bg-gray-700"
+                                                        ? "bg-gray-100 dark:bg-gray-700"
+                                                        : "hover:bg-gray-50 dark:hover:bg-gray-700"
                                                 }`}
                                             >
                                                 <button
@@ -240,8 +243,8 @@ const ChatLayout = ({
                                                             className={`truncate block ${
                                                                 activeRoomId ===
                                                                 room.id
-                                                                    ? "text-white"
-                                                                    : "text-gray-300 group-hover:text-white"
+                                                                    ? "text-gray-900 dark:text-white"
+                                                                    : "text-gray-600 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white"
                                                             }`}
                                                         >
                                                             {formatChatName(
@@ -258,7 +261,7 @@ const ChatLayout = ({
                         </div>
 
                         {/* User Profile */}
-                        <div className="p-3 border-t border-gray-700 flex-shrink-0">
+                        <div className="p-3 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
                             <div className="relative">
                                 <button
                                     onClick={() =>
@@ -266,7 +269,7 @@ const ChatLayout = ({
                                             !mobileUserMenuOpen
                                         )
                                     }
-                                    className="w-full hover:bg-gray-700 rounded-md transition-colors text-sm flex items-center gap-2 p-2"
+                                    className="w-full hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md transition-colors text-sm flex items-center gap-2 p-2"
                                 >
                                     <div className="w-7 h-7 bg-blue-600 rounded-full flex items-center justify-center font-bold text-white text-sm flex-shrink-0">
                                         {user?.fullName
@@ -278,14 +281,14 @@ const ChatLayout = ({
                                             "U"}
                                     </div>
                                     <div className="flex-1 text-left min-w-0">
-                                        <div className="font-medium text-white truncate">
+                                        <div className="font-medium text-gray-900 dark:text-white truncate">
                                             {user?.fullName ||
                                                 user?.name ||
                                                 "User"}
                                         </div>
                                     </div>
                                     <svg
-                                        className={`w-4 h-4 text-gray-400 transition-transform flex-shrink-0 ${
+                                        className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform flex-shrink-0 ${
                                             mobileUserMenuOpen
                                                 ? "rotate-180"
                                                 : ""
@@ -305,9 +308,9 @@ const ChatLayout = ({
 
                                 {/* User Dropdown */}
                                 {mobileUserMenuOpen && (
-                                    <div className="absolute bottom-full left-0 right-0 mb-1 bg-gray-700 rounded-md border border-gray-600 shadow-lg overflow-hidden">
+                                    <div className="absolute bottom-full left-0 right-0 mb-1 bg-white dark:bg-gray-700 rounded-md border border-gray-200 dark:border-gray-600 shadow-lg overflow-hidden">
                                         <button
-                                            className="w-full text-left px-3 py-2 text-sm text-gray-200 hover:bg-gray-600 transition-colors"
+                                            className="w-full text-left px-3 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                                             onClick={() => {
                                                 setMobileUserMenuOpen(false);
                                                 navigate("/settings/profile");
@@ -316,9 +319,9 @@ const ChatLayout = ({
                                         >
                                             Settings
                                         </button>
-                                        <div className="border-t border-gray-600">
+                                        <div className="border-t border-gray-200 dark:border-gray-600">
                                             <button
-                                                className="w-full text-left px-3 py-2 text-sm text-red-400 hover:bg-gray-600 transition-colors"
+                                                className="w-full text-left px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                                                 onClick={() => {
                                                     setMobileUserMenuOpen(
                                                         false
@@ -362,12 +365,12 @@ const ChatLayout = ({
                 {/* Header */}
                 {headerTitle && (
                     <div className="h-12 sm:h-14 border-b border-gray-200 dark:border-neutral-700 flex items-center justify-between px-3 sm:px-4 md:px-6 bg-white dark:bg-neutral-900 flex-shrink-0 relative z-10 transition-colors duration-200">
-                        <div className="flex items-center gap-2 sm:gap-3">
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                             {/* Mobile Menu Button */}
                             {isMobile && (
                                 <button
                                     onClick={handleSidebarToggle}
-                                    className="p-2 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-md transition-colors"
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-md transition-colors flex-shrink-0"
                                     aria-label="Toggle sidebar"
                                 >
                                     <svg
@@ -386,10 +389,11 @@ const ChatLayout = ({
                                 </button>
                             )}
 
-                            <div className="flex items-center gap-2">
-                                <span className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
+                            {/* Title Container with proper truncation */}
+                            <div className="flex items-center gap-2 min-w-0 flex-1">
+                                <h1 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
                                     {headerTitle}
-                                </span>
+                                </h1>
                             </div>
                         </div>
 
