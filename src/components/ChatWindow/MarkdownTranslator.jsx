@@ -17,7 +17,7 @@ const MarkdownTranslator = ({
     const animationRef = useRef(null);
     const timeoutRef = useRef(null);
     const previousStreamingStateRef = useRef(false);
-    const STREAMING_SPEED = 500
+    const STREAMING_SPEED = 500;
 
     useEffect(() => {
         // Clean up previous animation
@@ -38,8 +38,9 @@ const MarkdownTranslator = ({
         }
 
         // Check if streaming state changed from false to true (trigger re-animation)
-        const streamingStarted = isStreaming && !previousStreamingStateRef.current;
-        
+        const streamingStarted =
+            isStreaming && !previousStreamingStateRef.current;
+
         // Update the streaming state reference
         previousStreamingStateRef.current = isStreaming;
 
@@ -52,28 +53,33 @@ const MarkdownTranslator = ({
 
         // If streaming just started or content changed while streaming
         if (streamingStarted || isStreaming) {
-            
             setIsAnimating(true);
             setDisplayedContent(""); // Always start from empty when streaming starts
 
             let currentIndex = 0;
             const totalLength = content.length;
             let lastTime = Date.now();
-            
+
             // Calculate characters to add per frame based on speed
             const charsPerSecond = STREAMING_SPEED;
-            const targetFrameRate = 60; 
+            const targetFrameRate = 60;
             const charsPerFrame = charsPerSecond / targetFrameRate;
 
             const animateText = () => {
                 const now = Date.now();
                 const deltaTime = (now - lastTime) / 1000; // Convert to seconds
-                
+
                 // Calculate how many characters to add this frame
-                const charsToAdd = Math.max(1, Math.ceil(charsPerFrame * deltaTime * targetFrameRate));
-                
+                const charsToAdd = Math.max(
+                    1,
+                    Math.ceil(charsPerFrame * deltaTime * targetFrameRate)
+                );
+
                 if (currentIndex < totalLength && isStreaming) {
-                    currentIndex = Math.min(currentIndex + charsToAdd, totalLength);
+                    currentIndex = Math.min(
+                        currentIndex + charsToAdd,
+                        totalLength
+                    );
                     const newContent = content.substring(0, currentIndex);
                     setDisplayedContent(newContent);
                     lastTime = now;
@@ -133,7 +139,7 @@ const MarkdownTranslator = ({
                     </SyntaxHighlighter>
                 ) : (
                     <code
-                        className="bg-gray-100 px-1 py-0.5 rounded text-sm font-mono text-red-600"
+                        className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm font-mono text-red-600 dark:text-red-400"
                         {...props}
                     >
                         {children}
@@ -142,7 +148,7 @@ const MarkdownTranslator = ({
             },
             p({ children }) {
                 return (
-                    <p className="mb-3 leading-relaxed text-gray-800">
+                    <p className="mb-3 leading-relaxed text-gray-800 dark:text-gray-200">
                         {children}
                     </p>
                 );
@@ -163,56 +169,56 @@ const MarkdownTranslator = ({
             },
             li({ children }) {
                 return (
-                    <li className="leading-relaxed text-gray-800 py-1 pl-1">
+                    <li className="leading-relaxed text-gray-800 dark:text-gray-200 py-1 pl-1">
                         {children}
                     </li>
                 );
             },
             h1({ children }) {
                 return (
-                    <h1 className="text-2xl font-bold mb-4 text-gray-900">
+                    <h1 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
                         {children}
                     </h1>
                 );
             },
             h2({ children }) {
                 return (
-                    <h2 className="text-xl font-semibold mb-3 text-gray-900">
+                    <h2 className="text-xl font-semibold mb-3 text-gray-900 dark:text-white">
                         {children}
                     </h2>
                 );
             },
             h3({ children }) {
                 return (
-                    <h3 className="text-lg font-medium mb-2 text-gray-900">
+                    <h3 className="text-lg font-medium mb-2 text-gray-900 dark:text-white">
                         {children}
                     </h3>
                 );
             },
             h4({ children }) {
                 return (
-                    <h4 className="text-base font-medium mb-2 text-gray-900">
+                    <h4 className="text-base font-medium mb-2 text-gray-900 dark:text-white">
                         {children}
                     </h4>
                 );
             },
             h5({ children }) {
                 return (
-                    <h5 className="text-sm font-medium mb-2 text-gray-900">
+                    <h5 className="text-sm font-medium mb-2 text-gray-900 dark:text-white">
                         {children}
                     </h5>
                 );
             },
             h6({ children }) {
                 return (
-                    <h6 className="text-xs font-medium mb-2 text-gray-900">
+                    <h6 className="text-xs font-medium mb-2 text-gray-900 dark:text-white">
                         {children}
                     </h6>
                 );
             },
             blockquote({ children }) {
                 return (
-                    <blockquote className="border-l-4 border-blue-300 pl-4 italic text-gray-700 mb-3 bg-blue-50 py-2 rounded-r-md">
+                    <blockquote className="border-l-4 border-blue-300 dark:border-blue-600 pl-4 italic text-gray-700 dark:text-gray-300 mb-3 bg-blue-50 dark:bg-blue-900/20 py-2 rounded-r-md">
                         {children}
                     </blockquote>
                 );
@@ -220,25 +226,29 @@ const MarkdownTranslator = ({
             table({ children }) {
                 return (
                     <div className="overflow-x-auto mb-4">
-                        <table className="min-w-full border-collapse border border-gray-300 rounded-md">
+                        <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-600 rounded-md">
                             {children}
                         </table>
                     </div>
                 );
             },
             thead({ children }) {
-                return <thead className="bg-gray-50">{children}</thead>;
+                return (
+                    <thead className="bg-gray-50 dark:bg-gray-800">
+                        {children}
+                    </thead>
+                );
             },
             th({ children }) {
                 return (
-                    <th className="border border-gray-300 px-4 py-2 font-semibold text-left text-gray-900">
+                    <th className="border border-gray-300 dark:border-gray-600 px-4 py-2 font-semibold text-left text-gray-900 dark:text-white">
                         {children}
                     </th>
                 );
             },
             td({ children }) {
                 return (
-                    <td className="border border-gray-300 px-4 py-2 text-gray-800">
+                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-gray-800 dark:text-gray-200">
                         {children}
                     </td>
                 );
@@ -249,7 +259,7 @@ const MarkdownTranslator = ({
                         href={href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 underline transition-colors duration-200"
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline transition-colors duration-200"
                     >
                         {children}
                     </a>
@@ -257,16 +267,22 @@ const MarkdownTranslator = ({
             },
             strong({ children }) {
                 return (
-                    <strong className="font-semibold text-gray-900">
+                    <strong className="font-semibold text-gray-900 dark:text-white">
                         {children}
                     </strong>
                 );
             },
             em({ children }) {
-                return <em className="italic text-gray-800">{children}</em>;
+                return (
+                    <em className="italic text-gray-800 dark:text-gray-200">
+                        {children}
+                    </em>
+                );
             },
             hr() {
-                return <hr className="my-4 border-gray-300" />;
+                return (
+                    <hr className="my-4 border-gray-300 dark:border-gray-600" />
+                );
             },
         }),
         [isAnimating]
@@ -283,18 +299,27 @@ const MarkdownTranslator = ({
             </ReactMarkdown>
             {isAnimating && (
                 <span className="inline-flex items-center ml-1">
-                    <span 
+                    <span
                         className="w-2 h-5 bg-orange-500 rounded-sm"
                         style={{
-                            animation: 'claude-cursor 1.2s ease-in-out infinite',
+                            animation:
+                                "claude-cursor 1.2s ease-in-out infinite",
                         }}
                     />
                 </span>
             )}
             <style jsx>{`
                 @keyframes claude-cursor {
-                    0%, 50% { opacity: 1; background-color: #f97316; }
-                    51%, 100% { opacity: 0.3; background-color: #fb923c; }
+                    0%,
+                    50% {
+                        opacity: 1;
+                        background-color: #f97316;
+                    }
+                    51%,
+                    100% {
+                        opacity: 0.3;
+                        background-color: #fb923c;
+                    }
                 }
             `}</style>
         </div>

@@ -38,7 +38,6 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
                 const errorMsg = "Failed to load theme preference";
                 setError(errorMsg);
                 if (onError) onError(errorMsg);
-                console.error("Error fetching user theme:", err);
             } finally {
                 setLoading(false);
             }
@@ -75,15 +74,8 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
     const handleChangeTheme = useCallback(
         async (themeId) => {
             if (updating || themeId === selectedMode) {
-                console.log(
-                    `🚫 Ignoring theme change: updating=${updating}, same theme=${
-                        themeId === selectedMode
-                    }`
-                );
                 return;
             }
-
-            console.log(`🎨 Starting theme change to: ${themeId}`);
 
             try {
                 setUpdating(true);
@@ -103,22 +95,16 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
                     try {
                         await onUserUpdate();
                     } catch (updateError) {
-                        console.warn(
-                            "Failed to refresh parent user data:",
-                            updateError
-                        );
+                        // Silent fail for parent update
                     }
                 }
 
                 // Clear any existing errors
                 if (onError) onError("");
-
-                console.log(`✅ Theme change completed: ${themeId}`);
             } catch (err) {
                 const errorMsg = err.message || "Failed to update theme";
                 setError(errorMsg);
                 if (onError) onError(errorMsg);
-                console.error("Error updating theme:", err);
 
                 // Revert local state on error
                 setSelectedMode(globalTheme);
@@ -151,7 +137,7 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
     }
 
     return (
-        <div className="max-w-4xl bg-gray-50 dark:bg-neutral-900 p-8 border border-gray-200 dark:border-neutral-700 rounded-2xl space-y-8 transition-colors duration-200">
+        <div className="max-w-4xl bg-white dark:bg-neutral-900 p-8 border border-gray-200 dark:border-neutral-700 rounded-2xl space-y-8 transition-colors duration-200">
             {/* Local Error Message */}
             {error && (
                 <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-md p-4">
@@ -184,14 +170,6 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
                 <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-gray-100">
                     Color mode
                 </h2>
-
-                {/* Debug info - remove this in production */}
-                <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-lg">
-                    <div className="text-xs text-blue-800 dark:text-blue-300">
-                        Debug: Global theme = {globalTheme}, Selected ={" "}
-                        {selectedMode}
-                    </div>
-                </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {themeOptions.map((theme) => {

@@ -8,7 +8,7 @@ const BotMessage = memo(({ message, shouldStream }) => {
             <div className="flex justify-start">
                 <div className="max-w-[90%] pl-2 relative">
                     <div className="relative">
-                        <div className="relative text-gray-800">
+                        <div className="relative text-gray-800 dark:text-white">
                             <MarkdownTranslator
                                 content={message.content}
                                 className="text-sm leading-relaxed"
