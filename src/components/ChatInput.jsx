@@ -125,24 +125,21 @@ export default function ChatInput({
 
         // Create file object with ID for preview
         const fileWithId = {
-            id: Date.now() + Math.random(), // Simple unique ID
+            id: Date.now() + Math.random(),
             file: audioFile,
             name: audioFile.name,
             size: audioFile.size,
             type: audioFile.type,
-            preview: null, // Audio files don't have image previews
+            preview: null,
             isAudio: true,
         };
 
-        // Add to uploaded files for preview
         setUploadedFiles((prev) => [...prev, fileWithId]);
 
-        // Call the audio file upload handler if provided
         if (onAudioFileUpload) {
             onAudioFileUpload(audioFile);
         }
 
-        // Reset the input and close menu
         if (audioFileInputRef.current) {
             audioFileInputRef.current.value = "";
         }
@@ -220,20 +217,16 @@ export default function ChatInput({
             return;
         }
 
-        // Pass web search state along with the message
         onSend(message, uploadedFiles, { webSearchEnabled });
         setMessage("");
         setUploadedFiles([]);
-        // Clear search results when sending
         setSearchResults([]);
     };
 
     const handleKeyDown = (e) => {
         if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
-            if (isProcessing || isLoading) {
-                return;
-            }
+            if (isProcessing || isLoading) return;
             handleSubmit(e);
         }
         if (e.key === "Escape" && isStreaming) {
@@ -257,7 +250,6 @@ export default function ChatInput({
         setUploadedFiles((prev) => prev.filter((file) => file.id !== fileId));
     };
 
-    // Check if file upload is disabled due to limit
     const isFileUploadDisabled = () => {
         return (
             isLoading ||
@@ -267,7 +259,6 @@ export default function ChatInput({
         );
     };
 
-    // Check if audio upload is disabled due to mode restrictions
     const isAudioUploadDisabled = () => {
         return (
             isLoading ||
@@ -278,7 +269,6 @@ export default function ChatInput({
         );
     };
 
-    // Determine placeholder text and button state
     const getPlaceholderText = () => {
         if (isRecording) return "Recording...";
         if (isTranscribing) return "Transcribing voice...";
@@ -288,7 +278,7 @@ export default function ChatInput({
         return "How can I help you today?";
     };
 
-    // Fixed research functionality
+    // Fixed research functionality (assumes conversationId/streamWebSearch exist in scope)
     const handleResearch = async () => {
         if (!message.trim() || !conversationId) return;
 
@@ -308,16 +298,12 @@ export default function ChatInput({
 
     const handleResearchClick = async () => {
         if (!webSearchEnabled) {
-            // Enable web search first
             onWebSearchToggle();
-            // Then perform search if there's a message
             if (message.trim()) {
                 await handleResearch();
             }
         } else {
-            // Disable web search
             onWebSearchToggle();
-            // Clear search results
             setSearchResults([]);
             setIsSearching(false);
         }
@@ -332,7 +318,6 @@ export default function ChatInput({
                 disabled: true,
             };
         }
-
         if (isProcessing) {
             return {
                 canSend: false,
@@ -341,7 +326,6 @@ export default function ChatInput({
                 disabled: true,
             };
         }
-
         if (isStreaming) {
             return {
                 canSend: true,
@@ -350,7 +334,6 @@ export default function ChatInput({
                 disabled: false,
             };
         }
-
         if (isLoading) {
             return {
                 canSend: false,
@@ -359,7 +342,6 @@ export default function ChatInput({
                 disabled: true,
             };
         }
-
         if (
             (message.trim() || uploadedFiles.length > 0) &&
             canSend &&
@@ -372,7 +354,6 @@ export default function ChatInput({
                 disabled: false,
             };
         }
-
         return {
             canSend: false,
             buttonText: "Send message",
@@ -384,7 +365,7 @@ export default function ChatInput({
     const buttonState = getInputButtonState();
 
     return (
-        <div className="border-t border-gray-200 bg-white px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+        <div className="border-t border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 sm:px-4 md:px-6 py-3 sm:py-4 transition-colors duration-200">
             <div className="max-w-4xl mx-auto">
                 <StreamingStatus
                     isStreaming={isStreaming}
@@ -395,9 +376,9 @@ export default function ChatInput({
 
                 {/* File limit indicator */}
                 {uploadedFiles.length >= MAX_FILES && (
-                    <div className="mb-3 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 sm:px-4 py-2">
+                    <div className="mb-3 flex items-start gap-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg px-3 sm:px-4 py-2">
                         <svg
-                            className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5"
+                            className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -409,18 +390,17 @@ export default function ChatInput({
                                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z"
                             />
                         </svg>
-                        <span className="text-xs sm:text-sm text-amber-700 font-medium">
-                            Maximum file limit reached ({MAX_FILES}/{MAX_FILES}
-                            ). Remove a file to upload more.
+                        <span className="text-xs sm:text-sm text-amber-700 dark:text-amber-300 font-medium">
+                            Maximum file limit reached ({MAX_FILES}/{MAX_FILES}). Remove a file to upload more.
                         </span>
                     </div>
                 )}
 
                 {/* File mode restriction indicator */}
                 {getCurrentFileMode() === "audio" && (
-                    <div className="mb-3 flex items-start gap-2 bg-purple-50 border border-purple-200 rounded-lg px-3 sm:px-4 py-2">
+                    <div className="mb-3 flex items-start gap-2 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-lg px-3 sm:px-4 py-2">
                         <svg
-                            className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5"
+                            className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -432,18 +412,16 @@ export default function ChatInput({
                                 d="M15.536 12.464a9 9 0 010-8.928M12 19V5M8.464 12.464a9 9 0 010-8.928"
                             />
                         </svg>
-                        <span className="text-xs sm:text-sm text-purple-700 font-medium">
-                            Audio mode active - Only audio files can be
-                            uploaded. Remove audio files to upload other file
-                            types.
+                        <span className="text-xs sm:text-sm text-purple-700 dark:text-purple-300 font-medium">
+                            Audio mode active - Only audio files can be uploaded. Remove audio files to upload other file types.
                         </span>
                     </div>
                 )}
 
                 {getCurrentFileMode() === "other" && (
-                    <div className="mb-3 flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-lg px-3 sm:px-4 py-2">
+                    <div className="mb-3 flex items-start gap-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg px-3 sm:px-4 py-2">
                         <svg
-                            className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5"
+                            className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -455,10 +433,8 @@ export default function ChatInput({
                                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                             />
                         </svg>
-                        <span className="text-xs sm:text-sm text-blue-700 font-medium">
-                            Document mode active - Only images, PDFs, and text
-                            files can be uploaded. Remove other files to upload
-                            audio files.
+                        <span className="text-xs sm:text-sm text-blue-700 dark:text-blue-300 font-medium">
+                            Document mode active - Only images, PDFs, and text files can be uploaded. Remove other files to upload audio files.
                         </span>
                     </div>
                 )}
@@ -466,12 +442,12 @@ export default function ChatInput({
                 <div className="relative">
                     <div
                         ref={inputBubbleRef}
-                        className={`relative bg-white rounded-2xl sm:rounded-3xl border transition-colors duration-200 ${
+                        className={`relative bg-white dark:bg-neutral-900 rounded-2xl sm:rounded-3xl border transition-colors duration-200 ${
                             webSearchEnabled
-                                ? "border-blue-300 shadow-blue-100 shadow-sm"
-                                : "border-gray-300 shadow-sm"
+                                ? "border-blue-300 shadow-blue-100 shadow-sm dark:border-blue-500/70"
+                                : "border-gray-300 dark:border-neutral-700 shadow-sm"
                         } ${
-                            isDragOver ? "border-orange-400 bg-orange-50" : ""
+                            isDragOver ? "border-orange-400 bg-orange-50 dark:bg-orange-900/30" : ""
                         }`}
                         style={{ minHeight: "56px" }}
                     >
@@ -486,21 +462,15 @@ export default function ChatInput({
                                 onChange={(e) => setMessage(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder={getPlaceholderText()}
-                                className={`w-full bg-transparent outline-none text-gray-900 resize-none text-sm sm:text-base leading-relaxed px-4 sm:px-5 pt-3 sm:pt-4 ${
+                                className={`w-full bg-transparent outline-none text-gray-900 dark:text-gray-100 resize-none text-sm sm:text-base leading-relaxed px-4 sm:px-5 pt-3 sm:pt-4 ${
                                     webSearchEnabled
-                                        ? "placeholder-blue-400"
-                                        : "placeholder-gray-500"
+                                        ? "placeholder-blue-400 dark:placeholder-blue-300"
+                                        : "placeholder-gray-500 dark:placeholder-gray-400"
                                 }`}
                                 style={{
                                     minHeight: "48px",
                                     maxHeight: "180px",
                                 }}
-                                // disabled={
-                                //     isLoading ||
-                                //     isRecording ||
-                                //     isProcessing ||
-                                //     isTranscribing
-                                // }
                                 tabIndex={0}
                             />
 
@@ -525,7 +495,7 @@ export default function ChatInput({
                                                     !showAudioUploadMenu
                                                 )
                                             }
-                                            className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-gray-600 border border-gray-200 bg-gray-100 hover:bg-gray-150 transition-all duration-200"
+                                            className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-neutral-700 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-150 dark:hover:bg-neutral-700 transition-all duration-200"
                                             disabled={
                                                 isLoading ||
                                                 isProcessing ||
@@ -548,23 +518,22 @@ export default function ChatInput({
                                             </svg>
                                         </button>
 
-
                                         {/* Audio upload dropdown menu */}
                                         {showAudioUploadMenu && (
-                                            <div className="absolute bottom-full left-0  mb-2 bg-white border border-gray-200 rounded-lg shadow-lg py-1 min-w-[180px] sm:min-w-[200px] z-50">
+                                            <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-lg py-1 min-w-[180px] sm:min-w-[200px] z-50">
                                                 <button
                                                     onClick={() =>
                                                         audioFileInputRef.current?.click()
                                                     }
                                                     disabled={isAudioUploadDisabled()}
-                                                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-left text-xs sm:text-sm hover:bg-gray-100 flex items-center gap-2 sm:gap-3 ${
+                                                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-left text-xs sm:text-sm hover:bg-gray-100 dark:hover:bg-neutral-800 flex items-center gap-2 sm:gap-3 ${
                                                         isAudioUploadDisabled()
-                                                            ? "text-gray-400 cursor-not-allowed"
-                                                            : "text-gray-700"
+                                                            ? "text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                                                            : "text-gray-700 dark:text-gray-200"
                                                     }`}
                                                 >
                                                     <svg
-                                                        className="w-4 h-4 text-gray-500"
+                                                        className="w-4 h-4 text-gray-500 dark:text-gray-400"
                                                         fill="none"
                                                         stroke="currentColor"
                                                         viewBox="0 0 24 24"
@@ -579,7 +548,7 @@ export default function ChatInput({
                                                     Upload Audio File
                                                     {getCurrentFileMode() ===
                                                         "other" && (
-                                                        <span className="text-xs text-gray-400 hidden sm:inline">
+                                                        <span className="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">
                                                             (Disabled)
                                                         </span>
                                                     )}
@@ -596,8 +565,8 @@ export default function ChatInput({
                                                 flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border whitespace-nowrap
                                                 ${
                                                     webSearchEnabled
-                                                        ? "bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-150"
-                                                        : "bg-gray-100 text-gray-600 border-gray-200 hover:bg-gray-150"
+                                                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 hover:bg-blue-150"
+                                                        : "bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-neutral-700 hover:bg-gray-150 dark:hover:bg-neutral-700"
                                                 }
                                             `}
                                             disabled={
@@ -644,7 +613,7 @@ export default function ChatInput({
                                                     className={`w-3 h-3 sm:w-3.5 sm:h-3.5 transition-colors duration-200 flex-shrink-0 ${
                                                         webSearchEnabled
                                                             ? "text-blue-600"
-                                                            : "text-gray-500"
+                                                            : "text-gray-500 dark:text-gray-400"
                                                     }`}
                                                     fill="none"
                                                     stroke="currentColor"
@@ -675,8 +644,8 @@ export default function ChatInput({
                                         onClick={handleFileUploadClick}
                                         className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${
                                             isFileUploadDisabled()
-                                                ? "text-gray-300 cursor-not-allowed"
-                                                : "text-gray-400 hover:text-gray-600 hover:bg-gray-100"
+                                                ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                                                : "text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-neutral-800"
                                         }`}
                                         title={getFileUploadTitle()}
                                         disabled={isFileUploadDisabled()}
@@ -800,7 +769,7 @@ export default function ChatInput({
 
                     {/* Search Results Section */}
                     {isSearching && (
-                        <div className="mt-3 flex items-center gap-2 text-gray-500 text-sm">
+                        <div className="mt-3 flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
                             <svg
                                 className="w-4 h-4 animate-spin"
                                 fill="none"
@@ -826,27 +795,27 @@ export default function ChatInput({
 
                     {searchResults.length > 0 && (
                         <div className="mt-3 space-y-2">
-                            <div className="text-sm text-gray-600 font-medium mb-2">
+                            <div className="text-sm text-gray-600 dark:text-gray-300 font-medium mb-2">
                                 Search Results ({searchResults.length})
                             </div>
                             {searchResults.map((result, index) => (
                                 <div
                                     key={index}
-                                    className="border border-gray-200 rounded-lg p-3 bg-gray-50"
+                                    className="border border-gray-200 dark:border-neutral-700 rounded-lg p-3 bg-gray-50 dark:bg-neutral-800"
                                 >
                                     <a
                                         href={result.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-blue-600 font-medium hover:underline text-sm"
+                                        className="text-blue-600 dark:text-blue-400 font-medium hover:underline text-sm"
                                     >
                                         {result.title}
                                     </a>
-                                    <p className="text-gray-600 text-sm mt-1 line-clamp-2">
+                                    <p className="text-gray-600 dark:text-gray-300 text-sm mt-1 line-clamp-2">
                                         {result.snippet}
                                     </p>
                                     {result.url && (
-                                        <p className="text-gray-400 text-xs mt-1 truncate">
+                                        <p className="text-gray-400 dark:text-gray-500 text-xs mt-1 truncate">
                                             {result.url}
                                         </p>
                                     )}

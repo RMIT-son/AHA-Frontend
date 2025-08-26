@@ -8,33 +8,20 @@ const Appearance = ({ user: userProp, onUserUpdate }) => {
     const [error, setError] = useState("");
 
     const themeOptions = [
-        {
-            id: "light",
-            label: "Light",
-            desc: "Describe a forest at sunrise.",
-        },
-        {
-            id: "dark",
-            label: "Dark",
-            desc: "Describe a desert at midnight.",
-        },
+        { id: "light", label: "Light", desc: "Describe a forest at sunrise." },
+        { id: "dark", label: "Dark", desc: "Describe a desert at midnight." },
     ];
 
-    // Fetch user's current theme preference on component mount
     useEffect(() => {
         const fetchUserTheme = async () => {
             try {
                 setLoading(true);
                 let userData;
-
-                // Prioritize user prop over API call
                 if (userProp && userProp.theme !== undefined) {
                     userData = userProp;
                 } else {
                     userData = await getUserProfile();
                 }
-
-                // Set the selected mode based on user's preference
                 const userTheme = userData.theme || "light";
                 setSelectedMode(userTheme);
                 setError("");
@@ -45,7 +32,6 @@ const Appearance = ({ user: userProp, onUserUpdate }) => {
                 setLoading(false);
             }
         };
-
         fetchUserTheme();
     }, [userProp]);
 
@@ -79,22 +65,13 @@ const Appearance = ({ user: userProp, onUserUpdate }) => {
         try {
             setUpdating(true);
             setError("");
-
-            // Update theme in database
             await updateUserTheme(themeId);
-
-            // Update local state to show selection
             setSelectedMode(themeId);
-
-            // Call parent update callback if provided
             if (onUserUpdate) {
                 try {
                     await onUserUpdate();
                 } catch (updateError) {
-                    console.warn(
-                        "Failed to refresh parent user data:",
-                        updateError
-                    );
+                    console.warn("Failed to refresh parent user data:", updateError);
                 }
             }
         } catch (err) {
@@ -107,12 +84,12 @@ const Appearance = ({ user: userProp, onUserUpdate }) => {
 
     if (loading) {
         return (
-            <div className="max-w-4xl bg-gray-50 p-8 border border-gray-200 rounded-2xl">
+            <div className="max-w-4xl bg-gray-50 dark:bg-neutral-900 p-8 border border-gray-200 dark:border-neutral-700 rounded-2xl">
                 <div className="animate-pulse">
-                    <div className="h-6 bg-gray-200 rounded w-1/4 mb-6"></div>
+                    <div className="h-6 bg-gray-200 dark:bg-neutral-700 rounded w-1/4 mb-6"></div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="h-40 bg-gray-200 rounded-2xl"></div>
-                        <div className="h-40 bg-gray-200 rounded-2xl"></div>
+                        <div className="h-40 bg-gray-200 dark:bg-neutral-700 rounded-2xl"></div>
+                        <div className="h-40 bg-gray-200 dark:bg-neutral-700 rounded-2xl"></div>
                     </div>
                 </div>
             </div>
@@ -120,17 +97,17 @@ const Appearance = ({ user: userProp, onUserUpdate }) => {
     }
 
     return (
-        <div className="max-w-4xl bg-gray-50 p-8 border border-gray-200 rounded-2xl space-y-8">
+        <div className="max-w-4xl bg-gray-50 dark:bg-neutral-900 p-8 border border-gray-200 dark:border-neutral-700 rounded-2xl space-y-8">
             {/* Error Message */}
             {error && (
-                <div className="bg-red-50 border border-red-200 rounded-md p-4">
-                    <div className="text-red-800 text-sm">{error}</div>
+                <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-md p-4">
+                    <div className="text-red-800 dark:text-red-300 text-sm">{error}</div>
                 </div>
             )}
 
             {/* Color mode section */}
             <div>
-                <h2 className="text-xl font-semibold mb-6 text-gray-900">
+                <h2 className="text-xl font-semibold mb-6 text-gray-900 dark:text-gray-100">
                     Color mode
                 </h2>
 
@@ -140,10 +117,7 @@ const Appearance = ({ user: userProp, onUserUpdate }) => {
                         const styles = getThemeStyles(theme.id);
 
                         return (
-                            <div
-                                key={theme.id}
-                                className="flex flex-col items-center cursor-pointer"
-                            >
+                            <div key={theme.id} className="flex flex-col items-center cursor-pointer">
                                 <button
                                     onClick={() => handleChangeTheme(theme.id)}
                                     disabled={updating}
@@ -151,9 +125,9 @@ const Appearance = ({ user: userProp, onUserUpdate }) => {
                                         ${
                                             isSelected
                                                 ? "border-blue-500 shadow-lg"
-                                                : "border-gray-200"
+                                                : "border-gray-200 dark:border-neutral-700"
                                         }
-                                        hover:border-blue-400 hover:bg-white hover:shadow-md
+                                        hover:border-blue-400 hover:bg-white dark:hover:bg-neutral-800 hover:shadow-md
                                         disabled:opacity-50 disabled:cursor-not-allowed`}
                                 >
                                     <div
@@ -161,11 +135,7 @@ const Appearance = ({ user: userProp, onUserUpdate }) => {
                                     >
                                         {/* Chat header */}
                                         <div className="flex items-center justify-between mb-3">
-                                            <div
-                                                className={`text-sm ${styles.text}`}
-                                            >
-                                                {theme.desc}
-                                            </div>
+                                            <div className={`text-sm ${styles.text}`}>{theme.desc}</div>
                                             <div className="w-6 h-6 bg-orange-600 rounded-full flex items-center justify-center">
                                                 <svg
                                                     className="w-3 h-3 text-white"
@@ -180,11 +150,7 @@ const Appearance = ({ user: userProp, onUserUpdate }) => {
                                         {/* Chat footer */}
                                         <div className="flex items-center justify-between text-xs">
                                             <div className="flex items-center gap-2">
-                                                <span
-                                                    className={`${styles.text} opacity-70`}
-                                                >
-                                                    AHA Chatbot
-                                                </span>
+                                                <span className={`${styles.text} opacity-70`}>AHA Chatbot</span>
                                                 <svg
                                                     className="w-3 h-3 text-gray-400"
                                                     fill="currentColor"
@@ -201,11 +167,7 @@ const Appearance = ({ user: userProp, onUserUpdate }) => {
                                                 >
                                                     <path d="M2 3h12v2H2V3zm0 4h12v2H2V7zm0 4h8v2H2v-2z" />
                                                 </svg>
-                                                <span
-                                                    className={`${styles.text} opacity-70`}
-                                                >
-                                                    Choose style
-                                                </span>
+                                                <span className={`${styles.text} opacity-70`}>Choose style</span>
                                                 <svg
                                                     className="w-3 h-3 text-gray-400"
                                                     fill="currentColor"
@@ -218,17 +180,13 @@ const Appearance = ({ user: userProp, onUserUpdate }) => {
                                     </div>
                                 </button>
 
-                                <p className="mt-3 text-sm font-medium text-gray-700">
+                                <p className="mt-3 text-sm font-medium text-gray-700 dark:text-gray-300">
                                     {theme.label}
                                     {isSelected && (
-                                        <span className="ml-2 text-blue-600 font-semibold">
-                                            ✓ Selected
-                                        </span>
+                                        <span className="ml-2 text-blue-600 font-semibold">✓ Selected</span>
                                     )}
                                     {updating && isSelected && (
-                                        <span className="ml-2 text-blue-600">
-                                            (Saving...)
-                                        </span>
+                                        <span className="ml-2 text-blue-600">(Saving...)</span>
                                     )}
                                 </p>
                             </div>

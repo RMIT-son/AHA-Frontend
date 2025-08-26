@@ -99,7 +99,7 @@ const ChatLayout = ({
     });
 
     return (
-        <div className="flex h-screen bg-white relative">
+        <div className="flex h-screen bg-white dark:bg-neutral-900 relative transition-colors duration-200">
             {/* Mobile Overlay */}
             {isMobile && (
                 <div
@@ -344,17 +344,17 @@ const ChatLayout = ({
             <div className="flex-1 flex flex-col min-w-0 w-full">
                 {/* Header */}
                 {headerTitle && (
-                    <div className="h-12 sm:h-14 border-b border-gray-200 flex items-center justify-between px-3 sm:px-4 md:px-6 bg-white flex-shrink-0 relative z-10">
+                    <div className="h-12 sm:h-14 border-b border-gray-200 dark:border-neutral-700 flex items-center justify-between px-3 sm:px-4 md:px-6 bg-white dark:bg-neutral-900 flex-shrink-0 relative z-10 transition-colors duration-200">
                         <div className="flex items-center gap-2 sm:gap-3">
                             {/* Mobile Menu Button */}
                             {isMobile && (
                                 <button
                                     onClick={handleSidebarToggle}
-                                    className="p-2 hover:bg-gray-100 rounded-md transition-colors"
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-neutral-800 rounded-md transition-colors"
                                     aria-label="Toggle sidebar"
                                 >
                                     <svg
-                                        className="w-5 h-5 text-gray-600"
+                                        className="w-5 h-5 text-gray-600 dark:text-gray-300"
                                         fill="none"
                                         stroke="currentColor"
                                         viewBox="0 0 24 24"
@@ -370,7 +370,7 @@ const ChatLayout = ({
                             )}
 
                             <div className="flex items-center gap-2">
-                                <span className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                                <span className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
                                     {headerTitle}
                                 </span>
                             </div>

@@ -46,8 +46,6 @@ export default function ChatWindow({
 
     // File click handler - for non-image files
     const handleFileClick = useCallback((fileInfo) => {
-        // For now, just download the file
-        // You can add a file preview modal later if needed
         const link = document.createElement("a");
         link.href = fileInfo.url;
         link.download = fileInfo.fileName;
@@ -117,7 +115,6 @@ export default function ChatWindow({
 
     useEffect(() => {
         if (messages.length > 0 && isNewConversation.current) {
-            // Force scroll to bottom when conversation is loaded initially
             positionAtBottomInstant();
             isNewConversation.current = false;
         }
@@ -188,7 +185,7 @@ export default function ChatWindow({
         <>
             <div
                 ref={scrollAreaRef}
-                className="flex-1 overflow-y-auto bg-white"
+                className="flex-1 overflow-y-auto bg-white dark:bg-neutral-900 transition-colors duration-200"
             >
                 {messages.length === 0 ? (
                     <EmptyState />

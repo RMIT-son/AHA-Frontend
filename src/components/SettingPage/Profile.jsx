@@ -9,16 +9,12 @@ const Profile = () => {
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
 
-    // Fetch user data on component mount
     useEffect(() => {
         const fetchUserData = async () => {
             try {
                 setLoading(true);
                 const userData = await getUserProfile();
-
-                if (!userData) {
-                    throw new Error("No user data returned");
-                }
+                if (!userData) throw new Error("No user data returned");
 
                 setFullName(userData.fullName || "");
                 setNickname(userData.nickname || "");
@@ -48,7 +44,6 @@ const Profile = () => {
             await updateUserProfile(profileData);
             setSuccess("Profile updated successfully!");
 
-            // Clear success message after 3 seconds
             setTimeout(() => setSuccess(""), 3000);
         } catch (err) {
             setError(err.message || "Failed to update profile");
@@ -61,12 +56,12 @@ const Profile = () => {
     if (loading) {
         return (
             <div className="max-w-4xl">
-                <div className="bg-white border border-gray-200 rounded-lg p-8">
+                <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg p-8">
                     <div className="animate-pulse">
-                        <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-                        <div className="h-10 bg-gray-200 rounded mb-4"></div>
-                        <div className="h-4 bg-gray-200 rounded w-1/4 mb-4"></div>
-                        <div className="h-10 bg-gray-200 rounded"></div>
+                        <div className="h-4 bg-gray-200 dark:bg-neutral-700 rounded w-1/4 mb-4"></div>
+                        <div className="h-10 bg-gray-200 dark:bg-neutral-700 rounded mb-4"></div>
+                        <div className="h-4 bg-gray-200 dark:bg-neutral-700 rounded w-1/4 mb-4"></div>
+                        <div className="h-10 bg-gray-200 dark:bg-neutral-700 rounded"></div>
                     </div>
                 </div>
             </div>
@@ -75,45 +70,45 @@ const Profile = () => {
 
     return (
         <div className="max-w-4xl">
-            <div className="bg-white border border-gray-200 rounded-lg p-8 space-y-6">
+            <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg p-8 space-y-6">
                 {/* Error Message */}
                 {error && (
-                    <div className="bg-red-50 border border-red-200 rounded-md p-4">
-                        <div className="text-red-800 text-sm">{error}</div>
+                    <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-md p-4">
+                        <div className="text-red-800 dark:text-red-300 text-sm">{error}</div>
                     </div>
                 )}
 
                 {/* Success Message */}
                 {success && (
-                    <div className="bg-green-50 border border-green-200 rounded-md p-4">
-                        <div className="text-green-800 text-sm">{success}</div>
+                    <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-md p-4">
+                        <div className="text-green-800 dark:text-green-300 text-sm">{success}</div>
                     </div>
                 )}
 
                 {/* Name Section */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             Full name
                         </label>
                         <input
                             type="text"
                             value={fullName}
                             onChange={(e) => setFullName(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-neutral-800 text-gray-900 dark:text-gray-100"
                             disabled={saving}
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                             What should we call you?
                         </label>
                         <input
                             type="text"
                             value={nickname}
                             onChange={(e) => setNickname(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-neutral-700 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm bg-white dark:bg-neutral-800 text-gray-900 dark:text-gray-100"
                             disabled={saving}
                         />
                     </div>
