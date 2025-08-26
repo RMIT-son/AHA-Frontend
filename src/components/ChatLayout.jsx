@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sidebar } from "../components";
+import { Sidebar, SearchChatModal } from "../components";
 import { renameConversation, deleteConversation } from "../controllers/chat";
 
 const ChatLayout = ({
@@ -15,6 +15,7 @@ const ChatLayout = ({
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isMobile, setIsMobile] = useState(false);
     const [mobileUserMenuOpen, setMobileUserMenuOpen] = useState(false);
+    const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
 
     // Mobile detection and sidebar state management
     useEffect(() => {
@@ -68,6 +69,19 @@ const ChatLayout = ({
             setIsSidebarOpen(false);
         }
         navigate(roomId && roomId !== "undefined" ? `/chat/${roomId}` : "/");
+    };
+
+    const handleSearchClick = () => {
+        setIsSearchModalOpen(true);
+    };
+
+    const handleSearchModalClose = () => {
+        setIsSearchModalOpen(false);
+    };
+
+    const handleSearchChatSelect = (chatId) => {
+        handleRoomSelect(chatId);
+        setIsSearchModalOpen(false);
     };
 
     // Format chat name utility
@@ -174,7 +188,10 @@ const ChatLayout = ({
                                     New chat
                                 </button>
 
-                                <button className="w-full bg-gray-700 hover:bg-gray-600 text-white rounded-lg px-3 py-3 flex items-center gap-2 text-sm font-medium touch-manipulation transition-colors">
+                                <button
+                                    onClick={handleSearchClick}
+                                    className="w-full bg-gray-700 hover:bg-gray-600 text-white rounded-lg px-3 py-3 flex items-center gap-2 text-sm font-medium touch-manipulation transition-colors"
+                                >
                                     <svg
                                         className="w-4 h-4 flex-shrink-0"
                                         fill="none"
@@ -387,6 +404,13 @@ const ChatLayout = ({
                     {children}
                 </div>
             </div>
+            {/* Search Modal */}
+            <SearchChatModal
+                isOpen={isSearchModalOpen}
+                onClose={handleSearchModalClose}
+                onSelectChat={handleSearchChatSelect}
+                user={user}
+            />
         </div>
     );
 };
