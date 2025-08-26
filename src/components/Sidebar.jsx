@@ -231,9 +231,42 @@ const Sidebar = ({
                                         />
                                     </svg>
                                 </button>
-                                <span className="text-white font-medium text-sm md:text-base truncate">
-                                    AI Healthcare Assistant
-                                </span>
+
+                                {/* Logo Container - Centered */}
+                                <div className="flex-1 flex justify-center">
+                                    {/* Logo Image */}
+                                    <img
+                                        src="/logo.png"
+                                        alt="AI Healthcare Assistant"
+                                        className="h-8 w-auto max-w-[180px] object-contain"
+                                        onError={(e) => {
+                                            // Fallback to a default icon if image fails to load
+                                            e.target.style.display = "none";
+                                            e.target.nextSibling.style.display =
+                                                "flex";
+                                        }}
+                                    />
+
+                                    {/* Fallback Icon (hidden by default, shown if image fails) */}
+                                    <div
+                                        className="h-8 w-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center"
+                                        style={{ display: "none" }}
+                                    >
+                                        <svg
+                                            className="w-5 h-5 text-white"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                                            />
+                                        </svg>
+                                    </div>
+                                </div>
                             </>
                         ) : (
                             <button
@@ -331,7 +364,7 @@ const Sidebar = ({
                                                 activeRoomId === room.id
                                                     ? "bg-gray-700"
                                                     : "hover:bg-gray-700"
-                                            }`}
+                                            } cursor-pointer`}
                                         >
                                             <div className="flex items-center">
                                                 <button
