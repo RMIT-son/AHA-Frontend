@@ -5,8 +5,17 @@
  */
 
 import axios from "axios";
-import { app } from "../config/keys";
+import { app } from "../config/keys.js"; // Added .js extension
 import Cookies from "js-cookie";
+
+// Create axios instance with base URL from your existing config
+const apiClient = axios.create({
+    baseURL: app.dataURL,
+    timeout: 300000, // 5 minutes timeout
+    headers: {
+        "Content-Type": "application/json",
+    },
+});
 
 /**
  * Retrieves authentication headers from stored user cookie
@@ -45,13 +54,37 @@ const getAuthHeaders = () => {
  */
 export const getUserProfile = async () => {
     try {
-        const response = await axios.get(`/api/users/profile`, {
+        const response = await apiClient.get(`/api/users/profile`, {
             headers: getAuthHeaders(),
         });
 
         return response.data;
     } catch (error) {
         console.error("Error fetching user profile:", error);
+
+        // Handle different types of errors
+        if (error.response) {
+            const statusCode = error.response.status;
+            const message =
+                error.response.data?.message || error.response.data?.detail;
+
+            switch (statusCode) {
+                case 401:
+                    throw new Error("Unauthorized. Please login again.");
+                case 404:
+                    throw new Error("User profile not found.");
+                case 500:
+                    throw new Error("Server error. Please try again later.");
+                default:
+                    throw new Error(message || "Failed to fetch user profile.");
+            }
+        } else if (error.request) {
+            throw new Error(
+                "Network error. Please check your internet connection."
+            );
+        } else {
+            throw new Error(error.message || "An unexpected error occurred.");
+        }
     }
 };
 
@@ -74,9 +107,13 @@ export const updateUserProfile = async (profileData) => {
             filteredData.nickname = profileData.nickname.trim();
         }
 
-        const response = await axios.put(`/api/users/profile`, filteredData, {
-            headers: getAuthHeaders(),
-        });
+        const response = await apiClient.put(
+            `/api/users/profile`,
+            filteredData,
+            {
+                headers: getAuthHeaders(),
+            }
+        );
 
         const updatedUser = response.data;
 
@@ -97,6 +134,34 @@ export const updateUserProfile = async (profileData) => {
         return updatedUser;
     } catch (error) {
         console.error("Error updating user profile:", error);
+
+        // Handle different types of errors
+        if (error.response) {
+            const statusCode = error.response.status;
+            const message =
+                error.response.data?.message || error.response.data?.detail;
+
+            switch (statusCode) {
+                case 400:
+                    throw new Error(
+                        message || "Invalid profile data provided."
+                    );
+                case 401:
+                    throw new Error("Unauthorized. Please login again.");
+                case 422:
+                    throw new Error(message || "Invalid data format.");
+                case 500:
+                    throw new Error("Server error. Please try again later.");
+                default:
+                    throw new Error(message || "Failed to update profile.");
+            }
+        } else if (error.request) {
+            throw new Error(
+                "Network error. Please check your internet connection."
+            );
+        } else {
+            throw new Error(error.message || "An unexpected error occurred.");
+        }
     }
 };
 
@@ -108,7 +173,7 @@ export const updateUserProfile = async (profileData) => {
  */
 export const updateUserTheme = async (theme) => {
     try {
-        const response = await axios.put(
+        const response = await apiClient.put(
             `/api/users/theme`,
             { theme },
             {
@@ -131,6 +196,30 @@ export const updateUserTheme = async (theme) => {
         return updatedUser;
     } catch (error) {
         console.error("Error updating user theme:", error);
+
+        // Handle different types of errors
+        if (error.response) {
+            const statusCode = error.response.status;
+            const message =
+                error.response.data?.message || error.response.data?.detail;
+
+            switch (statusCode) {
+                case 400:
+                    throw new Error(message || "Invalid theme preference.");
+                case 401:
+                    throw new Error("Unauthorized. Please login again.");
+                case 500:
+                    throw new Error("Server error. Please try again later.");
+                default:
+                    throw new Error(message || "Failed to update theme.");
+            }
+        } else if (error.request) {
+            throw new Error(
+                "Network error. Please check your internet connection."
+            );
+        } else {
+            throw new Error(error.message || "An unexpected error occurred.");
+        }
     }
 };
 
@@ -141,7 +230,7 @@ export const updateUserTheme = async (theme) => {
  */
 export const deleteAccount = async () => {
     try {
-        const response = await axios.delete(`/api/users/account`, {
+        const response = await apiClient.delete(`/api/users/account`, {
             headers: getAuthHeaders(),
         });
 
@@ -151,6 +240,31 @@ export const deleteAccount = async () => {
         return response.data;
     } catch (error) {
         console.error("Error deleting account:", error);
+
+        // Handle different types of errors
+        if (error.response) {
+            const statusCode = error.response.status;
+            const message =
+                error.response.data?.message || error.response.data?.detail;
+
+            switch (statusCode) {
+                case 401:
+                    throw new Error("Unauthorized. Please login again.");
+                case 403:
+                    throw new Error("Account deletion not allowed.");
+                case 500:
+                    throw new Error("Server error. Please try again later.");
+                default:
+                    throw new Error(message || "Failed to delete account.");
+            }
+        } else if (error.request) {
+            throw new Error(
+                "Network error. Please check your internet connection."
+            );
+        } else {
+            throw new Error(error.message || "An unexpected error occurred.");
+        }
+
         // Clear cookies even if API call fails
         Cookies.remove("user");
     }
