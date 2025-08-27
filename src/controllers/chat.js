@@ -170,7 +170,7 @@ export async function sendMessageToBackend(
     let endpoint;
     if (isAudioOnly && !hasText && processedFiles.length > 0) {
         // Audio-only files without text content go to audio endpoint
-        endpoint = `/api/conversations/${conversationId}/${userId}/audio`;
+        endpoint = `/api/conversations/${conversationId}/${userId}/stream`;
     } else {
         // Everything else goes to standard endpoint
         endpoint = `/api/conversations/${conversationId}/${userId}/stream`;

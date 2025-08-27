@@ -204,79 +204,69 @@ const Sidebar = ({
                     isOpen ? "w-64" : "w-16"
                 } bg-gray-800 text-white flex flex-col overflow-hidden relative`}
             >
-                {/* Header */}
-                <div className="px-3 py-4 flex-shrink-0">
-                    <div
-                        className={`flex items-center gap-2 ${
-                            isOpen ? "mb-6 md:mb-8" : "mb-6 justify-center"
-                        }`}
+                {/* ===== Header (toggle + centered logo) ===== */}
+                <div className="px-3 py-4 flex-shrink-0 relative flex items-center justify-center">
+                    {/* Toggle button — always clickable */}
+                    <button
+                        onClick={onToggle}
+                        className={`${
+                            isOpen ? "absolute left-3" : ""
+                        } p-2 hover:bg-gray-700 rounded transition-colors z-10`}
+                        title={isOpen ? "Collapse sidebar" : "Expand sidebar"}
+                        aria-label={
+                            isOpen ? "Collapse sidebar" : "Expand sidebar"
+                        }
                     >
                         {isOpen ? (
-                            <>
-                                <button
-                                    onClick={onToggle}
-                                    className="p-1 hover:bg-gray-700 rounded transition-colors"
-                                >
-                                    <svg
-                                        className="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M15 19l-7-7 7-7"
-                                        />
-                                    </svg>
-                                </button>
-
-                                {/* Logo Container - Centered */}
-                                <div className="flex-1 flex justify-center">
-                                    {/* Logo Image */}
-                                    <img
-                                        src="/logo.png"
-                                        alt="AI Healthcare Assistant"
-                                        className="h-8 w-auto max-w-[180px] object-contain"
-                                        onError={(e) => {
-                                            // Fallback to a default icon if image fails to load
-                                            e.target.style.display = "none";
-                                            e.target.nextSibling.style.display =
-                                                "flex";
-                                        }}
-                                    />
-
-                                    {/* Fallback Icon (hidden by default, shown if image fails) */}
-                                    <div
-                                        className="h-8 w-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center"
-                                        style={{ display: "none" }}
-                                    >
-                                        <svg
-                                            className="w-5 h-5 text-white"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                                            />
-                                        </svg>
-                                    </div>
-                                </div>
-                            </>
-                        ) : (
-                            <button
-                                onClick={onToggle}
-                                className="p-2 hover:bg-gray-700 rounded transition-colors"
-                                title="Expand sidebar"
-                                aria-label="Expand sidebar"
+                            <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
                             >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M15 19l-7-7 7-7"
+                                />
+                            </svg>
+                        ) : (
+                            <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M4 6h16M4 12h16M4 18h16"
+                                />
+                            </svg>
+                        )}
+                    </button>
+
+                    {/* Centered logo — render only when open so it can't block clicks when closed */}
+                    {isOpen && (
+                        <>
+                            <img
+                                src="/logo.png"
+                                alt="AI Healthcare Assistant"
+                                className="h-8 w-auto max-w-[180px] object-contain mx-auto pointer-events-none"
+                                onError={(e) => {
+                                    e.currentTarget.style.display = "none";
+                                    const fallback =
+                                        e.currentTarget.nextElementSibling;
+                                    if (fallback)
+                                        fallback.classList.remove("hidden");
+                                }}
+                            />
+                            {/* Fallback Icon */}
+                            <div className="hidden h-8 w-8 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg items-center justify-center">
                                 <svg
-                                    className="w-5 h-5"
+                                    className="w-5 h-5 text-white"
                                     fill="none"
                                     stroke="currentColor"
                                     viewBox="0 0 24 24"
@@ -285,67 +275,67 @@ const Sidebar = ({
                                         strokeLinecap="round"
                                         strokeLinejoin="round"
                                         strokeWidth={2}
-                                        d="M4 6h16M4 12h16M4 18h16"
+                                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
                                     />
                                 </svg>
-                            </button>
-                        )}
-                    </div>
+                            </div>
+                        </>
+                    )}
+                </div>
 
-                    {/* Button Container */}
-                    <div className="space-y-2">
-                        {/* New Chat Button */}
-                        <button
-                            onClick={handleStartNewChat}
-                            className={`w-full bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all duration-200 text-sm font-medium touch-manipulation ${
-                                isOpen
-                                    ? "px-3 py-2.5 md:py-2.5 flex items-center gap-2"
-                                    : "p-3 flex items-center justify-center"
-                            }`}
-                            title={!isOpen ? "New chat" : ""}
+                {/* ===== Button Container (New chat + Search chats) ===== */}
+                <div className="space-y-2 px-3">
+                    {/* New Chat Button */}
+                    <button
+                        onClick={handleStartNewChat}
+                        className={`w-full bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-all duration-200 text-sm font-medium touch-manipulation ${
+                            isOpen
+                                ? "px-3 py-2.5 md:py-2.5 flex items-center gap-2"
+                                : "p-3 flex items-center justify-center"
+                        }`}
+                        title={!isOpen ? "New chat" : ""}
+                    >
+                        <svg
+                            className="w-4 h-4 flex-shrink-0"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
                         >
-                            <svg
-                                className="w-4 h-4 flex-shrink-0"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M12 4v16m8-8H4"
-                                />
-                            </svg>
-                            {isOpen && <span>New chat</span>}
-                        </button>
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 4v16m8-8H4"
+                            />
+                        </svg>
+                        {isOpen && <span>New chat</span>}
+                    </button>
 
-                        {/* Search Button */}
-                        <button
-                            onClick={handleSearchClick}
-                            className={`w-full bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-200 text-sm font-medium touch-manipulation ${
-                                isOpen
-                                    ? "px-3 py-2.5 flex items-center gap-2"
-                                    : "p-3 flex items-center justify-center"
-                            }`}
-                            title={!isOpen ? "Search chats" : ""}
+                    {/* Search Button */}
+                    <button
+                        onClick={handleSearchClick}
+                        className={`w-full bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all duration-200 text-sm font-medium touch-manipulation ${
+                            isOpen
+                                ? "px-3 py-2.5 flex items-center gap-2"
+                                : "p-3 flex items-center justify-center"
+                        }`}
+                        title={!isOpen ? "Search chats" : ""}
+                    >
+                        <svg
+                            className="w-4 h-4 flex-shrink-0"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
                         >
-                            <svg
-                                className="w-4 h-4 flex-shrink-0"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                                />
-                            </svg>
-                            {isOpen && <span>Search chats</span>}
-                        </button>
-                    </div>
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                            />
+                        </svg>
+                        {isOpen && <span>Search chats</span>}
+                    </button>
                 </div>
 
                 {/* Recents Section */}
