@@ -136,9 +136,9 @@ export default function ChatInput({
 
         setUploadedFiles((prev) => [...prev, fileWithId]);
 
-        if (onAudioFileUpload) {
-            onAudioFileUpload(audioFile);
-        }
+        // if (onAudioFileUpload) {
+        //     onAudioFileUpload(audioFile);
+        // }
 
         if (audioFileInputRef.current) {
             audioFileInputRef.current.value = "";
@@ -391,7 +391,8 @@ export default function ChatInput({
                             />
                         </svg>
                         <span className="text-xs sm:text-sm text-amber-700 dark:text-amber-300 font-medium">
-                            Maximum file limit reached ({MAX_FILES}/{MAX_FILES}). Remove a file to upload more.
+                            Maximum file limit reached ({MAX_FILES}/{MAX_FILES}
+                            ). Remove a file to upload more.
                         </span>
                     </div>
                 )}
@@ -413,7 +414,9 @@ export default function ChatInput({
                             />
                         </svg>
                         <span className="text-xs sm:text-sm text-purple-700 dark:text-purple-300 font-medium">
-                            Audio mode active - Only audio files can be uploaded. Remove audio files to upload other file types.
+                            Audio mode active - Only audio files can be
+                            uploaded. Remove audio files to upload other file
+                            types.
                         </span>
                     </div>
                 )}
@@ -434,7 +437,9 @@ export default function ChatInput({
                             />
                         </svg>
                         <span className="text-xs sm:text-sm text-blue-700 dark:text-blue-300 font-medium">
-                            Document mode active - Only images, PDFs, and text files can be uploaded. Remove other files to upload audio files.
+                            Document mode active - Only images, PDFs, and text
+                            files can be uploaded. Remove other files to upload
+                            audio files.
                         </span>
                     </div>
                 )}
@@ -447,7 +452,9 @@ export default function ChatInput({
                                 ? "border-blue-300 shadow-blue-100 shadow-sm dark:border-blue-500/70"
                                 : "border-gray-300 dark:border-neutral-700 shadow-sm"
                         } ${
-                            isDragOver ? "border-orange-400 bg-orange-50 dark:bg-orange-900/30" : ""
+                            isDragOver
+                                ? "border-orange-400 bg-orange-50 dark:bg-orange-900/30"
+                                : ""
                         }`}
                         style={{ minHeight: "56px" }}
                     >
