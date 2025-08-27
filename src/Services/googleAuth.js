@@ -6,14 +6,6 @@ class GoogleAuthService {
         this.clientId = app.googleClientId;
         this.isInitialized = false;
         this.authInstance = null;
-
-        // Debug: Check if client ID is loaded
-        console.log("Google Client ID:", this.clientId);
-        if (!this.clientId) {
-            console.error(
-                "Google Client ID is missing! Check your .env file and config."
-            );
-        }
     }
 
     // Load Google API script dynamically
