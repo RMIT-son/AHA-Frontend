@@ -45,7 +45,6 @@ const Sidebar = ({
 
     const displayName = user?.fullName || user?.name || "Dr. Assistant";
     const displayInitial = displayName.charAt(0).toUpperCase();
-    const userRole = user?.role || "Healthcare AI";
 
     const formatChatName = (room) => {
         if (room.title && room.title.trim() !== "") {
@@ -249,15 +248,15 @@ const Sidebar = ({
             <div
                 className={`transition-all duration-300 ease-in-out ${
                     isOpen ? "w-72" : "w-16"
-                } bg-gradient-to-b from-slate-50 to-emerald-50 border-r border-emerald-200 text-slate-800 flex flex-col overflow-hidden relative shadow-lg`}
+                } bg-gradient-to-b from-slate-50 to-emerald-50 dark:from-slate-900 dark:to-slate-800 border-r border-emerald-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 flex flex-col overflow-hidden relative shadow-lg`}
             >
                 {/* Medical Header */}
-                <div className="px-4 py-5 flex-shrink-0 relative flex items-center justify-center border-b border-emerald-100 bg-white/70">
+                <div className="px-4 py-5 flex-shrink-0 relative flex items-center justify-center border-b border-emerald-100 dark:border-slate-700 bg-white/70 dark:bg-slate-800/70">
                     <button
                         onClick={onToggle}
                         className={`${
                             isOpen ? "absolute left-4" : ""
-                        } p-2 hover:bg-emerald-100 rounded-lg transition-colors z-10 text-emerald-700`}
+                        } p-2 hover:bg-emerald-100 dark:hover:bg-slate-700 rounded-lg transition-colors z-10 text-emerald-700 dark:text-emerald-400`}
                         title={isOpen ? "Collapse sidebar" : "Expand sidebar"}
                     >
                         {isOpen ? (
@@ -282,7 +281,7 @@ const Sidebar = ({
                     {isOpen && (
                         <div className="flex flex-col items-center">
                             <div className="flex items-center gap-2 mb-1">
-                                <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center">
+                                <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 rounded-full flex items-center justify-center">
                                     <svg
                                         className="w-5 h-5 text-white"
                                         fill="none"
@@ -297,7 +296,7 @@ const Sidebar = ({
                                         />
                                     </svg>
                                 </div>
-                                <h1 className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 bg-clip-text text-transparent">
+                                <h1 className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 dark:from-emerald-400 dark:to-emerald-600 bg-clip-text text-transparent">
                                     HealthCare AI
                                 </h1>
                             </div>
@@ -309,7 +308,7 @@ const Sidebar = ({
                 <div className="space-y-3 px-4 py-4">
                     <button
                         onClick={handleStartNewChat}
-                        className={`w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-xl transition-all duration-200 text-sm font-semibold shadow-md hover:shadow-lg touch-manipulation ${
+                        className={`w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 dark:from-emerald-700 dark:to-emerald-800 dark:hover:from-emerald-800 dark:hover:to-emerald-900 text-white rounded-xl transition-all duration-200 text-sm font-semibold shadow-md hover:shadow-lg touch-manipulation ${
                             isOpen
                                 ? "px-4 py-3 flex items-center gap-3"
                                 : "p-3 flex items-center justify-center"
@@ -322,7 +321,7 @@ const Sidebar = ({
 
                     <button
                         onClick={handleSearchClick}
-                        className={`w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-emerald-300 rounded-xl transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md touch-manipulation ${
+                        className={`w-full bg-white hover:bg-slate-50 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-200 hover:border-emerald-300 dark:border-slate-600 dark:hover:border-emerald-500 rounded-xl transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md touch-manipulation ${
                             isOpen
                                 ? "px-4 py-3 flex items-center gap-3"
                                 : "p-3 flex items-center justify-center"
@@ -339,7 +338,7 @@ const Sidebar = ({
                     <div className="flex-1 overflow-y-auto px-4 pb-4">
                         {sortedChatRooms.length > 0 && (
                             <>
-                                <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider mb-4 px-2">
+                                <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-4 px-2">
                                     <HealthcareIcon type="patient" />
                                     Recent Consultations
                                 </div>
@@ -349,8 +348,8 @@ const Sidebar = ({
                                             key={room.id}
                                             className={`relative group rounded-lg transition-all duration-200 ${
                                                 activeRoomId === room.id
-                                                    ? "bg-emerald-100 border border-emerald-200 shadow-sm"
-                                                    : "hover:bg-white hover:shadow-sm border border-transparent hover:border-slate-200"
+                                                    ? "bg-emerald-100 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 shadow-sm"
+                                                    : "hover:bg-white dark:hover:bg-slate-800 hover:shadow-sm border border-transparent hover:border-slate-200 dark:hover:border-slate-600"
                                             } cursor-pointer`}
                                         >
                                             <div className="flex items-center">
@@ -367,8 +366,8 @@ const Sidebar = ({
                                                             className={`truncate block font-medium ${
                                                                 activeRoomId ===
                                                                 room.id
-                                                                    ? "text-emerald-800"
-                                                                    : "text-slate-700 group-hover:text-slate-900"
+                                                                    ? "text-emerald-800 dark:text-emerald-300"
+                                                                    : "text-slate-700 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-slate-100"
                                                             }`}
                                                         >
                                                             {formatChatName(
@@ -376,7 +375,7 @@ const Sidebar = ({
                                                             )}
                                                         </span>
                                                         {room.lastMessageTime && (
-                                                            <span className="text-xs text-slate-500 mt-1 block">
+                                                            <span className="text-xs text-slate-500 dark:text-slate-400 mt-1 block">
                                                                 {new Date(
                                                                     room.lastMessageTime
                                                                 ).toLocaleDateString(
@@ -401,14 +400,14 @@ const Sidebar = ({
                                                                 e
                                                             )
                                                         }
-                                                        className={`p-2 mr-2 hover:bg-slate-200 rounded-lg transition-all duration-200 touch-manipulation ${
+                                                        className={`p-2 mr-2 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-all duration-200 touch-manipulation ${
                                                             isMobile
                                                                 ? "opacity-100"
                                                                 : "opacity-0 group-hover:opacity-100"
                                                         }`}
                                                     >
                                                         <svg
-                                                            className="w-4 h-4 text-slate-500 hover:text-slate-700"
+                                                            className="w-4 h-4 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
                                                             fill="currentColor"
                                                             viewBox="0 0 20 20"
                                                         >
@@ -418,7 +417,7 @@ const Sidebar = ({
 
                                                     {activeDropdown ===
                                                         room.id && (
-                                                        <div className="absolute right-0 top-10 w-48 bg-white rounded-lg border border-slate-200 shadow-lg z-10 overflow-hidden">
+                                                        <div className="absolute right-0 top-10 w-48 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600 shadow-lg z-10 overflow-hidden">
                                                             <button
                                                                 onClick={(e) =>
                                                                     handleRename(
@@ -426,7 +425,7 @@ const Sidebar = ({
                                                                         e
                                                                     )
                                                                 }
-                                                                className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
+                                                                className="w-full text-left px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
                                                             >
                                                                 <svg
                                                                     className="w-4 h-4"
@@ -445,7 +444,7 @@ const Sidebar = ({
                                                                 </svg>
                                                                 Rename Session
                                                             </button>
-                                                            <div className="border-t border-slate-100">
+                                                            <div className="border-t border-slate-100 dark:border-slate-600">
                                                                 <button
                                                                     onClick={(
                                                                         e
@@ -455,7 +454,7 @@ const Sidebar = ({
                                                                             e
                                                                         )
                                                                     }
-                                                                    className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-3"
+                                                                    className="w-full text-left px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-3"
                                                                 >
                                                                     <svg
                                                                         className="w-4 h-4"
@@ -489,32 +488,29 @@ const Sidebar = ({
                 )}
 
                 {/* Medical Professional Profile */}
-                <div className="p-4 border-t border-emerald-100 mt-auto bg-white/50">
+                <div className="p-4 border-t border-emerald-100 dark:border-slate-700 mt-auto bg-white/50 dark:bg-slate-800/50">
                     <div className="relative">
                         <button
                             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                            className={`w-full hover:bg-white/70 rounded-lg transition-colors text-sm border border-transparent hover:border-emerald-200 ${
+                            className={`w-full hover:bg-white/70 dark:hover:bg-slate-700/70 rounded-lg transition-colors text-sm border border-transparent hover:border-emerald-200 dark:hover:border-slate-600 ${
                                 isOpen
                                     ? "flex items-center gap-3 p-3"
                                     : "p-3 flex items-center justify-center"
                             }`}
                             title={!isOpen ? displayName : ""}
                         >
-                            <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center font-bold text-white text-sm flex-shrink-0 shadow-sm">
+                            <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 rounded-full flex items-center justify-center font-bold text-white text-sm flex-shrink-0 shadow-sm">
                                 {displayInitial}
                             </div>
                             {isOpen && (
                                 <>
                                     <div className="flex-1 text-left min-w-0">
-                                        <div className="font-semibold text-slate-800 truncate">
+                                        <div className="font-semibold text-slate-800 dark:text-slate-200 truncate">
                                             {displayName}
-                                        </div>
-                                        <div className="text-xs text-slate-600 truncate">
-                                            {userRole}
                                         </div>
                                     </div>
                                     <svg
-                                        className={`w-4 h-4 text-slate-500 transition-transform flex-shrink-0 ${
+                                        className={`w-4 h-4 text-slate-500 dark:text-slate-400 transition-transform flex-shrink-0 ${
                                             isUserMenuOpen ? "rotate-180" : ""
                                         }`}
                                         fill="none"
@@ -533,9 +529,9 @@ const Sidebar = ({
                         </button>
 
                         {isUserMenuOpen && isOpen && (
-                            <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg border border-slate-200 shadow-lg overflow-hidden">
+                            <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600 shadow-lg overflow-hidden">
                                 <button
-                                    className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
+                                    className="w-full text-left px-4 py-3 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-3"
                                     onClick={() => {
                                         setIsUserMenuOpen(false);
                                         navigate("/settings/profile");
@@ -560,37 +556,12 @@ const Sidebar = ({
                                             d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                                         />
                                     </svg>
-                                    Medical Settings
+                                    Settings
                                 </button>
 
-                                <div className="border-t border-slate-100">
+                                <div className="border-t border-slate-100 dark:border-slate-600">
                                     <button
-                                        className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
-                                        onClick={() => {
-                                            setIsUserMenuOpen(false);
-                                            // Add help/documentation navigation
-                                        }}
-                                    >
-                                        <svg
-                                            className="w-4 h-4"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth={2}
-                                                d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                            />
-                                        </svg>
-                                        Help & Documentation
-                                    </button>
-                                </div>
-
-                                <div className="border-t border-slate-100">
-                                    <button
-                                        className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-3"
+                                        className="w-full text-left px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center gap-3"
                                         onClick={handleLogout}
                                     >
                                         <svg
