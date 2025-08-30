@@ -3,10 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import ConversationModal from "./ConversationModal";
 import SearchChatModal from "./SearchChatModal";
-import { searchAllChats } from "../controllers/chat";
 import Cookies from "js-cookie";
 
-const Sidebar = ({
+const MobileSidebar = ({
     isOpen,
     chatRooms = [],
     onSelectRoom,
@@ -24,24 +23,10 @@ const Sidebar = ({
         roomId: null,
         roomName: "",
     });
-
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
-    const [searchQuery, setSearchQuery] = useState("");
-    const [searchResult, setSearchResults] = useState([]);
-    const [isMobile, setIsMobile] = useState(false);
 
     const navigate = useNavigate();
     const dispatch = useDispatch();
-
-    useEffect(() => {
-        const checkMobile = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
-
-        checkMobile();
-        window.addEventListener("resize", checkMobile);
-        return () => window.removeEventListener("resize", checkMobile);
-    }, []);
 
     const displayName = user?.fullName || user?.name || "Dr. Assistant";
     const displayInitial = displayName.charAt(0).toUpperCase();
@@ -51,11 +36,9 @@ const Sidebar = ({
         if (room.title && room.title.trim() !== "") {
             return room.title;
         }
-
         if (room.name && room.name !== `Chat ${room.id?.slice(-5)}`) {
             return room.name;
         }
-
         return room.lastMessageSnippet &&
             room.lastMessageSnippet !== "No messages yet"
             ? room.lastMessageSnippet.slice(0, 30) + "..."
@@ -79,9 +62,7 @@ const Sidebar = ({
         if (onSelectRoom) {
             onSelectRoom(null);
         }
-        if (isMobile && isOpen) {
-            onToggle();
-        }
+        onToggle(); // Close sidebar after selection
     };
 
     const handleDropdownToggle = (roomId, e) => {
@@ -144,9 +125,7 @@ const Sidebar = ({
         if (onSelectRoom) {
             onSelectRoom(chatId);
         }
-        if (isMobile && isOpen) {
-            onToggle();
-        }
+        onToggle(); // Close sidebar after selection
     };
 
     const handleLogout = () => {
@@ -164,9 +143,7 @@ const Sidebar = ({
         if (onSelectRoom) {
             onSelectRoom(roomId);
         }
-        if (isMobile && isOpen) {
-            onToggle();
-        }
+        onToggle(); // Close sidebar after selection
     };
 
     useEffect(() => {
@@ -210,21 +187,6 @@ const Sidebar = ({
                     />
                 </svg>
             ),
-            stethoscope: (
-                <svg
-                    className="w-5 h-5"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2z"
-                    />
-                </svg>
-            ),
             patient: (
                 <svg
                     className="w-4 h-4"
@@ -240,48 +202,51 @@ const Sidebar = ({
                     />
                 </svg>
             ),
+            close: (
+                <svg
+                    className="w-5 h-5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                >
+                    <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 19l-7-7 7-7"
+                    />
+                </svg>
+            ),
         };
         return icons[type] || icons.default;
     };
 
     return (
         <>
+            {/* Mobile Overlay */}
             <div
-                className={`transition-all duration-300 ease-in-out ${
-                    isOpen ? "w-72" : "w-16"
-                } bg-gradient-to-b from-slate-50 to-emerald-50 border-r border-emerald-200 text-slate-800 flex flex-col overflow-hidden relative shadow-lg`}
-            >
-                {/* Medical Header */}
-                <div className="px-4 py-5 flex-shrink-0 relative flex items-center justify-center border-b border-emerald-100 bg-white/70">
-                    <button
-                        onClick={onToggle}
-                        className={`${
-                            isOpen ? "absolute left-4" : ""
-                        } p-2 hover:bg-emerald-100 rounded-lg transition-colors z-10 text-emerald-700`}
-                        title={isOpen ? "Collapse sidebar" : "Expand sidebar"}
-                    >
-                        {isOpen ? (
-                            <svg
-                                className="w-5 h-5"
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
-                            >
-                                <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth={2}
-                                    d="M15 19l-7-7 7-7"
-                                />
-                            </svg>
-                        ) : (
-                            <HealthcareIcon type="stethoscope" />
-                        )}
-                    </button>
+                className={`fixed inset-0 z-40 transition-opacity duration-300 ease-in-out md:hidden ${
+                    isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+                }`}
+                onClick={onToggle}
+                style={{
+                    backdropFilter: "blur(4px)",
+                    WebkitBackdropFilter: "blur(4px)",
+                }}
+            />
 
-                    {isOpen && (
-                        <div className="flex flex-col items-center">
-                            <div className="flex items-center gap-2 mb-1">
+            {/* Mobile Sidebar */}
+            <div
+                className={`fixed inset-y-0 left-0 w-80 z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
+                    isOpen ? "translate-x-0" : "-translate-x-full"
+                }`}
+                style={{ height: "100vh" }}
+            >
+                <div className="h-full bg-gradient-to-b from-slate-50 to-emerald-50 text-slate-800 flex flex-col overflow-hidden shadow-xl">
+                    {/* Header */}
+                    <div className="px-4 py-5 flex-shrink-0 border-b border-emerald-100 bg-white/70">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center">
                                     <svg
                                         className="w-5 h-5 text-white"
@@ -301,42 +266,36 @@ const Sidebar = ({
                                     HealthCare AI
                                 </h1>
                             </div>
+                            <button
+                                onClick={onToggle}
+                                className="p-2 hover:bg-emerald-100 rounded-lg transition-colors text-emerald-700"
+                            >
+                                <HealthcareIcon type="close" />
+                            </button>
                         </div>
-                    )}
-                </div>
 
-                {/* Quick Actions */}
-                <div className="space-y-3 px-4 py-4">
-                    <button
-                        onClick={handleStartNewChat}
-                        className={`w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-xl transition-all duration-200 text-sm font-semibold shadow-md hover:shadow-lg touch-manipulation ${
-                            isOpen
-                                ? "px-4 py-3 flex items-center gap-3"
-                                : "p-3 flex items-center justify-center"
-                        }`}
-                        title={!isOpen ? "New Consultation" : ""}
-                    >
-                        <HealthcareIcon type="consultation" />
-                        {isOpen && <span>New Consultation</span>}
-                    </button>
+                        {/* Quick Actions */}
+                        <div className="space-y-3">
+                            <button
+                                onClick={handleStartNewChat}
+                                className="w-full bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white rounded-xl px-4 py-4 flex items-center gap-3 text-sm font-semibold shadow-md hover:shadow-lg transition-all duration-200 touch-manipulation"
+                            >
+                                <HealthcareIcon type="consultation" />
+                                <span>New Consultation</span>
+                            </button>
 
-                    <button
-                        onClick={handleSearchClick}
-                        className={`w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-emerald-300 rounded-xl transition-all duration-200 text-sm font-medium shadow-sm hover:shadow-md touch-manipulation ${
-                            isOpen
-                                ? "px-4 py-3 flex items-center gap-3"
-                                : "p-3 flex items-center justify-center"
-                        }`}
-                        title={!isOpen ? "Search Patient Records" : ""}
-                    >
-                        <HealthcareIcon type="search" />
-                        {isOpen && <span>Search Past Consultations</span>}
-                    </button>
-                </div>
+                            <button
+                                onClick={handleSearchClick}
+                                className="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 hover:border-emerald-300 rounded-xl px-4 py-4 flex items-center gap-3 text-sm font-medium shadow-sm hover:shadow-md transition-all duration-200 touch-manipulation"
+                            >
+                                <HealthcareIcon type="search" />
+                                <span>Search Past Consultations</span>
+                            </button>
+                        </div>
+                    </div>
 
-                {/* Patient Sessions */}
-                {isOpen && (
-                    <div className="flex-1 overflow-y-auto px-4 pb-4">
+                    {/* Patient Sessions */}
+                    <div className="flex-1 overflow-y-auto px-4 py-4">
                         {sortedChatRooms.length > 0 && (
                             <>
                                 <div className="flex items-center gap-2 text-xs font-semibold text-slate-600 uppercase tracking-wider mb-4 px-2">
@@ -401,11 +360,7 @@ const Sidebar = ({
                                                                 e
                                                             )
                                                         }
-                                                        className={`p-2 mr-2 hover:bg-slate-200 rounded-lg transition-all duration-200 touch-manipulation ${
-                                                            isMobile
-                                                                ? "opacity-100"
-                                                                : "opacity-0 group-hover:opacity-100"
-                                                        }`}
+                                                        className="p-3 mr-2 hover:bg-slate-200 rounded-lg transition-all duration-200 touch-manipulation"
                                                     >
                                                         <svg
                                                             className="w-4 h-4 text-slate-500 hover:text-slate-700"
@@ -418,7 +373,7 @@ const Sidebar = ({
 
                                                     {activeDropdown ===
                                                         room.id && (
-                                                        <div className="absolute right-0 top-10 w-48 bg-white rounded-lg border border-slate-200 shadow-lg z-10 overflow-hidden">
+                                                        <div className="absolute right-0 top-12 w-56 bg-white rounded-lg border border-slate-200 shadow-xl z-10 overflow-hidden">
                                                             <button
                                                                 onClick={(e) =>
                                                                     handleRename(
@@ -426,7 +381,7 @@ const Sidebar = ({
                                                                         e
                                                                     )
                                                                 }
-                                                                className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
+                                                                className="w-full text-left px-4 py-4 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3 touch-manipulation"
                                                             >
                                                                 <svg
                                                                     className="w-4 h-4"
@@ -455,7 +410,7 @@ const Sidebar = ({
                                                                             e
                                                                         )
                                                                     }
-                                                                    className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-3"
+                                                                    className="w-full text-left px-4 py-4 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-3 touch-manipulation"
                                                                 >
                                                                     <svg
                                                                         className="w-4 h-4"
@@ -486,89 +441,52 @@ const Sidebar = ({
                             </>
                         )}
                     </div>
-                )}
 
-                {/* Medical Professional Profile */}
-                <div className="p-4 border-t border-emerald-100 mt-auto bg-white/50">
-                    <div className="relative">
-                        <button
-                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                            className={`w-full hover:bg-white/70 rounded-lg transition-colors text-sm border border-transparent hover:border-emerald-200 ${
-                                isOpen
-                                    ? "flex items-center gap-3 p-3"
-                                    : "p-3 flex items-center justify-center"
-                            }`}
-                            title={!isOpen ? displayName : ""}
-                        >
-                            <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center font-bold text-white text-sm flex-shrink-0 shadow-sm">
-                                {displayInitial}
-                            </div>
-                            {isOpen && (
-                                <>
-                                    <div className="flex-1 text-left min-w-0">
-                                        <div className="font-semibold text-slate-800 truncate">
-                                            {displayName}
-                                        </div>
-                                        <div className="text-xs text-slate-600 truncate">
-                                            {userRole}
-                                        </div>
+                    {/* Medical Professional Profile */}
+                    <div className="p-4 border-t border-emerald-100 bg-white/50 flex-shrink-0">
+                        <div className="relative">
+                            <button
+                                onClick={() =>
+                                    setIsUserMenuOpen(!isUserMenuOpen)
+                                }
+                                className="w-full hover:bg-white/70 rounded-lg transition-colors text-sm border border-transparent hover:border-emerald-200 flex items-center gap-3 p-3 touch-manipulation"
+                            >
+                                <div className="w-10 h-10 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0 shadow-sm">
+                                    {displayInitial}
+                                </div>
+                                <div className="flex-1 text-left min-w-0">
+                                    <div className="font-semibold text-slate-800 truncate text-base">
+                                        {displayName}
                                     </div>
-                                    <svg
-                                        className={`w-4 h-4 text-slate-500 transition-transform flex-shrink-0 ${
-                                            isUserMenuOpen ? "rotate-180" : ""
-                                        }`}
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M19 9l-7 7-7-7"
-                                        />
-                                    </svg>
-                                </>
-                            )}
-                        </button>
-
-                        {isUserMenuOpen && isOpen && (
-                            <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg border border-slate-200 shadow-lg overflow-hidden">
-                                <button
-                                    className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
-                                    onClick={() => {
-                                        setIsUserMenuOpen(false);
-                                        navigate("/settings/profile");
-                                    }}
+                                    <div className="text-sm text-slate-600 truncate">
+                                        {userRole}
+                                    </div>
+                                </div>
+                                <svg
+                                    className={`w-5 h-5 text-slate-500 transition-transform flex-shrink-0 ${
+                                        isUserMenuOpen ? "rotate-180" : ""
+                                    }`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
                                 >
-                                    <svg
-                                        className="w-4 h-4"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
-                                        />
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                        />
-                                    </svg>
-                                    Medical Settings
-                                </button>
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M19 9l-7 7-7-7"
+                                    />
+                                </svg>
+                            </button>
 
-                                <div className="border-t border-slate-100">
+                            {isUserMenuOpen && (
+                                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg border border-slate-200 shadow-xl overflow-hidden">
                                     <button
-                                        className="w-full text-left px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3"
+                                        className="w-full text-left px-4 py-4 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3 touch-manipulation"
                                         onClick={() => {
                                             setIsUserMenuOpen(false);
-                                            // Add help/documentation navigation
+                                            navigate("/settings/profile");
+                                            onToggle();
                                         }}
                                     >
                                         <svg
@@ -581,36 +499,70 @@ const Sidebar = ({
                                                 strokeLinecap="round"
                                                 strokeLinejoin="round"
                                                 strokeWidth={2}
-                                                d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
                                             />
-                                        </svg>
-                                        Help & Documentation
-                                    </button>
-                                </div>
-
-                                <div className="border-t border-slate-100">
-                                    <button
-                                        className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-3"
-                                        onClick={handleLogout}
-                                    >
-                                        <svg
-                                            className="w-4 h-4"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
                                             <path
                                                 strokeLinecap="round"
                                                 strokeLinejoin="round"
                                                 strokeWidth={2}
-                                                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
                                             />
                                         </svg>
-                                        Sign Out
+                                        Medical Settings
                                     </button>
+
+                                    <div className="border-t border-slate-100">
+                                        <button
+                                            className="w-full text-left px-4 py-4 text-sm text-slate-700 hover:bg-slate-50 transition-colors flex items-center gap-3 touch-manipulation"
+                                            onClick={() => {
+                                                setIsUserMenuOpen(false);
+                                                onToggle();
+                                            }}
+                                        >
+                                            <svg
+                                                className="w-4 h-4"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                                                />
+                                            </svg>
+                                            Help & Documentation
+                                        </button>
+                                    </div>
+
+                                    <div className="border-t border-slate-100">
+                                        <button
+                                            className="w-full text-left px-4 py-4 text-sm text-red-600 hover:bg-red-50 transition-colors flex items-center gap-3 touch-manipulation"
+                                            onClick={() => {
+                                                handleLogout();
+                                                onToggle();
+                                            }}
+                                        >
+                                            <svg
+                                                className="w-4 h-4"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                                                />
+                                            </svg>
+                                            Sign Out
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        )}
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
@@ -635,4 +587,4 @@ const Sidebar = ({
     );
 };
 
-export default Sidebar;
+export default MobileSidebar;

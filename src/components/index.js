@@ -17,3 +17,4 @@ export { default as StreamingStatus } from "./StatusIndicator/StreamingStatus";
 export { default as TranscribingStatus } from "./StatusIndicator/TranscribingStatus";
 export { default as SearchChatModal } from "./SearchChatModal";
 export {default as ErrorAlert} from "./Error/ErrorAlert";
+export {default as MobileSidebar} from "./MobileSidebar";
