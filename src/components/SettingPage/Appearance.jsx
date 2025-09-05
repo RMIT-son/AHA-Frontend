@@ -197,7 +197,7 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
                                 </div>
                                 <button
                                     onClick={() => setError("")}
-                                    className="ml-3 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200"
+                                    className="ml-3 text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 focus:outline-none focus:ring-2 focus:ring-red-500"
                                 >
                                     <svg
                                         className="w-4 h-4"
@@ -228,9 +228,9 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
                                             handleChangeTheme(theme.id)
                                         }
                                         disabled={updating}
-                                        className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left group hover:scale-[1.02] ${
+                                        className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left group hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 ${
                                             isActive
-                                                ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-lg ring-2 ring-blue-500/20"
+                                                ? "border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20 shadow-lg ring-2 ring-emerald-500/20"
                                                 : "border-gray-200 dark:border-neutral-700 hover:border-gray-300 dark:hover:border-neutral-600 hover:shadow-md"
                                         } disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100`}
                                     >
@@ -250,8 +250,8 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
                                                             className={`w-2 h-2 rounded-full ${
                                                                 theme.id ===
                                                                 "dark"
-                                                                    ? "bg-green-400"
-                                                                    : "bg-green-500"
+                                                                    ? "bg-emerald-400"
+                                                                    : "bg-emerald-500"
                                                             }`}
                                                         ></div>
                                                         <span
@@ -290,8 +290,8 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
                                                     <div
                                                         className={`inline-block px-3 py-1 rounded-full text-xs ${
                                                             theme.id === "dark"
-                                                                ? "bg-blue-600 text-white"
-                                                                : "bg-blue-100 text-blue-800"
+                                                                ? "bg-emerald-600 text-white"
+                                                                : "bg-emerald-100 text-emerald-800"
                                                         }`}
                                                     >
                                                         Example message
@@ -320,7 +320,7 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
                                             {/* Status Indicators */}
                                             <div className="flex flex-col items-end space-y-2 ml-3">
                                                 {isActive && (
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300">
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
                                                         <svg
                                                             className="w-3 h-3 mr-1"
                                                             fill="currentColor"
@@ -364,48 +364,12 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
 
                                         {/* Selection Ring */}
                                         {isActive && (
-                                            <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl opacity-20 blur-sm transition-opacity duration-200"></div>
+                                            <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl opacity-20 blur-sm transition-opacity duration-200"></div>
                                         )}
                                     </button>
                                 </div>
                             );
                         })}
-                    </div>
-                </div>
-            </div>
-
-            {/* Theme Benefits Info */}
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-6">
-                <div className="flex items-start">
-                    <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-                        <svg
-                            className="w-5 h-5 text-blue-600 dark:text-blue-400"
-                            fill="currentColor"
-                            viewBox="0 0 20 20"
-                        >
-                            <path
-                                fillRule="evenodd"
-                                d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
-                                clipRule="evenodd"
-                            />
-                        </svg>
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-200 mb-2">
-                            Theme Preferences
-                        </h3>
-                        <div className="text-sm text-blue-800 dark:text-blue-300 space-y-1">
-                            <p>
-                                <span className="font-medium">Light Mode:</span>{" "}
-                                Optimal for well-lit environments and daytime
-                                use
-                            </p>
-                            <p>
-                                <span className="font-medium">Dark Mode:</span>{" "}
-                                Reduces eye strain and saves battery on OLED
-                                screens
-                            </p>
-                        </div>
                     </div>
                 </div>
             </div>

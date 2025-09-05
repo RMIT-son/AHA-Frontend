@@ -20,20 +20,18 @@ export default function ChatInput({
     transcribedText = "",
     onTranscribedTextUsed,
     isTranscribing = false,
-    // New props for web search
     enableWebSearch = false,
     onWebSearchToggle,
     webSearchEnabled = false,
-    // New prop for audio file upload
     onAudioFileUpload,
 }) {
+    // State management
     const [message, setMessage] = useState("");
     const [uploadedFiles, setUploadedFiles] = useState([]);
     const [isDragOver, setIsDragOver] = useState(false);
-    const [searchResults, setSearchResults] = useState([]);
-    const [isSearching, setIsSearching] = useState(false);
     const [showAudioUploadMenu, setShowAudioUploadMenu] = useState(false);
 
+    // Refs
     const textareaRef = useRef(null);
     const audioFileInputRef = useRef(null);
     const audioMenuRef = useRef(null);
@@ -41,7 +39,7 @@ export default function ChatInput({
     // Constants
     const MAX_FILES = 4;
 
-    // File uploader hook with file limit check and mode restrictions
+    // File uploader hook
     const {
         fileInputRef,
         inputBubbleRef,
@@ -50,8 +48,6 @@ export default function ChatInput({
         getCurrentFileMode,
         getAcceptAttribute,
         getFileUploadTitle,
-        hasAudioFiles,
-        hasNonAudioFiles,
     } = FileUploader({
         uploadedFiles,
         setUploadedFiles,
@@ -61,7 +57,21 @@ export default function ChatInput({
         maxFiles: MAX_FILES,
     });
 
-    // Wrapper for file selection with limit and mode checks
+    // Voice recorder hook
+    const {
+        isRecording,
+        recordingTime,
+        startRecording,
+        stopRecording,
+        formatTime,
+        VoiceButton,
+    } = VoiceRecorder({
+        onVoiceRecord,
+        isTranscribing,
+        isDisabled: isLoading || isProcessing,
+    });
+
+    // File selection handler with validation
     const handleFileSelect = (e) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
@@ -80,14 +90,12 @@ export default function ChatInput({
         originalHandleFileSelect(e);
     };
 
-    // Handle audio file selection with mode restrictions
+    // Audio file selection handler
     const handleAudioFileSelect = (e) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
 
         const audioFile = files[0];
-
-        // Check if it's an audio file only
         const isAudioFile = audioFile.type.startsWith("audio/");
         const hasAudioExtension = /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(
             audioFile.name
@@ -100,7 +108,6 @@ export default function ChatInput({
             return;
         }
 
-        // Check file mode restrictions
         const currentMode = getCurrentFileMode();
         if (currentMode === "other") {
             alert(
@@ -112,7 +119,6 @@ export default function ChatInput({
             return;
         }
 
-        // Check file limit
         if (uploadedFiles.length >= MAX_FILES) {
             alert(
                 `You can only upload a maximum of ${MAX_FILES} files. You currently have ${uploadedFiles.length} file(s) uploaded.`
@@ -123,7 +129,6 @@ export default function ChatInput({
             return;
         }
 
-        // Create file object with ID for preview
         const fileWithId = {
             id: Date.now() + Math.random(),
             file: audioFile,
@@ -136,49 +141,13 @@ export default function ChatInput({
 
         setUploadedFiles((prev) => [...prev, fileWithId]);
 
-        // if (onAudioFileUpload) {
-        //     onAudioFileUpload(audioFile);
-        // }
-
         if (audioFileInputRef.current) {
             audioFileInputRef.current.value = "";
         }
         setShowAudioUploadMenu(false);
     };
 
-    // Close audio menu when clicking outside
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (
-                audioMenuRef.current &&
-                !audioMenuRef.current.contains(event.target)
-            ) {
-                setShowAudioUploadMenu(false);
-            }
-        };
-
-        if (showAudioUploadMenu) {
-            document.addEventListener("mousedown", handleClickOutside);
-            return () =>
-                document.removeEventListener("mousedown", handleClickOutside);
-        }
-    }, [showAudioUploadMenu]);
-
-    // Voice recorder hook
-    const {
-        isRecording,
-        recordingTime,
-        startRecording,
-        stopRecording,
-        formatTime,
-        VoiceButton,
-    } = VoiceRecorder({
-        onVoiceRecord,
-        isTranscribing,
-        isDisabled: isLoading || isProcessing,
-    });
-
-    // Handle transcribed text updates
+    // Handle transcribed text
     useEffect(() => {
         if (transcribedText && transcribedText.trim()) {
             setMessage((prev) => {
@@ -207,6 +176,36 @@ export default function ChatInput({
         }
     }, [transcribedText, onTranscribedTextUsed]);
 
+    // Auto-resize textarea
+    useEffect(() => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = "auto";
+            textareaRef.current.style.height = `${Math.min(
+                textareaRef.current.scrollHeight,
+                200
+            )}px`;
+        }
+    }, [message]);
+
+    // Close audio menu when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (
+                audioMenuRef.current &&
+                !audioMenuRef.current.contains(event.target)
+            ) {
+                setShowAudioUploadMenu(false);
+            }
+        };
+
+        if (showAudioUploadMenu) {
+            document.addEventListener("mousedown", handleClickOutside);
+            return () =>
+                document.removeEventListener("mousedown", handleClickOutside);
+        }
+    }, [showAudioUploadMenu]);
+
+    // Event handlers
     const handleSubmit = (e) => {
         e.preventDefault();
         if (
@@ -220,7 +219,6 @@ export default function ChatInput({
         onSend(message, uploadedFiles, { webSearchEnabled });
         setMessage("");
         setUploadedFiles([]);
-        setSearchResults([]);
     };
 
     const handleKeyDown = (e) => {
@@ -235,21 +233,11 @@ export default function ChatInput({
         }
     };
 
-    // Auto-resize textarea
-    useEffect(() => {
-        if (textareaRef.current) {
-            textareaRef.current.style.height = "auto";
-            textareaRef.current.style.height = `${Math.min(
-                textareaRef.current.scrollHeight,
-                200
-            )}px`;
-        }
-    }, [message]);
-
     const removeFile = (fileId) => {
         setUploadedFiles((prev) => prev.filter((file) => file.id !== fileId));
     };
 
+    // Utility functions
     const isFileUploadDisabled = () => {
         return (
             isLoading ||
@@ -276,37 +264,6 @@ export default function ChatInput({
         if (isStreaming)
             return "AI is responding... (Press Escape or send to interrupt)";
         return "How can I help you today?";
-    };
-
-    // Fixed research functionality (assumes conversationId/streamWebSearch exist in scope)
-    const handleResearch = async () => {
-        if (!message.trim() || !conversationId) return;
-
-        setIsSearching(true);
-        setSearchResults([]);
-
-        try {
-            await streamWebSearch(conversationId, message, (chunk) => {
-                setSearchResults((prev) => [...prev, chunk]);
-            });
-        } catch (error) {
-            console.error("Search failed:", error);
-        } finally {
-            setIsSearching(false);
-        }
-    };
-
-    const handleResearchClick = async () => {
-        if (!webSearchEnabled) {
-            onWebSearchToggle();
-            if (message.trim()) {
-                await handleResearch();
-            }
-        } else {
-            onWebSearchToggle();
-            setSearchResults([]);
-            setIsSearching(false);
-        }
     };
 
     const getInputButtonState = () => {
@@ -350,7 +307,8 @@ export default function ChatInput({
             return {
                 canSend: true,
                 buttonText: "Send message",
-                buttonColor: "bg-orange-500 hover:bg-orange-600 text-white",
+                buttonColor:
+                    "bg-emerald-600 hover:bg-emerald-700 text-white focus:ring-emerald-500",
                 disabled: false,
             };
         }
@@ -365,18 +323,17 @@ export default function ChatInput({
     const buttonState = getInputButtonState();
 
     return (
-        <div className="border-t border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 sm:px-4 md:px-6 py-3 sm:py-4 transition-colors duration-200">
+        <div className="border-t border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-4">
             <div className="max-w-4xl mx-auto">
                 <StreamingStatus
                     isStreaming={isStreaming}
                     onCancelStream={onCancelStream}
                 />
-
                 <TranscribingStatus isTranscribing={isTranscribing} />
 
                 {/* File limit indicator */}
                 {uploadedFiles.length >= MAX_FILES && (
-                    <div className="mb-3 flex items-start gap-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg px-3 sm:px-4 py-2">
+                    <div className="mb-3 flex items-start gap-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg px-4 py-2">
                         <svg
                             className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
                             fill="none"
@@ -390,18 +347,18 @@ export default function ChatInput({
                                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z"
                             />
                         </svg>
-                        <span className="text-xs sm:text-sm text-amber-700 dark:text-amber-300 font-medium">
+                        <span className="text-sm text-amber-700 dark:text-amber-300 font-medium">
                             Maximum file limit reached ({MAX_FILES}/{MAX_FILES}
                             ). Remove a file to upload more.
                         </span>
                     </div>
                 )}
 
-                {/* File mode restriction indicator */}
+                {/* File mode indicators */}
                 {getCurrentFileMode() === "audio" && (
-                    <div className="mb-3 flex items-start gap-2 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-lg px-3 sm:px-4 py-2">
+                    <div className="mb-3 flex items-start gap-2 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 rounded-lg px-4 py-2">
                         <svg
-                            className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5"
+                            className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -413,16 +370,15 @@ export default function ChatInput({
                                 d="M15.536 12.464a9 9 0 010-8.928M12 19V5M8.464 12.464a9 9 0 010-8.928"
                             />
                         </svg>
-                        <span className="text-xs sm:text-sm text-purple-700 dark:text-purple-300 font-medium">
+                        <span className="text-sm text-emerald-700 dark:text-emerald-300 font-medium">
                             Audio mode active - Only audio files can be
-                            uploaded. Remove audio files to upload other file
-                            types.
+                            uploaded.
                         </span>
                     </div>
                 )}
 
                 {getCurrentFileMode() === "other" && (
-                    <div className="mb-3 flex items-start gap-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg px-3 sm:px-4 py-2">
+                    <div className="mb-3 flex items-start gap-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg px-4 py-2">
                         <svg
                             className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
                             fill="none"
@@ -436,32 +392,31 @@ export default function ChatInput({
                                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                             />
                         </svg>
-                        <span className="text-xs sm:text-sm text-blue-700 dark:text-blue-300 font-medium">
+                        <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">
                             Document mode active - Only images, PDFs, and text
-                            files can be uploaded. Remove other files to upload
-                            audio files.
+                            files can be uploaded.
                         </span>
                     </div>
                 )}
 
+                {/* Main input container */}
                 <div className="relative">
                     <div
                         ref={inputBubbleRef}
-                        className={`relative bg-white dark:bg-neutral-900 rounded-2xl sm:rounded-3xl border transition-colors duration-200 ${
+                        className={`relative bg-white dark:bg-neutral-900 rounded-2xl border transition-all duration-200 ${
                             webSearchEnabled
                                 ? "border-blue-300 shadow-blue-100 shadow-sm dark:border-blue-500/70"
                                 : "border-gray-300 dark:border-neutral-700 shadow-sm"
                         } ${
                             isDragOver
-                                ? "border-orange-400 bg-orange-50 dark:bg-orange-900/30"
+                                ? "border-emerald-400 bg-emerald-50 dark:bg-emerald-900/30"
                                 : ""
                         }`}
-                        style={{ minHeight: "56px" }}
                     >
                         <DragOverlay isDragOver={isDragOver} />
 
                         <div className="relative">
-                            {/* Main text input area */}
+                            {/* Text input */}
                             <textarea
                                 ref={textareaRef}
                                 rows="1"
@@ -469,7 +424,7 @@ export default function ChatInput({
                                 onChange={(e) => setMessage(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder={getPlaceholderText()}
-                                className={`w-full bg-transparent outline-none text-gray-900 dark:text-gray-100 resize-none text-sm sm:text-base leading-relaxed px-4 sm:px-5 pt-3 sm:pt-4 ${
+                                className={`w-full bg-transparent outline-none text-gray-900 dark:text-gray-100 resize-none text-base leading-relaxed px-5 pt-4 ${
                                     webSearchEnabled
                                         ? "placeholder-blue-400 dark:placeholder-blue-300"
                                         : "placeholder-gray-500 dark:placeholder-gray-400"
@@ -487,11 +442,11 @@ export default function ChatInput({
                                 formatTime={formatTime}
                             />
 
-                            {/* Bottom button row */}
-                            <div className="pb-4 flex items-center justify-between px-4">
-                                {/* Left side - Plus button and Research button */}
-                                <div className="flex items-center justify-start gap-2">
-                                    {/* Plus button with audio upload menu */}
+                            {/* Bottom controls */}
+                            <div className="pb-4 flex items-center justify-between px-5">
+                                {/* Left side - Additional options */}
+                                <div className="flex items-center gap-2">
+                                    {/* Audio upload menu */}
                                     <div
                                         className="relative"
                                         ref={audioMenuRef}
@@ -502,7 +457,7 @@ export default function ChatInput({
                                                     !showAudioUploadMenu
                                                 )
                                             }
-                                            className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-neutral-700 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-150 dark:hover:bg-neutral-700 transition-all duration-200"
+                                            className="flex items-center justify-center w-8 h-8 rounded-lg text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-neutral-700 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-150 dark:hover:bg-neutral-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                             disabled={
                                                 isLoading ||
                                                 isProcessing ||
@@ -525,15 +480,15 @@ export default function ChatInput({
                                             </svg>
                                         </button>
 
-                                        {/* Audio upload dropdown menu */}
+                                        {/* Audio upload dropdown */}
                                         {showAudioUploadMenu && (
-                                            <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-lg py-1 min-w-[180px] sm:min-w-[200px] z-50">
+                                            <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-lg py-1 min-w-[180px] z-50">
                                                 <button
                                                     onClick={() =>
                                                         audioFileInputRef.current?.click()
                                                     }
                                                     disabled={isAudioUploadDisabled()}
-                                                    className={`w-full px-3 sm:px-4 py-2.5 sm:py-3 text-left text-xs sm:text-sm hover:bg-gray-100 dark:hover:bg-neutral-800 flex items-center gap-2 sm:gap-3 ${
+                                                    className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-100 dark:hover:bg-neutral-800 flex items-center gap-3 ${
                                                         isAudioUploadDisabled()
                                                             ? "text-gray-400 dark:text-gray-500 cursor-not-allowed"
                                                             : "text-gray-700 dark:text-gray-200"
@@ -555,7 +510,7 @@ export default function ChatInput({
                                                     Upload Audio File
                                                     {getCurrentFileMode() ===
                                                         "other" && (
-                                                        <span className="text-xs text-gray-400 dark:text-gray-500 hidden sm:inline">
+                                                        <span className="text-xs text-gray-400 dark:text-gray-500">
                                                             (Disabled)
                                                         </span>
                                                     )}
@@ -564,23 +519,19 @@ export default function ChatInput({
                                         )}
                                     </div>
 
-                                    {/* Research button */}
+                                    {/* Web search toggle */}
                                     {enableWebSearch && (
                                         <button
-                                            onClick={handleResearchClick}
-                                            className={`
-                                                flex items-center gap-1.5 px-2 sm:px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border whitespace-nowrap
-                                                ${
-                                                    webSearchEnabled
-                                                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 hover:bg-blue-150"
-                                                        : "bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-neutral-700 hover:bg-gray-150 dark:hover:bg-neutral-700"
-                                                }
-                                            `}
+                                            onClick={onWebSearchToggle}
+                                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                                                webSearchEnabled
+                                                    ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 hover:bg-blue-150"
+                                                    : "bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-neutral-700 hover:bg-gray-150 dark:hover:bg-neutral-700"
+                                            }`}
                                             disabled={
                                                 isLoading ||
                                                 isProcessing ||
-                                                isStreaming ||
-                                                isSearching
+                                                isStreaming
                                             }
                                             title={
                                                 webSearchEnabled
@@ -588,68 +539,31 @@ export default function ChatInput({
                                                     : "Click to enable web search"
                                             }
                                         >
-                                            {isSearching ? (
-                                                <svg
-                                                    className="w-3 h-3 sm:w-3.5 sm:h-3.5 animate-spin flex-shrink-0"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <circle
-                                                        className="opacity-25"
-                                                        cx="12"
-                                                        cy="12"
-                                                        r="10"
-                                                        stroke="currentColor"
-                                                        strokeWidth="4"
-                                                        fill="none"
-                                                    />
-                                                    <circle
-                                                        className="opacity-75"
-                                                        cx="12"
-                                                        cy="12"
-                                                        r="10"
-                                                        stroke="currentColor"
-                                                        strokeWidth="4"
-                                                        fill="none"
-                                                        strokeDasharray="31.416"
-                                                        strokeDashoffset="23.562"
-                                                        strokeLinecap="round"
-                                                    />
-                                                </svg>
-                                            ) : (
-                                                <svg
-                                                    className={`w-3 h-3 sm:w-3.5 sm:h-3.5 transition-colors duration-200 flex-shrink-0 ${
-                                                        webSearchEnabled
-                                                            ? "text-blue-600"
-                                                            : "text-gray-500 dark:text-gray-400"
-                                                    }`}
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    viewBox="0 0 24 24"
-                                                >
-                                                    <circle
-                                                        cx="11"
-                                                        cy="11"
-                                                        r="8"
-                                                    />
-                                                    <path d="M21 21l-4.35-4.35" />
-                                                </svg>
-                                            )}
-                                            <span>
-                                                {isSearching
-                                                    ? "Searching..."
-                                                    : "Research"}
-                                            </span>
+                                            <svg
+                                                className={`w-3.5 h-3.5 ${
+                                                    webSearchEnabled
+                                                        ? "text-blue-600"
+                                                        : "text-gray-500 dark:text-gray-400"
+                                                }`}
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <circle cx="11" cy="11" r="8" />
+                                                <path d="M21 21l-4.35-4.35" />
+                                            </svg>
+                                            <span>Research</span>
                                         </button>
                                     )}
                                 </div>
 
                                 {/* Right side - Action buttons */}
-                                <div className="flex items-center justify-end gap-1">
+                                <div className="flex items-center gap-1">
                                     {/* File upload button */}
                                     <button
                                         type="button"
                                         onClick={handleFileUploadClick}
-                                        className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${
+                                        className={`p-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
                                             isFileUploadDisabled()
                                                 ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
                                                 : "text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-neutral-800"
@@ -679,13 +593,15 @@ export default function ChatInput({
                                     <button
                                         type="submit"
                                         onClick={handleSubmit}
-                                        className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${buttonState.buttonColor}`}
+                                        className={`p-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 ${buttonState.buttonColor}`}
                                         disabled={buttonState.disabled}
                                         title={buttonState.buttonText}
                                     >
-                                        {isLoading || isProcessing ? (
+                                        {isLoading ||
+                                        isProcessing ||
+                                        isTranscribing ? (
                                             <svg
-                                                className="animate-spin w-3.5 h-3.5 sm:w-4 sm:h-4"
+                                                className="animate-spin w-4 h-4"
                                                 fill="none"
                                                 viewBox="0 0 24 24"
                                             >
@@ -696,36 +612,16 @@ export default function ChatInput({
                                                     r="10"
                                                     stroke="currentColor"
                                                     strokeWidth="4"
-                                                ></circle>
+                                                />
                                                 <path
                                                     className="opacity-75"
                                                     fill="currentColor"
                                                     d="M12 2a10 10 0 100 20 10 10 0 000-20zM2 12a10 10 0 0110-10v4a6 6 0 00-6 6H2z"
-                                                ></path>
-                                            </svg>
-                                        ) : isTranscribing ? (
-                                            <svg
-                                                className="animate-spin w-3.5 h-3.5 sm:w-4 sm:h-4"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <circle
-                                                    className="opacity-25"
-                                                    cx="12"
-                                                    cy="12"
-                                                    r="10"
-                                                    stroke="currentColor"
-                                                    strokeWidth="4"
-                                                ></circle>
-                                                <path
-                                                    className="opacity-75"
-                                                    fill="currentColor"
-                                                    d="M12 2a10 10 0 100 20 10 10 0 000-20zM2 12a10 10 0 0110-10v4a6 6 0 00-6 6H2z"
-                                                ></path>
+                                                />
                                             </svg>
                                         ) : isStreaming ? (
                                             <svg
-                                                className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                                                className="w-4 h-4"
                                                 fill="none"
                                                 stroke="currentColor"
                                                 viewBox="0 0 24 24"
@@ -745,7 +641,7 @@ export default function ChatInput({
                                             </svg>
                                         ) : (
                                             <svg
-                                                className="w-3.5 h-3.5 sm:w-4 sm:h-4"
+                                                className="w-4 h-4"
                                                 fill="none"
                                                 stroke="currentColor"
                                                 viewBox="0 0 24 24"
@@ -762,9 +658,9 @@ export default function ChatInput({
                                 </div>
                             </div>
 
-                            {/* File Preview Row - Third line */}
+                            {/* File preview */}
                             {uploadedFiles.length > 0 && (
-                                <div className="px-4">
+                                <div className="px-5">
                                     <FilePreview
                                         uploadedFiles={uploadedFiles}
                                         removeFile={removeFile}
@@ -773,63 +669,6 @@ export default function ChatInput({
                             )}
                         </div>
                     </div>
-
-                    {/* Search Results Section */}
-                    {isSearching && (
-                        <div className="mt-3 flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
-                            <svg
-                                className="w-4 h-4 animate-spin"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                            >
-                                <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                ></circle>
-                                <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                ></path>
-                            </svg>
-                            <span>Searching the web...</span>
-                        </div>
-                    )}
-
-                    {searchResults.length > 0 && (
-                        <div className="mt-3 space-y-2">
-                            <div className="text-sm text-gray-600 dark:text-gray-300 font-medium mb-2">
-                                Search Results ({searchResults.length})
-                            </div>
-                            {searchResults.map((result, index) => (
-                                <div
-                                    key={index}
-                                    className="border border-gray-200 dark:border-neutral-700 rounded-lg p-3 bg-gray-50 dark:bg-neutral-800"
-                                >
-                                    <a
-                                        href={result.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-blue-600 dark:text-blue-400 font-medium hover:underline text-sm"
-                                    >
-                                        {result.title}
-                                    </a>
-                                    <p className="text-gray-600 dark:text-gray-300 text-sm mt-1 line-clamp-2">
-                                        {result.snippet}
-                                    </p>
-                                    {result.url && (
-                                        <p className="text-gray-400 dark:text-gray-500 text-xs mt-1 truncate">
-                                            {result.url}
-                                        </p>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    )}
 
                     {/* Hidden file inputs */}
                     <input
@@ -841,7 +680,6 @@ export default function ChatInput({
                         accept={getAcceptAttribute()}
                     />
 
-                    {/* Hidden audio file input */}
                     <input
                         ref={audioFileInputRef}
                         type="file"

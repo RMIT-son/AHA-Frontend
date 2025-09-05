@@ -13,7 +13,7 @@ export default function ChatWindow({
     isStreaming,
     chatId,
 }) {
-    // State for image preview modal
+    // State management
     const [previewImage, setPreviewImage] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showScrollToBottom, setShowScrollToBottom] = useState(false);
@@ -28,14 +28,14 @@ export default function ChatWindow({
         scrollToBottomSmooth,
     } = useScrolling(isModalOpen, isStreaming);
 
-    // Refs for tracking conversation state
+    // Refs for conversation state tracking
     const previousMessagesLength = useRef(0);
     const isNewConversation = useRef(true);
     const lastBotMessageRef = useRef(null);
     const loadedImages = useRef(new Set());
     const scrollTimeoutRef = useRef(null);
 
-    // Image click handler
+    // Event handlers
     const handleImageClick = useCallback(
         (imageUrl, alt) => {
             scrollingEnabled.current = false;
@@ -45,7 +45,6 @@ export default function ChatWindow({
         [scrollingEnabled]
     );
 
-    // File click handler - for non-image files
     const handleFileClick = useCallback((fileInfo) => {
         const link = document.createElement("a");
         link.href = fileInfo.url;
@@ -55,13 +54,34 @@ export default function ChatWindow({
         document.body.removeChild(link);
     }, []);
 
-    // Scroll to bottom handler
     const handleScrollToBottom = useCallback(() => {
         scrollToBottomSmooth();
         setShowScrollToBottom(false);
     }, [scrollToBottomSmooth]);
 
-    // Monitor scroll position to show/hide scroll-to-bottom button
+    const closeModal = useCallback(() => {
+        isClosingModal.current = true;
+        scrollingEnabled.current = false;
+        setIsModalOpen(false);
+        setPreviewImage(null);
+
+        if (scrollTimeoutRef.current) {
+            clearTimeout(scrollTimeoutRef.current);
+        }
+
+        setTimeout(() => {
+            if (document.activeElement && document.activeElement.blur) {
+                document.activeElement.blur();
+            }
+        }, 50);
+
+        setTimeout(() => {
+            isClosingModal.current = false;
+            scrollingEnabled.current = true;
+        }, 300);
+    }, []);
+
+    // Effects
     useEffect(() => {
         const scrollArea = scrollAreaRef.current;
         if (!scrollArea) return;
@@ -76,7 +96,6 @@ export default function ChatWindow({
         return () => scrollArea.removeEventListener("scroll", handleScroll);
     }, [messages.length]);
 
-    // Main scroll effect
     useEffect(() => {
         if (
             !scrollingEnabled.current ||
@@ -107,7 +126,6 @@ export default function ChatWindow({
         isClosingModal,
     ]);
 
-    // Reset conversation state when needed
     useEffect(() => {
         if (
             messages.length === 0 ||
@@ -120,7 +138,6 @@ export default function ChatWindow({
         }
     }, [messages.length]);
 
-    // Track the latest bot message for streaming detection
     useEffect(() => {
         const botMessages = messages.filter((msg, index) => index % 2 !== 0);
         if (botMessages.length > 0) {
@@ -135,37 +152,7 @@ export default function ChatWindow({
         }
     }, [messages]);
 
-    useEffect(() => {
-        if (messages.length > 0 && isNewConversation.current) {
-            positionAtBottomInstant();
-            isNewConversation.current = false;
-        }
-    }, [messages.length, positionAtBottomInstant]);
-
-    // Modal close handler
-    const closeModal = useCallback(() => {
-        isClosingModal.current = true;
-        scrollingEnabled.current = false;
-        setIsModalOpen(false);
-        setPreviewImage(null);
-
-        if (scrollTimeoutRef.current) {
-            clearTimeout(scrollTimeoutRef.current);
-        }
-
-        setTimeout(() => {
-            if (document.activeElement && document.activeElement.blur) {
-                document.activeElement.blur();
-            }
-        }, 50);
-
-        setTimeout(() => {
-            isClosingModal.current = false;
-            scrollingEnabled.current = true;
-        }, 300);
-    }, []);
-
-    // Memoize the messages rendering
+    // Message rendering
     const renderedMessages = useMemo(() => {
         return messages.map((message, index) => {
             const isUser = index % 2 === 0;
@@ -205,33 +192,20 @@ export default function ChatWindow({
 
     return (
         <>
-            <div className="flex-1 relative overflow-hidden bg-gradient-to-b from-slate-50/30 to-emerald-50/20 dark:from-neutral-900 dark:to-neutral-800 transition-all duration-300">
-                {/* Subtle pattern overlay for texture */}
-                <div
-                    className="absolute inset-0 opacity-[0.02] dark:opacity-[0.01] pointer-events-none"
-                    style={{
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23059669' fill-opacity='0.1'%3E%3Ccircle cx='7' cy='7' r='1'/%3E%3Ccircle cx='37' cy='37' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-                    }}
-                />
-
+            <div className="flex-1 relative overflow-hidden bg-white dark:bg-neutral-900">
                 <div
                     ref={scrollAreaRef}
                     className="h-full overflow-y-auto scroll-smooth"
-                    style={{
-                        scrollbarWidth: "thin",
-                        scrollbarColor: "rgb(203 213 225) transparent",
-                    }}
                 >
                     {messages.length === 0 ? (
                         <div className="h-full flex items-center justify-center">
                             <EmptyState />
                         </div>
                     ) : (
-                        <div className="w-full max-w-2xl sm:max-w-3xl lg:max-w-4xl xl:max-w-5xl mx-auto px-4 sm:px-6 md:px-8 lg:px-12 pt-6 sm:pt-8 md:pt-12 pb-8">
-                            <div className="space-y-6 sm:space-y-8 md:space-y-10">
+                        <div className="w-full max-w-4xl mx-auto px-4 pt-8 pb-8">
+                            <div className="space-y-8">
                                 {renderedMessages}
 
-                                {/* Enhanced bot typing indicator */}
                                 {isBotTyping && !isStreaming && (
                                     <div className="flex justify-start">
                                         <TypingIndicator />
@@ -243,15 +217,15 @@ export default function ChatWindow({
                     <div ref={messagesEndRef} />
                 </div>
 
-                {/* Scroll to bottom button with healthcare styling */}
+                {/* Scroll to bottom button */}
                 {showScrollToBottom && (
                     <button
                         onClick={handleScrollToBottom}
-                        className="fixed bottom-24 right-6 sm:right-8 z-20 group bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm hover:bg-emerald-50 dark:hover:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+                        className="fixed bottom-24 right-6 z-20 bg-white dark:bg-neutral-800 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 border border-gray-200 dark:border-gray-700 hover:border-emerald-300 dark:hover:border-emerald-600 text-gray-600 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 rounded-full p-3 shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                         aria-label="Scroll to bottom"
                     >
                         <svg
-                            className="w-5 h-5 transition-transform group-hover:translate-y-0.5"
+                            className="w-5 h-5"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -263,8 +237,6 @@ export default function ChatWindow({
                                 d="M19 14l-7 7m0 0l-7-7m7 7V3"
                             />
                         </svg>
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full animate-ping opacity-75"></div>
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full"></div>
                     </button>
                 )}
 
@@ -277,18 +249,18 @@ export default function ChatWindow({
                         background: transparent;
                     }
                     .overflow-y-auto::-webkit-scrollbar-thumb {
-                        background: rgb(203 213 225 / 0.5);
+                        background: rgb(229 231 235 / 0.7);
                         border-radius: 3px;
                         transition: all 0.2s;
                     }
                     .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-                        background: rgb(148 163 184 / 0.7);
+                        background: rgb(16 185 129 / 0.5);
                     }
                     .dark .overflow-y-auto::-webkit-scrollbar-thumb {
-                        background: rgb(71 85 105 / 0.5);
+                        background: rgb(75 85 99 / 0.7);
                     }
                     .dark .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-                        background: rgb(100 116 139 / 0.7);
+                        background: rgb(16 185 129 / 0.5);
                     }
                 `}</style>
             </div>

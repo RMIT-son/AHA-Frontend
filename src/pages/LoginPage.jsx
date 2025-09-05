@@ -88,7 +88,7 @@ export default function LoginPage() {
                         className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 mx-auto mb-4"
                     />
                     <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-800 mb-2">
-                        Welcome Back
+                        Welcome
                     </h2>
                     <p className="text-sm text-gray-600">
                         Sign in to your healthcare account

@@ -1,12 +1,7 @@
-import { memo } from 'react';
-import FilePreview from './FilePreview';
+import { memo } from "react";
+import FilePreview from "./FilePreview";
 
-const FileDisplay = memo(({ 
-    files, 
-    messageKey, 
-    onImageClick,
-    onFileClick
-}) => {
+const FileDisplay = memo(({ files, messageKey, onImageClick, onFileClick }) => {
     if (!files || files.length === 0) {
         return null;
     }
@@ -26,7 +21,5 @@ const FileDisplay = memo(({
         </div>
     );
 });
-
-FileDisplay.displayName = 'FileDisplay';
 
 export default FileDisplay;

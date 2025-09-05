@@ -84,14 +84,14 @@ const Account = ({ user, onUserUpdate, onError }) => {
                 <div className="px-6 py-4 bg-gray-50 dark:bg-neutral-800/50 border-t border-gray-200 dark:border-neutral-700 flex justify-end space-x-3">
                     <button
                         onClick={() => setShowDeleteConfirm(false)}
-                        className="px-4 py-2 text-gray-700 dark:text-gray-200 bg-white dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-600 transition-all duration-200 font-medium"
+                        className="px-4 py-2 text-gray-700 dark:text-gray-200 bg-white dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-600 transition-all duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-gray-500"
                         disabled={isDeleting}
                     >
                         Cancel
                     </button>
                     <button
                         onClick={handleDeleteAccount}
-                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-200 disabled:bg-red-400 disabled:cursor-not-allowed font-medium min-w-[120px]"
+                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-200 disabled:bg-red-400 disabled:cursor-not-allowed font-medium min-w-[120px] focus:outline-none focus:ring-2 focus:ring-red-500"
                         disabled={isDeleting}
                     >
                         {isDeleting ? (
@@ -132,7 +132,7 @@ const Account = ({ user, onUserUpdate, onError }) => {
             {user && (
                 <div className="bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-xl p-6 shadow-sm">
                     <div className="flex items-center space-x-4">
-                        <div className="w-16 h-16 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center text-white font-semibold text-xl">
+                        <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-full flex items-center justify-center text-white font-semibold text-xl">
                             {user.fullName
                                 ? user.fullName.charAt(0).toUpperCase()
                                 : "U"}
@@ -200,9 +200,9 @@ const Account = ({ user, onUserUpdate, onError }) => {
                     <div className="px-6 py-6">
                         <div className="flex items-center justify-between">
                             <div className="flex items-center">
-                                <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mr-4">
+                                <div className="w-10 h-10 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mr-4">
                                     <svg
-                                        className="w-5 h-5 text-orange-600 dark:text-orange-400"
+                                        className="w-5 h-5 text-emerald-600 dark:text-emerald-400"
                                         fill="none"
                                         stroke="currentColor"
                                         viewBox="0 0 24 24"
@@ -227,7 +227,7 @@ const Account = ({ user, onUserUpdate, onError }) => {
                             </div>
                             <button
                                 onClick={handleLogout}
-                                className="px-4 py-2 text-gray-700 dark:text-gray-200 bg-white dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-600 transition-all duration-200 font-medium"
+                                className="px-4 py-2 text-gray-700 dark:text-gray-200 bg-white dark:bg-neutral-700 border border-gray-300 dark:border-neutral-600 rounded-lg hover:bg-gray-50 dark:hover:bg-neutral-600 transition-all duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 w-[140px]"
                             >
                                 Sign Out
                             </button>
@@ -241,23 +241,15 @@ const Account = ({ user, onUserUpdate, onError }) => {
                                 <div className="w-10 h-10 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mr-4">
                                     <svg
                                         className="w-5 h-5 text-red-600 dark:text-red-400"
-                                        fill="currentColor"
-                                        viewBox="0 0 20 20"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
                                     >
                                         <path
-                                            fillRule="evenodd"
-                                            d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z"
-                                            clipRule="evenodd"
-                                        />
-                                        <path
-                                            fillRule="evenodd"
-                                            d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z"
-                                            clipRule="evenodd"
-                                        />
-                                        <path
-                                            fillRule="evenodd"
-                                            d="M3 5a2 2 0 012-2h1a1 1 0 010 2H5v11a2 2 0 002 2h6a2 2 0 002-2V5h-1a1 1 0 110-2h1a2 2 0 012 2v11a4 4 0 01-4 4H7a4 4 0 01-4-4V5z"
-                                            clipRule="evenodd"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z"
                                         />
                                     </svg>
                                 </div>
@@ -274,38 +266,11 @@ const Account = ({ user, onUserUpdate, onError }) => {
                             <button
                                 onClick={() => setShowDeleteConfirm(true)}
                                 disabled={isDeleting}
-                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-200 disabled:bg-red-400 disabled:cursor-not-allowed font-medium"
+                                className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-all duration-200 disabled:bg-red-400 disabled:cursor-not-allowed font-medium focus:outline-none focus:ring-2 focus:ring-red-500 w-[140px]"
                             >
                                 Delete Account
                             </button>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Additional Security Info */}
-            <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-xl p-4">
-                <div className="flex items-start">
-                    <svg
-                        className="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5 mr-3 flex-shrink-0"
-                        fill="currentColor"
-                        viewBox="0 0 20 20"
-                    >
-                        <path
-                            fillRule="evenodd"
-                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                            clipRule="evenodd"
-                        />
-                    </svg>
-                    <div>
-                        <h4 className="text-orange-800 dark:text-orange-300 font-medium text-sm">
-                            Account Security
-                        </h4>
-                        <p className="text-orange-700 dark:text-orange-300 text-sm mt-1">
-                            Your account data is encrypted and securely stored.
-                            If you have any concerns about your account
-                            security, please contact our support team.
-                        </p>
                     </div>
                 </div>
             </div>

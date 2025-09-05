@@ -1,41 +1,21 @@
-export default function FilePreview({ uploadedFiles, removeFile }) {
-    const getFileIcon = (type) => {
-        if (type.startsWith("image/")) {
+import { memo } from "react";
+
+const FilePreview = memo(({ uploadedFiles, removeFile }) => {
+    if (!uploadedFiles || uploadedFiles.length === 0) {
+        return null;
+    }
+
+    const getFileIcon = (file) => {
+        const fileName = file.name || "";
+        const fileType = file.type || "";
+
+        if (
+            fileType.startsWith("audio/") ||
+            /\.(mp3|wav|m4a|aac|ogg|flac)$/i.test(fileName)
+        ) {
             return (
                 <svg
-                    className="w-5 h-5 text-blue-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                </svg>
-            );
-        } else if (type === "application/pdf") {
-            return (
-                <svg
-                    className="w-5 h-5 text-red-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                >
-                    <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-                    />
-                </svg>
-            );
-        } else if (type.startsWith("audio/")) {
-            return (
-                <svg
-                    className="w-5 h-5 text-purple-500"
+                    className="w-6 h-6"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -48,10 +28,12 @@ export default function FilePreview({ uploadedFiles, removeFile }) {
                     />
                 </svg>
             );
-        } else {
+        }
+
+        if (fileType.includes("pdf") || fileName.endsWith(".pdf")) {
             return (
                 <svg
-                    className="w-5 h-5 text-gray-500"
+                    className="w-6 h-6"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -60,120 +42,170 @@ export default function FilePreview({ uploadedFiles, removeFile }) {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
                     />
                 </svg>
             );
         }
+
+        // Default document icon
+        return (
+            <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+            >
+                <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+            </svg>
+        );
     };
 
-    const getFileTypeLabel = (type, name) => {
-        if (type.startsWith("audio/")) {
-            const extension = name.split(".").pop()?.toUpperCase();
-            return extension || "AUDIO";
-        } else if (type === "application/pdf") {
-            return "PDF";
-        } else if (type.startsWith("image/")) {
-            return "IMAGE";
-        } else if (type.includes("csv")) {
-            return "CSV";
-        } else if (type.includes("json")) {
-            return "JSON";
-        } else if (type.includes("text")) {
-            return "TEXT";
-        }
-        return "FILE";
+    const getFileTypeLabel = (file) => {
+        const fileName = file.name || "";
+        const fileType = file.type || "";
+
+        if (fileType.startsWith("image/")) return "IMG";
+        if (fileType.startsWith("audio/")) return "AUDIO";
+        if (fileType.includes("pdf")) return "PDF";
+        if (
+            fileType.includes("word") ||
+            fileName.endsWith(".doc") ||
+            fileName.endsWith(".docx")
+        )
+            return "DOC";
+        if (
+            fileType.includes("excel") ||
+            fileName.endsWith(".xls") ||
+            fileName.endsWith(".xlsx")
+        )
+            return "XLS";
+        if (fileType.includes("text") || fileName.endsWith(".txt"))
+            return "TXT";
+
+        // Try to extract extension
+        const extension = fileName.split(".").pop()?.toUpperCase();
+        return extension || "FILE";
     };
 
     const formatFileSize = (bytes) => {
-        if (bytes === 0) return "0 Bytes";
-        const k = 1024;
-        const sizes = ["Bytes", "KB", "MB", "GB"];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+        if (!bytes) return "";
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + " KB";
+        return (bytes / (1024 * 1024)).toFixed(1) + " MB";
     };
 
-    if (uploadedFiles.length === 0) return null;
+    const isImage = (file) => {
+        return (
+            file.type?.startsWith("image/") ||
+            /\.(jpg|jpeg|png|gif|bmp|webp|svg)$/i.test(file.name || "")
+        );
+    };
 
     return (
-        <div className="pb-4">
+        <div className="pb-3">
             <div className="flex flex-wrap gap-2">
-                {uploadedFiles.map((fileData) => (
-                    <div key={fileData.id} className="relative group">
-                        {fileData.preview ? (
-                            // Image preview
-                            <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-gray-200 bg-gray-100">
-                                <img
-                                    src={fileData.preview}
-                                    alt={fileData.name}
-                                    className="w-full h-full object-cover"
-                                />
-                                <button
-                                    onClick={() => removeFile(fileData.id)}
-                                    className="absolute top-1 right-1 w-4 h-4 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                                    title="Remove image"
-                                >
-                                    <svg
-                                        className="w-2.5 h-2.5"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M6 18L18 6M6 6l12 12"
-                                        />
-                                    </svg>
-                                </button>
-                            </div>
-                        ) : (
-                            // File icon preview
-                            <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors min-w-[120px]">
-                                <div className="w-6 h-6 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
-                                    {getFileIcon(fileData.type)}
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-1">
-                                        <span className="text-xs font-medium text-gray-600 bg-gray-200 px-1.5 py-0.5 rounded">
-                                            {getFileTypeLabel(
-                                                fileData.type,
-                                                fileData.name
-                                            )}
+                {uploadedFiles.map((file) => (
+                    <div key={file.id} className="relative group">
+                        {/* Square container for all file types */}
+                        <div className="w-20 h-20 bg-white dark:bg-neutral-800 border border-gray-200 dark:border-neutral-700 rounded-lg overflow-hidden relative hover:shadow-md transition-shadow">
+                            {isImage(file) ? (
+                                // Image preview
+                                <div className="w-full h-full">
+                                    <img
+                                        src={
+                                            file.preview ||
+                                            URL.createObjectURL(
+                                                file.file || file
+                                            )
+                                        }
+                                        alt={file.name}
+                                        className="w-full h-full object-cover"
+                                        onError={(e) => {
+                                            // Fallback to file icon if image fails to load
+                                            e.target.style.display = "none";
+                                            e.target.nextSibling.style.display =
+                                                "flex";
+                                        }}
+                                    />
+                                    {/* Fallback icon (hidden by default) */}
+                                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 hidden">
+                                        <svg
+                                            className="w-6 h-6 mb-1"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth={2}
+                                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                            />
+                                        </svg>
+                                        <span className="text-xs font-medium">
+                                            IMG
                                         </span>
                                     </div>
-                                    <p className="text-xs font-medium text-gray-900 truncate max-w-20">
-                                        {fileData.name}
-                                    </p>
-                                    <p className="text-xs text-gray-500">
-                                        {formatFileSize(fileData.size)}
-                                    </p>
                                 </div>
-                                <button
-                                    onClick={() => removeFile(fileData.id)}
-                                    className="p-1 text-gray-400 hover:text-red-500 rounded transition-colors opacity-0 group-hover:opacity-100 flex-shrink-0"
-                                    title="Remove file"
+                            ) : (
+                                // File icon for non-images
+                                <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 dark:text-gray-400">
+                                    {getFileIcon(file)}
+                                    <span className="text-xs font-medium mt-1">
+                                        {getFileTypeLabel(file)}
+                                    </span>
+                                </div>
+                            )}
+
+                            {/* Remove button */}
+                            <button
+                                onClick={() => removeFile(file.id)}
+                                className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                                title="Remove file"
+                            >
+                                <svg
+                                    className="w-3 h-3"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
                                 >
-                                    <svg
-                                        className="w-3 h-3"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M6 18L18 6M6 6l12 12"
-                                        />
-                                    </svg>
-                                </button>
-                            </div>
-                        )}
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M6 18L18 6M6 6l12 12"
+                                    />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* File info below the square */}
+                        <div className="mt-1 text-center">
+                            <p
+                                className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-20"
+                                title={file.name}
+                            >
+                                {file.name}
+                            </p>
+                            {file.size && (
+                                <p className="text-xs text-gray-500 dark:text-gray-500">
+                                    {formatFileSize(file.size)}
+                                </p>
+                            )}
+                        </div>
                     </div>
                 ))}
             </div>
         </div>
     );
-}
+});
+
+FilePreview.displayName = "FilePreview";
+
+export default FilePreview;

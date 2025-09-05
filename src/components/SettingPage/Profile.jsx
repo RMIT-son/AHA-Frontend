@@ -172,10 +172,10 @@ const Profile = ({ user: userProp, onUserUpdate, onError }) => {
 
                     {/* Success Message */}
                     {success && (
-                        <div className="bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-lg p-4">
+                        <div className="bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 rounded-lg p-4">
                             <div className="flex items-start">
                                 <svg
-                                    className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5 mr-3 flex-shrink-0"
+                                    className="w-5 h-5 text-emerald-600 dark:text-emerald-400 mt-0.5 mr-3 flex-shrink-0"
                                     fill="currentColor"
                                     viewBox="0 0 20 20"
                                 >
@@ -186,16 +186,16 @@ const Profile = ({ user: userProp, onUserUpdate, onError }) => {
                                     />
                                 </svg>
                                 <div className="flex-1">
-                                    <h4 className="text-green-800 dark:text-green-300 font-medium text-sm">
+                                    <h4 className="text-emerald-800 dark:text-emerald-300 font-medium text-sm">
                                         Success
                                     </h4>
-                                    <p className="text-green-700 dark:text-green-300 text-sm mt-1">
+                                    <p className="text-emerald-700 dark:text-emerald-300 text-sm mt-1">
                                         {success}
                                     </p>
                                 </div>
                                 <button
                                     onClick={() => setSuccess("")}
-                                    className="ml-3 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 transition-colors"
+                                    className="ml-3 text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-200 transition-colors"
                                 >
                                     <svg
                                         className="w-4 h-4"
@@ -227,7 +227,7 @@ const Profile = ({ user: userProp, onUserUpdate, onError }) => {
                                     onChange={(e) =>
                                         setFullName(e.target.value)
                                     }
-                                    className="w-full px-4 py-3 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm bg-white dark:bg-neutral-700 text-gray-900 dark:text-gray-100 transition-all duration-200 placeholder-gray-500 dark:placeholder-gray-400"
+                                    className="w-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-white dark:bg-neutral-700 text-gray-900 dark:text-gray-100 transition-all duration-200 placeholder-gray-500 dark:placeholder-gray-400"
                                     disabled={saving}
                                     placeholder="Enter your full name"
                                 />
@@ -263,7 +263,7 @@ const Profile = ({ user: userProp, onUserUpdate, onError }) => {
                                     onChange={(e) =>
                                         setNickname(e.target.value)
                                     }
-                                    className="w-full px-4 py-3 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm bg-white dark:bg-neutral-700 text-gray-900 dark:text-gray-100 transition-all duration-200 placeholder-gray-500 dark:placeholder-gray-400"
+                                    className="w-full px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 border border-gray-300 dark:border-neutral-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm bg-white dark:bg-neutral-700 text-gray-900 dark:text-gray-100 transition-all duration-200 placeholder-gray-500 dark:placeholder-gray-400"
                                     disabled={saving}
                                     placeholder="How should we address you?"
                                 />
@@ -322,7 +322,7 @@ const Profile = ({ user: userProp, onUserUpdate, onError }) => {
                         <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                             {hasChanges() && (
                                 <>
-                                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                                    <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
                                     <span>You have unsaved changes</span>
                                 </>
                             )}
@@ -344,7 +344,7 @@ const Profile = ({ user: userProp, onUserUpdate, onError }) => {
                             <button
                                 onClick={handleSave}
                                 disabled={saving || !hasChanges()}
-                                className="px-6 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-all duration-200 min-w-[120px]"
+                                className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-all duration-200 min-w-[120px]"
                             >
                                 {saving ? (
                                     <div className="flex items-center justify-center">

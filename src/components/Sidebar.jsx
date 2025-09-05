@@ -281,20 +281,12 @@ const Sidebar = ({
                     {isOpen && (
                         <div className="flex flex-col items-center">
                             <div className="flex items-center gap-2 mb-1">
-                                <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 rounded-full flex items-center justify-center">
-                                    <svg
-                                        className="w-5 h-5 text-white"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        viewBox="0 0 24 24"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth={2}
-                                            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                                        />
-                                    </svg>
+                                <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
+                                    <img
+                                        src="/logo.png"
+                                        alt="HealthCare AI Logo"
+                                        className="w-full h-full object-cover"
+                                    />
                                 </div>
                                 <h1 className="text-lg font-bold bg-gradient-to-r from-emerald-600 to-emerald-800 dark:from-emerald-400 dark:to-emerald-600 bg-clip-text text-transparent">
                                     HealthCare AI
