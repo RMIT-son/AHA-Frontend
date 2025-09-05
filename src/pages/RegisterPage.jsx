@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { registerUser } from "../controllers/auth";
 import { useDispatch } from "react-redux";
+import { Eye, EyeOff } from "lucide-react";
 import ErrorAlert from "../components/Error/ErrorAlert";
 
 export default function RegisterPage() {
@@ -66,17 +67,22 @@ export default function RegisterPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-            <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
+        <div className="min-h-screen flex items-center justify-center bg-emerald-50 px-4 sm:px-6 lg:px-8">
+            <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg bg-white rounded-lg shadow-lg p-6 sm:p-8">
                 {/* Logo */}
-                <div className="flex justify-center mb-4">
-                    <img src="/logo.png" alt="Logo" className="h-12 w-12" />
+                <div className="text-center mb-6">
+                    <img
+                        src="/logo.png"
+                        alt="Logo"
+                        className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 mx-auto mb-4"
+                    />
+                    <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-800 mb-2">
+                        Create Your Account
+                    </h2>
+                    <p className="text-sm text-gray-600">
+                        Join our healthcare platform
+                    </p>
                 </div>
-
-                {/* Title */}
-                <h2 className="text-center text-2xl font-semibold text-gray-800 mb-6">
-                    Create an account
-                </h2>
 
                 {/* Success & Error */}
                 <ErrorAlert
@@ -94,10 +100,10 @@ export default function RegisterPage() {
                     {/* Full Name */}
                     <input
                         type="text"
-                        placeholder="Name"
+                        placeholder="Full Name"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        className="w-full px-4 py-2 rounded-full border border-gray-300 outline-none focus:ring-2 focus:ring-[#EB5E33]"
+                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm sm:text-base outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                         disabled={isLoading}
                         required
                     />
@@ -108,18 +114,18 @@ export default function RegisterPage() {
                         placeholder="Email address"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full px-4 py-2 rounded-full border border-gray-300 outline-none focus:ring-2 focus:ring-[#EB5E33]"
+                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm sm:text-base outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                         disabled={isLoading}
                         required
                     />
 
                     {/* Phone */}
                     <input
-                        type="text"
-                        placeholder="Phone"
+                        type="tel"
+                        placeholder="Phone number"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="w-full px-4 py-2 rounded-full border border-gray-300 outline-none focus:ring-2 focus:ring-[#EB5E33]"
+                        className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm sm:text-base outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                         disabled={isLoading}
                         required
                     />
@@ -128,20 +134,28 @@ export default function RegisterPage() {
                     <div className="relative">
                         <input
                             type={showPassword ? "text" : "password"}
-                            placeholder="Password"
+                            placeholder="Password (min. 6 characters)"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="w-full px-4 py-2 rounded-full border border-gray-300 outline-none focus:ring-2 focus:ring-[#EB5E33] pr-10"
+                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm sm:text-base outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                             disabled={isLoading}
                             required
                             minLength="6"
                         />
-                        <img
-                            src="https://cdn-icons-png.flaticon.com/512/159/159604.png"
-                            alt="Toggle password"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-6 cursor-pointer"
+                        <button
+                            type="button"
                             onClick={() => setShowPassword(!showPassword)}
-                        />
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            aria-label={
+                                showPassword ? "Hide password" : "Show password"
+                            }
+                        >
+                            {showPassword ? (
+                                <EyeOff className="w-5 h-5" />
+                            ) : (
+                                <Eye className="w-5 h-5" />
+                            )}
+                        </button>
                     </div>
 
                     {/* Confirm Password */}
@@ -151,38 +165,44 @@ export default function RegisterPage() {
                             placeholder="Confirm Password"
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
-                            className={`w-full px-4 py-2 rounded-full border outline-none pr-10 
-                                ${
-                                    confirmPassword &&
-                                    password !== confirmPassword
-                                        ? "border-red-500 focus:ring-red-500 text-red-500"
-                                        : "border-gray-300 focus:ring-[#EB5E33]"
-                                }`}
+                            className={`w-full border rounded-lg px-4 py-3 text-sm sm:text-base outline-none focus:ring-2 ${
+                                confirmPassword && password !== confirmPassword
+                                    ? "border-red-500 focus:ring-red-500 focus:border-red-500"
+                                    : "border-gray-300 focus:ring-emerald-500 focus:border-emerald-500"
+                            }`}
                             disabled={isLoading}
                             required
                         />
-                        <img
-                            src="https://cdn-icons-png.flaticon.com/512/159/159604.png"
-                            alt="Toggle confirm password"
-                            className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-6 cursor-pointer"
+                        <button
+                            type="button"
                             onClick={() =>
                                 setShowConfirmPassword(!showConfirmPassword)
                             }
-                        />
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                            aria-label={
+                                showConfirmPassword
+                                    ? "Hide confirm password"
+                                    : "Show confirm password"
+                            }
+                        >
+                            {showConfirmPassword ? (
+                                <EyeOff className="w-5 h-5" />
+                            ) : (
+                                <Eye className="w-5 h-5" />
+                            )}
+                        </button>
                     </div>
 
                     {/* Password Match Indicator */}
                     {confirmPassword && (
-                        <div className="mb-2 text-sm">
+                        <div className="text-sm">
                             {password === confirmPassword ? (
-                                <p className="text-green-600">
-                                    {" "}
-                                    Passwords match
+                                <p className="text-emerald-600 flex items-center gap-1">
+                                    ✓ Passwords match
                                 </p>
                             ) : (
-                                <p className="text-red-600">
-                                    {" "}
-                                    Passwords do not match
+                                <p className="text-red-600 flex items-center gap-1">
+                                    ✗ Passwords do not match
                                 </p>
                             )}
                         </div>
@@ -192,20 +212,20 @@ export default function RegisterPage() {
                     <button
                         type="submit"
                         disabled={isLoading}
-                        className="w-full bg-[#EB5E33] text-white py-2 rounded-full font-semibold hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full bg-emerald-600 text-white rounded-lg py-3 text-sm sm:text-base font-medium hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {isLoading ? "Creating Account..." : "Sign up"}
+                        {isLoading ? "Creating Account..." : "Create Account"}
                     </button>
                 </form>
 
                 {/* Login Redirect */}
-                <p className="text-center mt-4 text-sm text-gray-600">
+                <p className="mt-6 text-center text-sm text-gray-600">
                     Already have an account?{" "}
                     <Link
                         to="/login"
-                        className="text-[#EB5E33] font-medium hover:underline"
+                        className="text-emerald-600 hover:text-emerald-800 font-medium hover:underline"
                     >
-                        Log in
+                        Sign in
                     </Link>
                 </p>
             </div>

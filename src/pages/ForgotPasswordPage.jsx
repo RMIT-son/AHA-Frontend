@@ -36,45 +36,38 @@ export default function ForgotPasswordPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-            <div className="w-full max-w-md bg-white rounded-lg shadow p-8 text-center">
+        <div className="min-h-screen flex items-center justify-center bg-emerald-50 px-4 sm:px-6 lg:px-8">
+            <div className="w-full max-w-sm sm:max-w-md lg:max-w-lg bg-white rounded-lg shadow-lg p-6 sm:p-8">
                 {/* Logo */}
-                <div className="mb-4">
+                <div className="text-center mb-6">
                     <img
                         src="/logo.png"
                         alt="Logo"
-                        className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 mx-auto"
+                        className="w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 mx-auto mb-4"
                     />
+                    <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-gray-800 mb-2">
+                        Reset Your Password
+                    </h2>
+                    <p className="text-sm text-gray-600">
+                        Enter your email address and we'll send you a secure
+                        link to reset your password
+                    </p>
                 </div>
 
-                {/* Title */}
-                <h2 className="text-xl font-semibold text-gray-800 mb-2">
-                    Forgot password
-                </h2>
-                <p className="text-gray-500 text-sm mb-6">
-                    Enter your email address and we'll send you a link to reset
-                    your password
-                </p>
-
                 {!isSuccess ? (
-                    <form onSubmit={handleSubmit}>
+                    <form onSubmit={handleSubmit} className="space-y-4">
                         <input
                             type="email"
-                            placeholder="Enter your email"
+                            placeholder="Enter your email address"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            className="w-full px-4 py-2 border border-gray-300 rounded-full focus:ring-2 focus:ring-orange-400 focus:outline-none mb-4"
+                            className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm sm:text-base outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                            disabled={isLoading}
                         />
 
-                        {message && (
-                            <p
-                                className={`mb-4 text-sm ${
-                                    isSuccess
-                                        ? "text-green-600"
-                                        : "text-red-600"
-                                }`}
-                            >
+                        {message && !isSuccess && (
+                            <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
                                 {message}
                             </p>
                         )}
@@ -82,37 +75,58 @@ export default function ForgotPasswordPage() {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full bg-orange-500 text-white py-2 rounded-full hover:bg-orange-600 transition disabled:opacity-50"
+                            className="w-full bg-emerald-600 text-white rounded-lg py-3 text-sm sm:text-base font-medium hover:bg-emerald-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isLoading ? "Sending..." : "Send Reset Link"}
                         </button>
                     </form>
                 ) : (
-                    <div>
-                        <h3 className="text-lg font-semibold text-green-600 mb-2">
+                    <div className="text-center space-y-4">
+                        <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg
+                                className="w-8 h-8 text-emerald-600"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M5 13l4 4L19 7"
+                                />
+                            </svg>
+                        </div>
+                        <h3 className="text-lg font-semibold text-emerald-600 mb-2">
                             Check Your Email
                         </h3>
-                        <p className="text-gray-600 mb-4 text-sm">{message}</p>
+                        <p className="text-gray-600 text-sm bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                            {message}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                            Didn't receive the email? Check your spam folder or
+                            try again.
+                        </p>
                         <button
                             onClick={() => {
                                 setIsSuccess(false);
                                 setMessage("");
                                 setEmail("");
                             }}
-                            className="w-full bg-orange-500 text-white py-2 rounded-full hover:bg-orange-600 transition mb-4"
+                            className="w-full bg-emerald-600 text-white rounded-lg py-3 text-sm sm:text-base font-medium hover:bg-emerald-700 transition"
                         >
                             Try Again
                         </button>
                     </div>
                 )}
 
-                {/* Links */}
-                <div className="mt-4">
+                {/* Back to Login */}
+                <div className="mt-6 text-center">
                     <Link
                         to="/login"
-                        className="text-sm text-gray-600 hover:underline"
+                        className="text-sm text-emerald-600 hover:text-emerald-800 font-medium hover:underline"
                     >
-                        Back to Login
+                        ← Back to Sign In
                     </Link>
                 </div>
             </div>
