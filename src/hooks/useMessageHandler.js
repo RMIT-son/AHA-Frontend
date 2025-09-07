@@ -176,7 +176,7 @@ export default function useMessageHandler(chatState) {
 
             // Execute appropriate function based on options
             if (webSearchEnabled) {
-                response = await sendWebSearchRequest(currentChatId, text);
+                response = await sendWebSearchRequest(currentChatId, userId, text, files);
             } else {
                 response = await sendMessageToBackend(
                     currentChatId,
