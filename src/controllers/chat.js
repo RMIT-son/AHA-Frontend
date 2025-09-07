@@ -329,18 +329,36 @@ export const sendVoiceMessage = async (
 };
 
 // Updated web search function to handle complete response
-export async function sendWebSearchRequest(conversationId, query) {
+export async function sendWebSearchRequest(    
+    conversationId,
+    userId,
+    content,
+    files = []
+) {
+    if (!conversationId || conversationId === "undefined") {
+        throw new Error("Conversation ID is required");
+    }
+
+    console.log(files)
+    // Process files for multipart/form-data
+    const processedFiles = await processFilesForBackend(files);
+
+    // Create FormData for multipart/form-data request
     const formData = new FormData();
 
     // Add text content and timestamp
-    if (query) {
-        formData.append("content", query);
+    if (content) {
+        formData.append("content", content);
     }
     formData.append("timestamp", new Date().toISOString());
+    // Add files to FormData
+    processedFiles.forEach((file) => {
+        formData.append("files", file);
+    });
 
     try {
         const response = await apiClient.post(
-            `/api/conversations/${conversationId}/web/search`,
+            `/api/conversations/${conversationId}/${userId}/web/search`,
             formData,
             {
                 headers: {
@@ -353,6 +371,7 @@ export async function sendWebSearchRequest(conversationId, query) {
             return {
                 success: true,
                 response: response.data.final_response,
+                references: response.data.references || [],
             };
         } else {
             throw new Error("No search response received from backend");
