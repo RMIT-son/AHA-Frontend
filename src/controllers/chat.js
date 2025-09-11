@@ -77,6 +77,43 @@ const processFilesForBackend = async (files) => {
     return processedFiles;
 };
 
+// Poller for async jobs
+export async function pollJobResult(jobId, isAudio = false, maxRetries = 300, delay = 200) {
+    for (let i = 0; i < maxRetries; i++) {
+        const res = await axios.get(`${app.dataURL}/api/jobs/${jobId}`, {
+            responseType: isAudio ? "blob" : "json",
+        });
+
+        if (!isAudio) {
+            // Normal JSON job
+            const { status, result } = res.data;
+
+            if (status === "done") {
+                console.log(`Job ${jobId} completed successfully:`, result);
+                return { success: true, data: result };
+            }
+            if (status === "error") {
+                console.error(`Job ${jobId} failed:`, result);
+                return { success: false, message: result || "Job failed" };
+            }
+        } else {
+            // Audio job
+            if (res.status === 200) {
+                const contentType = res.headers["content-type"];
+                if (contentType === "audio/mpeg") {
+                    console.log(`Audio job ${jobId} completed successfully`);
+                    return { success: true, data: res.data };
+                }
+            }
+
+        }
+
+        await new Promise(r => setTimeout(r, delay));
+    }
+
+    return { success: false, message: "Job polling timed out" };
+}
+
 export const createConversation = async (user_id, content, files = []) => {
     try {
         // Process files to base64
@@ -139,7 +176,8 @@ export async function sendMessageToBackend(
     conversationId,
     userId,
     content,
-    files = []
+    files = [],
+    isJob = true
 ) {
     if (!conversationId || conversationId === "undefined") {
         throw new Error("Conversation ID is required");
@@ -181,12 +219,25 @@ export async function sendMessageToBackend(
             headers: {
                 "Content-Type": "multipart/form-data",
             },
+            timeout: isJob ? 60000 : 15000,
         });
 
-        if (response.data && response.data.final_response) {
+        if (!isJob) {
+            // standard API
+            return { success: true, response: response.data };
+        }
+
+        // Step 2: poll job results
+        const jobId = response.data?.job_id;
+        if (!jobId) {
+            return { success: false, message: "Failed to enqueue job: no job_id returned" };
+        }
+
+        const result = await pollJobResult(jobId);
+        if (result && result.data) {
             return {
                 success: true,
-                response: response.data.final_response,
+                response: result.data,
                 endpoint: isAudioOnly && !hasText ? "audio" : "standard",
             };
         } else {
@@ -285,7 +336,8 @@ export const sendVoiceMessage = async (
     conversationId,
     userId,
     audioBlob,
-    onChunk
+    onChunk,
+    isJob = true
 ) => {
     try {
         const base64Audio = await audioBlobToBase64(audioBlob);
@@ -299,10 +351,23 @@ export const sendVoiceMessage = async (
                 headers: {
                     "Content-Type": "application/json",
                 },
+                timeout: isJob ? 60000 : 15000,
             }
         );
 
-        const transcribedText = response.data;
+        if (!isJob) {
+            // standard API
+            return { success: true, response: response.data };
+        }
+
+        // Step 2: poll job results
+        const jobId = response.data?.job_id;
+        if (!jobId) {
+            return { success: false, message: "Failed to enqueue job: no job_id returned" };
+        }
+
+        const result = await pollJobResult(jobId);
+        const transcribedText = result.data;
 
         if (onChunk && transcribedText) {
             onChunk(transcribedText);
@@ -333,7 +398,8 @@ export async function sendWebSearchRequest(
     conversationId,
     userId,
     content,
-    files = []
+    files = [],
+    isJob = true
 ) {
     if (!conversationId || conversationId === "undefined") {
         throw new Error("Conversation ID is required");
@@ -364,18 +430,32 @@ export async function sendWebSearchRequest(
                 headers: {
                     "Content-Type": "multipart/form-data",
                 },
+                timeout: isJob ? 60000 : 15000,
             }
         );
 
-        if (response.data && response.data.final_response) {
+        if (!isJob) {
+            // standard API
+            return { success: true, response: response.data };
+        }
+
+        // Step 2: poll job results
+        const jobId = response.data?.job_id;
+        if (!jobId) {
+            return { success: false, message: "Failed to enqueue job: no job_id returned" };
+        }
+
+        const result = await pollJobResult(jobId);
+        if (result && result.data) {
             return {
                 success: true,
-                response: response.data.final_response,
-                references: response.data.references || [],
+                response: result.data.final_response,
+                references: result.data.references || [],
             };
         } else {
             throw new Error("No search response received from backend");
         }
+
     } catch (error) {
         if (error.response) {
             const statusCode = error.response.status;
@@ -408,7 +488,7 @@ export async function sendWebSearchRequest(
     }
 }
 
-export async function sendTextToVoiceSpeaker(text) {
+export async function sendTextToVoiceSpeaker(text, isJob = true) {
     if (!text || typeof text !== "string") {
         return;
     }
@@ -421,13 +501,25 @@ export async function sendTextToVoiceSpeaker(text) {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                responseType: "blob", // Expect binary audio
+                timeout: isJob ? 60000 : 15000,
             }
         );
 
+        if (!isJob) {
+            // standard API
+            return { success: true, response: response.data };
+        }
+
+        // Step 2: poll job results
+        const jobId = response.data?.job_id;
+        if (!jobId) {
+            return { success: false, message: "Failed to enqueue job: no job_id returned" };
+        }
+
+        const result = await pollJobResult(jobId, true);
+        console.log("Blob type:", result.data.type, "size:", result.data.size);
         // Create a blob URL for the audio
-        const audioBlob = new Blob([response.data], { type: "audio/mpeg" });
-        const audioUrl = URL.createObjectURL(audioBlob);
+        const audioUrl = URL.createObjectURL(result.data);
 
         // Create audio element but DON'T play it automatically
         const audio = new Audio(audioUrl);
