@@ -12,6 +12,7 @@ import {
  * - Sending text and file messages
  * - Handling real-time streaming responses
  * - Voice message transcription
+ * - Web search with references
  * - Message state management and error handling
  *
  * @param {Object} chatState - Object containing all chat-related state and setters
@@ -95,6 +96,7 @@ export default function useMessageHandler(chatState) {
      * - Input validation and state management
      * - Conversation creation for new chats
      * - Real-time streaming response handling
+     * - Web search with references
      * - Error handling and recovery
      *
      * @param {string} text - The message text content
@@ -176,7 +178,12 @@ export default function useMessageHandler(chatState) {
 
             // Execute appropriate function based on options
             if (webSearchEnabled) {
-                response = await sendWebSearchRequest(currentChatId, userId, text, files);
+                response = await sendWebSearchRequest(
+                    currentChatId,
+                    userId,
+                    text,
+                    files
+                );
             } else {
                 response = await sendMessageToBackend(
                     currentChatId,
@@ -203,7 +210,7 @@ export default function useMessageHandler(chatState) {
                 // Stop typing indicator
                 setIsBotTyping(false);
 
-                // Add bot message with complete response - streaming will be handled by MarkdownTranslator
+                // Add bot message with complete response and references
                 setMessages((prev) => {
                     const updated = [...prev];
                     updated.push({
@@ -214,18 +221,26 @@ export default function useMessageHandler(chatState) {
                         source: webSearchEnabled ? "websearch" : "chat",
                         shouldStream: true, // Flag to indicate this message should stream
                         streamingComplete: false,
+                        references: response.references || [], // Add references from web search
                     });
                     return updated;
                 });
 
                 // Mark streaming as complete after the animation duration
-                const estimatedStreamingTime = Math.max(3000, (response.response.length / 15) * 1000);
-                
+                const estimatedStreamingTime = Math.max(
+                    3000,
+                    (response.response.length / 15) * 1000
+                );
+
                 streamingTimeoutRef.current = setTimeout(() => {
                     setMessages((prev) => {
                         return prev.map((msg) =>
                             msg.tempId === botMessageId
-                                ? { ...msg, streamingComplete: true, shouldStream: false }
+                                ? {
+                                      ...msg,
+                                      streamingComplete: true,
+                                      shouldStream: false,
+                                  }
                                 : msg
                         );
                     });
@@ -254,7 +269,6 @@ export default function useMessageHandler(chatState) {
             } else {
                 throw new Error("No response received from backend");
             }
-
         } catch (err) {
             // Reset states on error
             setShouldReloadAfterStream(false);
