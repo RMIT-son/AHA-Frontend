@@ -2,11 +2,25 @@
 
 import axios from "axios";
 import { app } from "../config/keys.js";
+import { GoogleAuth } from 'google-auth-library';
 
 // Create axios instance with base URL from your existing config
 const apiClient = axios.create({
     baseURL: app.dataURL,
     timeout: 300000, // 5 minutes timeout
+});
+
+// Add a request interceptor
+apiClient.interceptors.request.use(async (config) => {
+    try {
+        const auth = new GoogleAuth();
+        const client = await auth.getIdTokenClient(app.dataURL);
+        const headers = await client.getRequestHeaders();
+        config.headers.Authorization = headers.Authorization;
+    } catch (error) {
+        console.error('Error getting ID token:', error);
+    }
+    return config;
 });
 
 // Helper function to convert base64 to File
