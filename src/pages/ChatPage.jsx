@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { ChatWindow, ChatInput, ChatLayout } from "../components";
+import { useState, useEffect } from "react";
+import { ChatWindow, ChatInput, ChatLayout, MobileChatInput } from "../components";
 import {
     useAuth,
     useChatState,
@@ -9,6 +9,19 @@ import {
 } from "../hooks";
 
 export default function ChatPage() {
+    const [isMobile, setIsMobile] = useState(false);
+
+    // Detect mobile screen size
+    useEffect(() => {
+        const checkMobile = () => {
+            setIsMobile(window.innerWidth < 768); // Tailwind's md breakpoint
+        };
+
+        checkMobile();
+        window.addEventListener("resize", checkMobile);
+        return () => window.removeEventListener("resize", checkMobile);
+    }, []);
+
     // Web search state
     const [webSearchEnabled, setWebSearchEnabled] = useState(false);
 
@@ -153,24 +166,45 @@ export default function ChatPage() {
                 onCancelStream={cancelCurrentStream}
                 chatId={chatId}
             />
-            <ChatInput
-                onSend={handleSendWithOptions}
-                onVoiceRecord={handleVoiceMessage}
-                isLoading={isLoadingInput}
-                canSend={canSendNewMessage && !isProcessingMessage}
-                isStreaming={isStreaming}
-                onCancelStream={cancelCurrentStream}
-                isProcessing={isProcessingMessage}
-                transcribedText={transcribedText}
-                onTranscribedTextUsed={handleTranscribedTextUsed}
-                isTranscribing={isTranscribing}
-                // Web search props
-                enableWebSearch={true}
-                webSearchEnabled={webSearchEnabled}
-                onWebSearchToggle={handleWebSearchToggle}
-                // Audio file upload prop
-                onAudioFileUpload={handleAudioFileUpload}
-            />
+            {isMobile ? (
+                <MobileChatInput
+                    onSend={handleSendWithOptions}
+                    onVoiceRecord={handleVoiceMessage}
+                    isLoading={isLoadingInput}
+                    canSend={canSendNewMessage && !isProcessingMessage}
+                    isStreaming={isStreaming}
+                    onCancelStream={cancelCurrentStream}
+                    isProcessing={isProcessingMessage}
+                    transcribedText={transcribedText}
+                    onTranscribedTextUsed={handleTranscribedTextUsed}
+                    isTranscribing={isTranscribing}
+                    // Web search props
+                    enableWebSearch={true}
+                    webSearchEnabled={webSearchEnabled}
+                    onWebSearchToggle={handleWebSearchToggle}
+                    // Audio file upload prop
+                    onAudioFileUpload={handleAudioFileUpload}
+                />
+            ) : (
+                <ChatInput
+                    onSend={handleSendWithOptions}
+                    onVoiceRecord={handleVoiceMessage}
+                    isLoading={isLoadingInput}
+                    canSend={canSendNewMessage && !isProcessingMessage}
+                    isStreaming={isStreaming}
+                    onCancelStream={cancelCurrentStream}
+                    isProcessing={isProcessingMessage}
+                    transcribedText={transcribedText}
+                    onTranscribedTextUsed={handleTranscribedTextUsed}
+                    isTranscribing={isTranscribing}
+                    // Web search props
+                    enableWebSearch={true}
+                    webSearchEnabled={webSearchEnabled}
+                    onWebSearchToggle={handleWebSearchToggle}
+                    // Audio file upload prop
+                    onAudioFileUpload={handleAudioFileUpload}
+                />
+            )}
         </ChatLayout>
     );
 }

@@ -176,13 +176,14 @@ export default function ChatInput({
         }
     }, [transcribedText, onTranscribedTextUsed]);
 
-    // Auto-resize textarea
+    // Auto-resize textarea with mobile-optimized max height
     useEffect(() => {
         if (textareaRef.current) {
             textareaRef.current.style.height = "auto";
+            const maxHeight = window.innerWidth < 768 ? 60 : 200; // Reduced mobile max height
             textareaRef.current.style.height = `${Math.min(
                 textareaRef.current.scrollHeight,
-                200
+                maxHeight
             )}px`;
         }
     }, [message]);
@@ -323,7 +324,7 @@ export default function ChatInput({
     const buttonState = getInputButtonState();
 
     return (
-        <div className="border-t border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-4">
+        <div className="border-t border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-2 py-1 sm:px-4 sm:py-4">
             <div className="max-w-4xl mx-auto">
                 <StreamingStatus
                     isStreaming={isStreaming}
@@ -331,11 +332,11 @@ export default function ChatInput({
                 />
                 <TranscribingStatus isTranscribing={isTranscribing} />
 
-                {/* File limit indicator */}
+                {/* File limit indicator - collapsed on mobile */}
                 {uploadedFiles.length >= MAX_FILES && (
-                    <div className="mb-3 flex items-start gap-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg px-4 py-2">
+                    <div className="mb-1 sm:mb-3 flex items-center gap-1 sm:gap-2 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded px-2 py-1 sm:px-4 sm:py-2">
                         <svg
-                            className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5"
+                            className="w-3 h-3 sm:w-4 sm:h-4 text-amber-600 dark:text-amber-400 flex-shrink-0"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -347,18 +348,17 @@ export default function ChatInput({
                                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z"
                             />
                         </svg>
-                        <span className="text-sm text-amber-700 dark:text-amber-300 font-medium">
-                            Maximum file limit reached ({MAX_FILES}/{MAX_FILES}
-                            ). Remove a file to upload more.
+                        <span className="text-xs text-amber-700 dark:text-amber-300 font-medium">
+                            Max files ({MAX_FILES}/{MAX_FILES})
                         </span>
                     </div>
                 )}
 
-                {/* File mode indicators */}
+                {/* File mode indicators - collapsed on mobile */}
                 {getCurrentFileMode() === "audio" && (
-                    <div className="mb-3 flex items-start gap-2 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 rounded-lg px-4 py-2">
+                    <div className="mb-1 sm:mb-3 flex items-center gap-1 sm:gap-2 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-700 rounded px-2 py-1 sm:px-4 sm:py-2">
                         <svg
-                            className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5"
+                            className="w-3 h-3 sm:w-4 sm:h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -370,17 +370,16 @@ export default function ChatInput({
                                 d="M15.536 12.464a9 9 0 010-8.928M12 19V5M8.464 12.464a9 9 0 010-8.928"
                             />
                         </svg>
-                        <span className="text-sm text-emerald-700 dark:text-emerald-300 font-medium">
-                            Audio mode active - Only audio files can be
-                            uploaded.
+                        <span className="text-xs text-emerald-700 dark:text-emerald-300 font-medium">
+                            Audio mode
                         </span>
                     </div>
                 )}
 
                 {getCurrentFileMode() === "other" && (
-                    <div className="mb-3 flex items-start gap-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg px-4 py-2">
+                    <div className="mb-1 sm:mb-3 flex items-center gap-1 sm:gap-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded px-2 py-1 sm:px-4 sm:py-2">
                         <svg
-                            className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5"
+                            className="w-3 h-3 sm:w-4 sm:h-4 text-blue-600 dark:text-blue-400 flex-shrink-0"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -392,18 +391,17 @@ export default function ChatInput({
                                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                             />
                         </svg>
-                        <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">
-                            Document mode active - Only images, PDFs, and text
-                            files can be uploaded.
+                        <span className="text-xs text-blue-700 dark:text-blue-300 font-medium">
+                            Document mode
                         </span>
                     </div>
                 )}
 
-                {/* Main input container */}
+                {/* Main input container - minimal mobile padding */}
                 <div className="relative">
                     <div
                         ref={inputBubbleRef}
-                        className={`relative bg-white dark:bg-neutral-900 rounded-2xl border transition-all duration-200 ${
+                        className={`relative bg-white dark:bg-neutral-900 rounded-lg sm:rounded-2xl border transition-all duration-200 ${
                             webSearchEnabled
                                 ? "border-blue-300 shadow-blue-100 shadow-sm dark:border-blue-500/70"
                                 : "border-gray-300 dark:border-neutral-700 shadow-sm"
@@ -416,7 +414,7 @@ export default function ChatInput({
                         <DragOverlay isDragOver={isDragOver} />
 
                         <div className="relative">
-                            {/* Text input */}
+                            {/* Compact textarea */}
                             <textarea
                                 ref={textareaRef}
                                 rows="1"
@@ -424,14 +422,17 @@ export default function ChatInput({
                                 onChange={(e) => setMessage(e.target.value)}
                                 onKeyDown={handleKeyDown}
                                 placeholder={getPlaceholderText()}
-                                className={`w-full bg-transparent outline-none text-gray-900 dark:text-gray-100 resize-none text-base leading-relaxed px-5 pt-4 ${
+                                className={`w-full bg-transparent outline-none text-gray-900 dark:text-gray-100 resize-none text-sm sm:text-base leading-tight px-3 py-2 sm:px-5 sm:pt-4 ${
                                     webSearchEnabled
                                         ? "placeholder-blue-400 dark:placeholder-blue-300"
                                         : "placeholder-gray-500 dark:placeholder-gray-400"
                                 }`}
                                 style={{
-                                    minHeight: "48px",
-                                    maxHeight: "180px",
+                                    minHeight: "36px", // Minimal height for mobile
+                                    maxHeight:
+                                        window.innerWidth < 768
+                                            ? "60px"
+                                            : "180px",
                                 }}
                                 tabIndex={0}
                             />
@@ -442,11 +443,11 @@ export default function ChatInput({
                                 formatTime={formatTime}
                             />
 
-                            {/* Bottom controls */}
-                            <div className="pb-4 flex items-center justify-between px-5">
-                                {/* Left side - Additional options */}
-                                <div className="flex items-center gap-2">
-                                    {/* Audio upload menu */}
+                            {/* Compact bottom controls */}
+                            <div className="pb-1 sm:pb-4 flex items-center justify-between px-3 sm:px-5">
+                                {/* Left side - compact */}
+                                <div className="flex items-center gap-1 sm:gap-2">
+                                    {/* Audio upload menu - compact */}
                                     <div
                                         className="relative"
                                         ref={audioMenuRef}
@@ -457,7 +458,7 @@ export default function ChatInput({
                                                     !showAudioUploadMenu
                                                 )
                                             }
-                                            className="flex items-center justify-center w-8 h-8 rounded-lg text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-neutral-700 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-150 dark:hover:bg-neutral-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                                            className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded sm:rounded-lg text-gray-600 dark:text-gray-300 border border-gray-200 dark:border-neutral-700 bg-gray-100 dark:bg-neutral-800 hover:bg-gray-150 dark:hover:bg-neutral-700 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                                             disabled={
                                                 isLoading ||
                                                 isProcessing ||
@@ -466,7 +467,7 @@ export default function ChatInput({
                                             title="More options"
                                         >
                                             <svg
-                                                className="w-4 h-4"
+                                                className="w-3 h-3 sm:w-4 sm:h-4"
                                                 fill="none"
                                                 stroke="currentColor"
                                                 viewBox="0 0 24 24"
@@ -482,20 +483,20 @@ export default function ChatInput({
 
                                         {/* Audio upload dropdown */}
                                         {showAudioUploadMenu && (
-                                            <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-lg py-1 min-w-[180px] z-50">
+                                            <div className="absolute bottom-full left-0 mb-2 bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-700 rounded-lg shadow-lg py-1 min-w-[140px] sm:min-w-[180px] z-50">
                                                 <button
                                                     onClick={() =>
                                                         audioFileInputRef.current?.click()
                                                     }
                                                     disabled={isAudioUploadDisabled()}
-                                                    className={`w-full px-4 py-3 text-left text-sm hover:bg-gray-100 dark:hover:bg-neutral-800 flex items-center gap-3 ${
+                                                    className={`w-full px-3 py-2 sm:px-4 sm:py-3 text-left text-xs hover:bg-gray-100 dark:hover:bg-neutral-800 flex items-center gap-2 sm:gap-3 ${
                                                         isAudioUploadDisabled()
                                                             ? "text-gray-400 dark:text-gray-500 cursor-not-allowed"
                                                             : "text-gray-700 dark:text-gray-200"
                                                     }`}
                                                 >
                                                     <svg
-                                                        className="w-4 h-4 text-gray-500 dark:text-gray-400"
+                                                        className="w-3 h-3 text-gray-500 dark:text-gray-400"
                                                         fill="none"
                                                         stroke="currentColor"
                                                         viewBox="0 0 24 24"
@@ -507,7 +508,7 @@ export default function ChatInput({
                                                             d="M15.536 12.464a9 9 0 010-8.928M12 19V5M8.464 12.464a9 9 0 010-8.928"
                                                         />
                                                     </svg>
-                                                    Upload Audio File
+                                                    <span>Upload Audio</span>
                                                     {getCurrentFileMode() ===
                                                         "other" && (
                                                         <span className="text-xs text-gray-400 dark:text-gray-500">
@@ -519,11 +520,11 @@ export default function ChatInput({
                                         )}
                                     </div>
 
-                                    {/* Web search toggle */}
+                                    {/* Web search toggle - compact */}
                                     {enableWebSearch && (
                                         <button
                                             onClick={onWebSearchToggle}
-                                            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                                            className={`flex items-center gap-1 sm:gap-1.5 px-2 py-1 sm:px-2.5 sm:py-1.5 rounded sm:rounded-lg text-xs font-medium transition-all duration-200 border focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
                                                 webSearchEnabled
                                                     ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-700 hover:bg-blue-150"
                                                     : "bg-gray-100 dark:bg-neutral-800 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-neutral-700 hover:bg-gray-150 dark:hover:bg-neutral-700"
@@ -540,7 +541,7 @@ export default function ChatInput({
                                             }
                                         >
                                             <svg
-                                                className={`w-3.5 h-3.5 ${
+                                                className={`w-3 h-3 sm:w-3.5 sm:h-3.5 ${
                                                     webSearchEnabled
                                                         ? "text-blue-600"
                                                         : "text-gray-500 dark:text-gray-400"
@@ -552,18 +553,20 @@ export default function ChatInput({
                                                 <circle cx="11" cy="11" r="8" />
                                                 <path d="M21 21l-4.35-4.35" />
                                             </svg>
-                                            <span>Research</span>
+                                            <span className="hidden sm:inline">
+                                                Research
+                                            </span>
                                         </button>
                                     )}
                                 </div>
 
-                                {/* Right side - Action buttons */}
+                                {/* Right side - compact action buttons */}
                                 <div className="flex items-center gap-1">
-                                    {/* File upload button */}
+                                    {/* File upload button - compact */}
                                     <button
                                         type="button"
                                         onClick={handleFileUploadClick}
-                                        className={`p-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                                        className={`p-1 sm:p-2 rounded sm:rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
                                             isFileUploadDisabled()
                                                 ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
                                                 : "text-gray-400 dark:text-gray-300 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-neutral-800"
@@ -572,7 +575,7 @@ export default function ChatInput({
                                         disabled={isFileUploadDisabled()}
                                     >
                                         <svg
-                                            className="w-5 h-5"
+                                            className="w-4 h-4 sm:w-5 sm:h-5"
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -589,11 +592,11 @@ export default function ChatInput({
                                     {/* Voice recording button */}
                                     <VoiceButton />
 
-                                    {/* Send button */}
+                                    {/* Send button - compact */}
                                     <button
                                         type="submit"
                                         onClick={handleSubmit}
-                                        className={`p-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 ${buttonState.buttonColor}`}
+                                        className={`p-1 sm:p-2 rounded sm:rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 ${buttonState.buttonColor}`}
                                         disabled={buttonState.disabled}
                                         title={buttonState.buttonText}
                                     >
@@ -601,7 +604,7 @@ export default function ChatInput({
                                         isProcessing ||
                                         isTranscribing ? (
                                             <svg
-                                                className="animate-spin w-4 h-4"
+                                                className="animate-spin w-4 h-4 sm:w-4 sm:h-4"
                                                 fill="none"
                                                 viewBox="0 0 24 24"
                                             >
@@ -621,7 +624,7 @@ export default function ChatInput({
                                             </svg>
                                         ) : isStreaming ? (
                                             <svg
-                                                className="w-4 h-4"
+                                                className="w-4 h-4 sm:w-4 sm:h-4"
                                                 fill="none"
                                                 stroke="currentColor"
                                                 viewBox="0 0 24 24"
@@ -641,7 +644,7 @@ export default function ChatInput({
                                             </svg>
                                         ) : (
                                             <svg
-                                                className="w-4 h-4"
+                                                className="w-4 h-4 sm:w-4 sm:h-4"
                                                 fill="none"
                                                 stroke="currentColor"
                                                 viewBox="0 0 24 24"
@@ -660,7 +663,7 @@ export default function ChatInput({
 
                             {/* File preview */}
                             {uploadedFiles.length > 0 && (
-                                <div className="px-5">
+                                <div className="px-3 sm:px-5 pb-1">
                                     <FilePreview
                                         uploadedFiles={uploadedFiles}
                                         removeFile={removeFile}

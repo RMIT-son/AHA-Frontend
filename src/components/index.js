@@ -18,3 +18,4 @@ export { default as TranscribingStatus } from "./StatusIndicator/TranscribingSta
 export { default as SearchChatModal } from "./SearchChatModal";
 export {default as ErrorAlert} from "./Error/ErrorAlert";
 export {default as MobileSidebar} from "./MobileSidebar";
+export {default as MobileChatInput} from "./MobileChatInput";
