@@ -50,10 +50,13 @@ export default function LoginPage() {
                 // Skip backend verification for now - use Google data directly
                 const userData = {
                     id: result.data.id,
-                    name: result.data.name,
+                    fullName: result.data.name, // Changed from 'name' to 'fullName'
                     email: result.data.email,
-                    imageUrl: result.data.imageUrl,
-                    loginMethod: "google",
+                    phone: "", // Provide default empty phone since Google doesn't provide this
+                    nickname: null, // Match your backend default
+                    theme: "light", // Match your backend default
+                    imageUrl: result.data.imageUrl, // Keep this for display purposes
+                    loginMethod: "google", // Optional: to track login method
                     // Add any other fields your app expects
                 };
 

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { getUserProfile, updateUserTheme } from "../../controllers/user";
 import { useTheme } from "../../contexts/ThemeContext";
+import Cookies from "js-cookie";
 
 const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
     const { theme: globalTheme, updateTheme } = useTheme();
@@ -9,6 +10,7 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
     const [loading, setLoading] = useState(true);
     const [updating, setUpdating] = useState(false);
     const [error, setError] = useState("");
+    const [isGoogleUser, setIsGoogleUser] = useState(false);
 
     const themeOptions = [
         {
@@ -30,11 +32,17 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
             try {
                 setLoading(true);
                 let userData;
+
                 if (userProp && userProp.theme !== undefined) {
                     userData = userProp;
                 } else {
                     userData = await getUserProfile();
                 }
+
+                // Check if user is a Google user
+                const googleUser = userData.loginMethod === "google";
+                setIsGoogleUser(googleUser);
+
                 const userTheme = userData.theme || "light";
                 setSelectedMode(userTheme);
 
@@ -45,15 +53,18 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
 
                 setError("");
             } catch (err) {
-                const errorMsg = "Failed to load theme preference";
-                setError(errorMsg);
-                if (onError) onError(errorMsg);
+                // Only show error for non-Google users
+                if (!isGoogleUser) {
+                    const errorMsg = "Failed to load theme preference";
+                    setError(errorMsg);
+                    if (onError) onError(errorMsg);
+                }
             } finally {
                 setLoading(false);
             }
         };
         fetchUserTheme();
-    }, [userProp]); // Removed globalTheme and updateTheme from deps to prevent loops
+    }, [userProp]);
 
     const handleChangeTheme = useCallback(
         async (themeId) => {
@@ -71,24 +82,48 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
                 // 2. Update global theme context immediately for UI change
                 updateTheme(themeId);
 
-                // 3. Update in database (this can be slower)
-                await updateUserTheme(themeId);
+                if (isGoogleUser) {
+                    // For Google users: Only update locally and in cookies
+                    const userCookie = Cookies.get("user");
+                    if (userCookie) {
+                        const userData = JSON.parse(userCookie);
+                        userData.theme = themeId;
+                        Cookies.set("user", JSON.stringify(userData), {
+                            expires: 7,
+                        });
+                    }
 
-                // 4. Refresh parent user data if callback provided
-                if (onUserUpdate) {
-                    try {
-                        await onUserUpdate();
-                    } catch (updateError) {
-                        // Silent fail for parent update
+                    // Refresh parent user data if callback provided
+                    if (onUserUpdate) {
+                        try {
+                            await onUserUpdate();
+                        } catch (updateError) {
+                            // Silent fail for parent update
+                        }
+                    }
+                } else {
+                    // For regular users: Update in database
+                    await updateUserTheme(themeId);
+
+                    // Refresh parent user data if callback provided
+                    if (onUserUpdate) {
+                        try {
+                            await onUserUpdate();
+                        } catch (updateError) {
+                            // Silent fail for parent update
+                        }
                     }
                 }
 
                 // Clear any existing errors
                 if (onError) onError("");
             } catch (err) {
-                const errorMsg = err.message || "Failed to update theme";
-                setError(errorMsg);
-                if (onError) onError(errorMsg);
+                // Only show error for non-Google users
+                if (!isGoogleUser) {
+                    const errorMsg = err.message || "Failed to update theme";
+                    setError(errorMsg);
+                    if (onError) onError(errorMsg);
+                }
 
                 // Revert local state on error
                 setSelectedMode(globalTheme);
@@ -103,6 +138,7 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
             onUserUpdate,
             onError,
             globalTheme,
+            isGoogleUser,
         ]
     );
 
@@ -168,12 +204,18 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
                     </h2>
                     <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                         Choose your preferred interface appearance
+                        {isGoogleUser && (
+                            <span className="block text-blue-600 dark:text-blue-400 mt-1">
+                                Theme preferences are saved locally for Google
+                                accounts
+                            </span>
+                        )}
                     </p>
                 </div>
 
                 <div className="p-6">
-                    {/* Local Error Message */}
-                    {error && (
+                    {/* Local Error Message - Only show for non-Google users */}
+                    {error && !isGoogleUser && (
                         <div className="mb-6 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-lg p-4">
                             <div className="flex items-start">
                                 <svg
@@ -320,7 +362,13 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
                                             {/* Status Indicators */}
                                             <div className="flex flex-col items-end space-y-2 ml-3">
                                                 {isActive && (
-                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300">
+                                                    <span
+                                                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                                            isGoogleUser
+                                                                ? "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300"
+                                                                : "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300"
+                                                        }`}
+                                                    >
                                                         <svg
                                                             className="w-3 h-3 mr-1"
                                                             fill="currentColor"
@@ -332,7 +380,9 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
                                                                 clipRule="evenodd"
                                                             />
                                                         </svg>
-                                                        Active
+                                                        {isGoogleUser
+                                                            ? "Active (Local)"
+                                                            : "Active"}
                                                     </span>
                                                 )}
                                                 {isUpdating && (
@@ -364,7 +414,13 @@ const Appearance = ({ user: userProp, onUserUpdate, onError }) => {
 
                                         {/* Selection Ring */}
                                         {isActive && (
-                                            <div className="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-xl opacity-20 blur-sm transition-opacity duration-200"></div>
+                                            <div
+                                                className={`absolute -inset-0.5 rounded-xl opacity-20 blur-sm transition-opacity duration-200 ${
+                                                    isGoogleUser
+                                                        ? "bg-gradient-to-r from-blue-500 to-blue-600"
+                                                        : "bg-gradient-to-r from-emerald-500 to-emerald-600"
+                                                }`}
+                                            ></div>
                                         )}
                                     </button>
                                 </div>
